@@ -70,6 +70,48 @@ curl -X POST http://localhost:8080/api/materiales \
   }"
 ```
 
+## Supabase
+
+Supabase es Postgres, así que no hace falta ningún cambio de esquema ni de
+JPA/Flyway - solo apuntar el `datasource` a su host. Supabase da tres cadenas
+de conexión distintas (pestaña *Connect* del proyecto); cuál usar importa:
+
+| Conexión                    | Puerto | Cuándo usarla |
+|------------------------------|--------|----------------|
+| **Direct connection**         | 5432   | Recomendada si el backend corre en un solo proceso de larga duración (esto). Sin límites de PgBouncer. |
+| **Session pooler**            | 5432   | Igual de compatible que la directa, útil si tu red no soporta IPv6 (la directa de Supabase es IPv6-only salvo add-on de IPv4). |
+| **Transaction pooler (PgBouncer)** | 6543 | Pensada para serverless/muchas conexiones cortas. **No** soporta prepared statements a nivel de sesión ni `SET`, así que rompe a Hibernate y a Flyway si no se ajusta (ver abajo). |
+
+Para desarrollo o un backend "tradicional" como este, usa **Direct connection**
+o **Session pooler**. Variables de entorno (`.env`):
+
+```bash
+DB_HOST=aws-0-<region>.pooler.supabase.com   # o db.<project-ref>.supabase.co para la directa
+DB_PORT=5432
+DB_NAME=postgres
+DB_USERNAME=postgres.<project-ref>            # la directa usa solo "postgres"
+DB_PASSWORD=<tu contraseña de base de datos>
+DB_SSLMODE=require
+```
+
+Si en su lugar necesitas el **Transaction pooler** (puerto 6543), añade:
+
+```bash
+DB_PORT=6543
+DB_PREPARE_THRESHOLD=0        # desactiva prepared statements de servidor (PgBouncer los rompe)
+DB_POOL_MAX_SIZE=4             # mantente por debajo del límite de conexiones por cliente del pooler
+FLYWAY_DB_URL=jdbc:postgresql://db.<project-ref>.supabase.co:5432/postgres?sslmode=require
+FLYWAY_DB_USERNAME=postgres
+FLYWAY_DB_PASSWORD=<tu contraseña de base de datos>
+```
+
+(Flyway necesita locks de sesión que el modo transacción de PgBouncer no da,
+así que ahí sí conviene que las migraciones vayan por la conexión directa
+aunque el resto de la app use el pooler.)
+
+En producción, usa el perfil `prod` (`SPRING_PROFILES_ACTIVE=prod`), que pone
+`ddl-auto: validate` y no formatea el SQL en logs.
+
 ## Comandos habituales
 
 ```bash

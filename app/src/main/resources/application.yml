@@ -6,14 +6,19 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:granatum}
+    # Works as-is against docker-compose's local Postgres and against Supabase
+    # (direct connection or session pooler). If you point DB_HOST at Supabase's
+    # *transaction* pooler (port 6543) instead, set DB_PREPARE_THRESHOLD=0 and
+    # keep DB_POOL_MAX_SIZE at or below the pooler's per-client connection limit -
+    # see README.md#supabase.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:granatum}?sslmode=${DB_SSLMODE:disable}&prepareThreshold=${DB_PREPARE_THRESHOLD:5}
     username: ${DB_USERNAME:granatum}
     password: ${DB_PASSWORD:granatum}
     driver-class-name: org.postgresql.Driver
 
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
       connection-timeout: 20000
       idle-timeout: 300000
       max-lifetime: 1200000
@@ -31,6 +36,14 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    # Migrations use advisory locks and session state that Supabase's transaction
+    # pooler (port 6543) does not support. Override these three only if the app's
+    # main datasource above points at that pooler - point Flyway at the direct
+    # connection or the session pooler (port 5432) instead. Left unset, Flyway
+    # just reuses spring.datasource.*.
+    url: ${FLYWAY_DB_URL:${spring.datasource.url}}
+    user: ${FLYWAY_DB_USERNAME:${spring.datasource.username}}
+    password: ${FLYWAY_DB_PASSWORD:${spring.datasource.password}}
 
 management:
   endpoints:
