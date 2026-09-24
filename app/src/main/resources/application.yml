@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: granatum-suite
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:granatum}
+    username: ${DB_USERNAME:granatum}
+    password: ${DB_PASSWORD:granatum}
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      pool-name: GranatumHikariCP
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+jwt:
+  secret: ${JWT_SECRET_BASE64:VGhpc0lzQURldk9ubHlEZWZhdWx0U2VjcmV0S2V5MTIzNA==}
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}

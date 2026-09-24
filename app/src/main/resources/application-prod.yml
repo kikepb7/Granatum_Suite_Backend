@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+
+jwt:
+  expiration-minutes: 15
+
+logging:
+  level:
+    com.granatum: INFO

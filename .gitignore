@@ -1,0 +1,16 @@
+# Project exclude paths
+/.gradle/
+/.idea
+/*.iml
+/app/build/
+/build/
+/build-logic/.gradle/
+/build-logic/build/
+/common/build/
+/inventory/build/
+
+# Env files
+.env
+
+# OS
+.DS_Store
