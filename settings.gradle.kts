@@ -18,3 +18,4 @@ rootProject.name = "granatum-suite"
 include("app")
 include("common")
 include("inventory")
+include("timetracking")

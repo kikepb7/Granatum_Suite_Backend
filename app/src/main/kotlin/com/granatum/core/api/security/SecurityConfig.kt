@@ -4,6 +4,7 @@ import com.granatum.core.api.config.JwtAuthFilter
 import jakarta.servlet.DispatcherType
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -35,6 +36,19 @@ class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/materiales/**", "/api/categorias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO")
+                    // Staff management is ADMIN only: ENCARGADO runs inventory
+                    // and approves corrections, but does not manage people.
+                    .requestMatchers("/api/empleados/**")
+                    .hasRole("ADMIN")
+                    // REPRESENTANTE is read-only over the register, so it may
+                    // reach these paths with GET and nothing else. Resource
+                    // ownership (an EMPLEADO only seeing their own) is checked
+                    // in the service against the JWT subject, because a path
+                    // matcher cannot express it.
+                    .requestMatchers(HttpMethod.GET, "/api/fichajes/**", "/api/correcciones/**")
+                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
+                    .requestMatchers("/api/fichajes/**", "/api/correcciones/**")
+                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
                     .anyRequest()
                     .authenticated()
             }

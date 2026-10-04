@@ -1,14 +1,17 @@
 # Project exclude paths
 /.gradle/
-/.kotlin/
+# Sin anclar a la raiz: el compilador de Kotlin crea una por modulo, incluida
+# build-logic/, y una regla con "/" al principio solo cubriria la de la raiz.
+.kotlin/
 /.idea
 /*.iml
-/app/build/
-/build/
-/build-logic/.gradle/
-/build-logic/build/
-/common/build/
-/inventory/build/
+# Sin anclar y sin enumerar modulo por modulo: la lista anterior nombraba
+# app/, common/, inventory/ y build-logic/ una por una, asi que al anadir
+# `timetracking` sus ~200 ficheros de build entraron en el indice en el primer
+# `git add -A`. Una regla por directorio es una linea que alguien tiene que
+# acordarse de anadir; esta cubre cualquier modulo presente o futuro.
+build/
+.gradle/
 
 # Env files
 .env

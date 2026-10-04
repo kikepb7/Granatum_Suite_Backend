@@ -9,6 +9,7 @@ description = "Granatum Suite backend"
 dependencies {
     implementation(projects.common)
     implementation(projects.inventory)
+    implementation(projects.timetracking)
 
     implementation(libs.kotlin.reflect)
     implementation(libs.spring.boot.starter.security)

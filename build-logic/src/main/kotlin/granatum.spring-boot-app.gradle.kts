@@ -10,8 +10,7 @@ java {
     }
 }
 
-allOpen {
-    annotation("jakarta.persistence.Entity")
-    annotation("jakarta.persistence.MappedSuperclass")
-    annotation("jakarta.persistence.Embeddable")
-}
+// The allOpen configuration for JPA annotations lives in
+// `granatum.kotlin-common`, which every module applies. It used to be here, but
+// this plugin is applied only to `app` - the one module with no entities at all -
+// so it had no effect where it was needed. See that file for the details.
