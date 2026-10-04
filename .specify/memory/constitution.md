@@ -60,13 +60,50 @@ Reglas:
   `ADMIN`, nunca por quien la creó si es `EMPLEADO`.
 - Los registros **DEBEN** conservarse **4 años** y ser exportables a CSV para
   entregarlos a la Inspección de Trabajo o a la persona trabajadora.
-- Las tablas de fichaje y de histórico **DEBEN** tratarse como append-only: la
-  aplicación no ejecuta `UPDATE` ni `DELETE` sobre ellas.
+
+**Hechos frente a estado.** El registro se compone de dos cosas con reglas
+distintas, y confundirlas es lo que hace que una de las dos regla sea
+imposible de cumplir:
+
+- **Los hechos son inmutables, sin excepción.** Cada operación recibida
+  (entrada, inicio y fin de pausa, salida) **DEBE** quedar registrada como una
+  fila propia en una tabla de eventos append-only, con el instante en que
+  ocurrió y el instante en que se recibió. Sobre esa tabla la aplicación
+  **NO DEBE** ejecutar `UPDATE` ni `DELETE` jamás, por ninguna ruta, ningún rol
+  ni ningún proceso interno. **Es la prueba documental**: ante la Inspección lo
+  que importa es qué fichó la persona y cuándo, no el agregado.
+- **El estado es una proyección y sí se actualiza**, pero solo por las
+  transiciones enumeradas: añadir una pausa, cerrar la pausa abierta, registrar
+  la salida, marcar `INCOMPLETO` el fichaje abierto de un día anterior, y
+  aplicar una corrección aprobada. **Ninguna otra escritura está permitida.**
+- El instante de entrada, una vez registrado, **NO DEBE** cambiar nunca salvo
+  por una corrección aprobada — tampoco mientras el fichaje sigue `EN_CURSO`.
+  Que la jornada esté abierta no autoriza a reescribir su inicio.
+- Un fichaje **finalizado** (`CERRADO` o `INCOMPLETO`) **NO DEBE** cambiar de
+  valor salvo por una corrección aprobada.
+- **Invariante que cierra lo anterior**: el estado de cualquier fichaje **DEBE**
+  poder derivarse en todo momento del log de eventos más las correcciones
+  aprobadas. Si un valor de la proyección no se explica por un evento o por una
+  corrección, es que se escribió por una vía que no debería existir. Este
+  invariante es verificable con un test que reconstruya el estado y lo compare,
+  y **DEBE** tenerlo.
+- **Ninguna fila se borra nunca**, en ninguna tabla de estos módulos: ni
+  eventos, ni fichajes, ni pausas, ni solicitudes, ni empleados.
+- Los repositorios de las tablas append-only **NO DEBEN** exponer operaciones
+  de mutación. No basta con no llamarlas: si la interfaz las ofrece, un
+  descuido futuro las usará sin que nada lo impida.
 
 Razón: la ley exige poder demostrar la jornada realmente registrada, no la
-última versión editada. Un `UPDATE` destruye la prueba. El mismo patrón de
-"tabla inmutable + solicitud explícita" ya rige `HistorialMaterial` en
-`inventory`, así que es una regla del producto, no un parche del fichaje.
+última versión editada, y un `UPDATE` sobre el hecho destruye la prueba. Pero
+prohibir todo `UPDATE` sin distinguir hecho de estado haría imposible cerrar
+una jornada: un fichaje nace `EN_CURSO` y necesariamente se actualiza para
+registrar su salida. Separar ambos planos conserva la prueba intacta y además
+no cuesta nada, porque la tabla de eventos hace falta de todos modos para que
+las operaciones diferidas de la app móvil sean idempotentes.
+
+El mismo patrón de "tabla inmutable + solicitud explícita" ya rige
+`HistorialMaterial` en `inventory`, así que es una regla del producto, no un
+parche del fichaje.
 
 ### IV. Autorización por roles
 
@@ -298,15 +335,24 @@ incumplimientos que existían al redactar la primera versión de este documento
 —falta del test del perfil `prod`, ausencia de RLS en las tablas, y una CI sin
 Postgres— se cerraron antes de la ratificación.
 
-Queda una única excepción viva, acotada y documentada: `flyway_schema_history`
-no tiene RLS (principio VII), por la limitación técnica descrita allí. Se
-mitiga con un paso manual por entorno recogido en `README.md`.
+Excepciones y deuda vivas, todas acotadas y con su motivo:
 
-El principio III gobierna un módulo (`timetracking`) que todavía no existe:
-no es deuda, es diseño vinculante para cuando se escriba.
+1. **`flyway_schema_history` sin RLS** (principio VII), por la limitación
+   técnica descrita allí. Se mitiga con un paso manual por entorno recogido en
+   `README.md`.
+2. **`HistorialMaterialRepository` extiende `JpaRepository`**, que expone
+   `delete` y `deleteAll` sobre una tabla append-only. Hoy nadie los llama —
+   verificado: el servicio solo inserta y lee—, así que no hay incumplimiento
+   efectivo, pero la interfaz ofrece la fuga. Debe estrecharse a una interfaz
+   que declare únicamente las operaciones que la tabla admite, conforme a la
+   última regla del principio III. Es prerrequisito de dar `timetracking` por
+   terminado, para no replicar el patrón en sus tablas append-only.
+
+El principio III gobierna además un módulo (`timetracking`) que todavía no
+existe: eso no es deuda, es diseño vinculante para cuando se escriba.
 
 **Guía de desarrollo en tiempo de ejecución.** Los agentes de código leen esta
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-05
+**Version**: 1.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-05
