@@ -18,8 +18,8 @@ docker compose up -d
 ```
 
 El build debe quedar en verde, incluidas las migraciones nuevas aplicadas sobre
-el Postgres local y `RowLevelSecurityIT` confirmando que ninguna tabla del
-módulo se quedó sin RLS.
+el Postgres local y los tests de RLS del escenario 8 confirmando que ninguna
+tabla se quedó sin activar.
 
 ```bash
 ./gradlew :app:bootRun
@@ -193,13 +193,21 @@ entrada al consultar por rango, no en los dos.
 ## Escenario 8 — RLS en las tablas nuevas (principio VII)
 
 ```bash
-./gradlew :inventory:test --tests "*RowLevelSecurityIT"
+./gradlew :timetracking:test --tests "*RowLevelSecurityIT" :app:test --tests "*EsquemaCompletoRlsIT"
 ```
 
-**Resultado esperado**: verde. Ese test recorre **todas** las tablas del esquema
-`public`, así que cubre automáticamente las cinco nuevas de este módulo sin
-tocarlo. Si una migración olvida el `ENABLE ROW LEVEL SECURITY`, falla ahí con el
-nombre de la tabla.
+**Resultado esperado**: los dos en verde.
+
+Hacen falta **dos** tests y no uno. Cada módulo solo ve las migraciones de su
+propio classpath, así que el `RowLevelSecurityIT` de `inventory` —que depende
+únicamente de `common`— nunca llega a ver las tablas de este módulo: en su
+contenedor de pruebas no existen. El test de `timetracking` guarda las cinco
+tablas nuevas, y `EsquemaCompletoRlsIT` en `app` es el único punto donde el
+esquema está completo, porque `app` agrega todos los módulos. Ese segundo es el
+que detectaría un módulo futuro que olvide activar RLS.
+
+Si una migración olvida el `ENABLE ROW LEVEL SECURITY`, el test falla nombrando
+la tabla.
 
 Importa más que en inventario: estas tablas contienen DNI, ubicación y jornada
 —datos personales—, y la API de datos de Supabase las publicaría.

@@ -217,10 +217,16 @@ logs).
 migración, sin políticas (denegar por defecto). Sin `FORCE ROW LEVEL SECURITY`.
 
 **Rationale**: es el principio VII de la constitución y el patrón ya establecido
-en `V5__enable_row_level_security.sql`. `RowLevelSecurityIT` falla el build si
-alguna tabla se queda sin RLS, así que olvidarlo no llega a `main`. `FORCE` está
-prohibido porque aplicaría RLS también al propietario y el backend conecta como
-propietario.
+en `V5__enable_row_level_security.sql`. `FORCE` está prohibido porque aplicaría
+RLS también al propietario y el backend conecta como propietario.
+
+**La verificación necesita dos tests, no uno.** El `RowLevelSecurityIT` de
+`inventory` **no** cubre este módulo: `inventory` solo depende de `common`, así
+que su contenedor de pruebas recibe únicamente las migraciones de su propio
+classpath y las tablas de `timetracking` ni existen allí. Por eso hacen falta un
+`RowLevelSecurityIT` propio del módulo y, además, un test de esquema completo en
+`app` —el único módulo que agrega todos los demás y por tanto ve las diez
+migraciones—, que es el que detectaría un módulo futuro que olvide activar RLS.
 
 **Nota**: las tablas de este módulo contienen datos personales (DNI, ubicación,
 jornada), así que la exposición accidental vía PostgREST sería más grave aquí

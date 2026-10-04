@@ -70,7 +70,7 @@ la retención de 4 años.
 | **IV. Autorización por roles** | ✅ | FR-022 implementado comparando contra el sujeto del JWT, nunca contra un identificador de la petición. Empleados de `/api/empleados` solo `ADMIN`. |
 | **V. Tests y CI en verde** | ✅ | MockK + Testcontainers, con test específico para cada invariante de los principios III, IV, VI y VII. |
 | **VI. Seguridad y secretos** | ✅ | DNI y ubicación fuera de `toString`, de logs y de mensajes de error. Sin secretos nuevos. |
-| **VII. RLS en todas las tablas** | ✅ | Las cinco tablas activan RLS en su propia migración. `RowLevelSecurityIT` las cubre sin modificarlo. |
+| **VII. RLS en todas las tablas** | ✅ | Las cinco tablas activan RLS en su propia migración, verificado por un `RowLevelSecurityIT` **propio de este módulo** (T018) más un test de esquema completo en `app` (T095). El de `inventory` no sirve aquí: solo ve las migraciones de su propio classpath. |
 | **VIII. Contrato de la API REST** | ✅ | Todo bajo `/api`, formato de error único desde `@RestControllerAdvice`, DTO separados de entidades, flujo Controller → Service → Repository. |
 | **IX. Documentación** | ✅ | Esta carpeta `specs/001-timetracking/`. Pendiente actualizar `README.md` y `docs/ARCHITECTURE.md` al implementar. |
 

@@ -69,7 +69,7 @@ sus propios datos.
 - [ ] T015 Crear `db/migration/V8__create_pausas_table.sql`: `id UUID PK`, `fichaje_id UUID NOT NULL REFERENCES fichajes(id)`, `tipo VARCHAR(15) NOT NULL`, `inicio TIMESTAMPTZ NOT NULL`, `fin TIMESTAMPTZ`; `CHECK (tipo IN ('COMIDA','DESCANSO','OTRO'))`, `CHECK (fin IS NULL OR fin > inicio)`; índice `(fichaje_id)`; **índice único parcial** `uk_pausas_fichaje_abierta ON pausas (fichaje_id) WHERE fin IS NULL`; más `ENABLE ROW LEVEL SECURITY`
 - [ ] T016 Crear `db/migration/V9__create_solicitudes_correccion_fichaje_table.sql`: `id UUID PK`, `fichaje_id UUID NOT NULL REFERENCES fichajes(id)`, `solicitante_id UUID NOT NULL`, `motivo VARCHAR(500) NOT NULL`, `valores_propuestos JSONB NOT NULL`, `valores_originales JSONB`, `estado VARCHAR(12) NOT NULL`, `resuelta_por_id UUID`, `resuelta_en TIMESTAMPTZ`, `motivo_resolucion VARCHAR(500)`, `created_at TIMESTAMPTZ NOT NULL`; `CHECK (estado IN ('PENDIENTE','APROBADA','RECHAZADA'))`; índice `(fichaje_id, estado)`; más `ENABLE ROW LEVEL SECURITY`
 - [ ] T017 Crear `db/migration/V10__create_fichaje_eventos_table.sql`: `id UUID PK`, `client_event_id UUID NOT NULL`, `empleado_id UUID NOT NULL`, `fichaje_id UUID`, `tipo_operacion VARCHAR(15) NOT NULL`, `occurred_at TIMESTAMPTZ NOT NULL`, `received_at TIMESTAMPTZ NOT NULL`, `huella_peticion VARCHAR(64) NOT NULL`, `estado_respuesta INTEGER NOT NULL`, `cuerpo_respuesta JSONB NOT NULL`; `CONSTRAINT uk_fichaje_eventos_client_event_id UNIQUE (client_event_id)`; **sin `updated_at` y sin claves ajenas a `empleados` ni `fichajes`**, para que nada pueda cascadear un borrado hacia la tabla inmutable (data-model.md); más `ENABLE ROW LEVEL SECURITY`
-- [ ] T018 Ejecutar `./gradlew :inventory:test --tests "*RowLevelSecurityIT"` y confirmar que pasa con las cinco tablas nuevas. Ese test recorre **todas** las tablas de `public`, así que cubre este módulo sin modificarlo; si falla, nombra la tabla a la que le falta RLS
+- [ ] T018 Crear `timetracking/src/test/kotlin/com/granatum/core/RowLevelSecurityIT.kt`, replicando el de `inventory`: afirma que ninguna tabla de `public` se queda sin RLS (excluyendo `flyway_schema_history`, que no se puede alterar desde una migración) y que un rol que no es propietario ve 0 filas mientras el propietario sí ve las suyas. **El de `inventory` NO sirve para este módulo**: vive en `inventory`, que solo depende de `common`, así que su contenedor Testcontainers recibe únicamente las migraciones V1–V5 por classpath y las tablas V6–V10 ni existirían en esa base de datos. Sin esta tarea, las cinco tablas nuevas —con DNI, ubicación y jornada— podrían llegar a producción sin RLS creyendo que un test lo impedía
 
 ### Entidades JPA
 
@@ -100,7 +100,7 @@ principio VI).
 - [ ] T032 Crear `api/exception_handling/TimetrackingExceptionHandler.kt` como `@RestControllerAdvice`, mapeando cada excepción a su `code` y HTTP de `contracts/README.md`. Formato único `{ "code", "message" }` (principio VIII). **Ningún mensaje incluye documento de identidad ni ubicación** (principio VI): los errores de validación referencian el campo, no su valor
 - [ ] T033 Añadir en `app/.../api/security/SecurityConfig.kt` las reglas: `/api/fichajes/**` y `/api/correcciones/**` autenticado con cualquiera de los tres roles (la propiedad del recurso se comprueba en el servicio), y `/api/empleados/**` solo `ADMIN`
 - [ ] T034 Añadir `@EnableScheduling` en `app/.../GranatumSuiteApplication.kt`. Verificado que `TaskSchedulingAutoConfiguration` sigue en `spring-boot-autoconfigure` de Boot 4 y registrada en su fichero de imports, así que no hace falta ninguna dependencia nueva (research.md §1)
-- [ ] T035 Crear `api/util/` o reutilizar `common`: helper que convierte `desde`/`hasta` (fechas civiles) al rango de `Instant` correspondiente **interpretándolas en `Europe/Madrid`** con `atStartOfDay()`. El día del cambio de hora tiene 23 o 25 horas, así que un desplazamiento fijo da un rango equivocado (research.md §6)
+- [ ] T035 Crear `timetracking/src/main/kotlin/com/granatum/core/api/util/RangoFechas.kt`: helper que convierte `desde`/`hasta` (fechas civiles) al rango de `Instant` correspondiente **interpretándolas en `Europe/Madrid`** con `atStartOfDay()`. El día del cambio de hora tiene 23 o 25 horas, así que un desplazamiento fijo da un rango equivocado (research.md §6). **Va en este módulo y no en `common`**: hoy solo lo usa `timetracking`, y subirlo a `common` lo convertiría en superficie compartida con `inventory` sin ningún consumidor que lo justifique (principio I). Si la feature 003 lo necesita, se sube entonces
 - [ ] T036 Crear `service/RegistradorEventos.kt`: escribe una fila en `fichaje_eventos` por cada operación recibida, con `occurredAt`, `receivedAt`, huella SHA-256 del cuerpo canonicalizado, y estado y cuerpo de la respuesta. **Lo exige el principio III v1.1.0 para toda operación de fichaje**, no solo para la idempotencia de US4
 
 **Checkpoint**: `./gradlew build` en verde, las cinco tablas creadas con RLS, y
@@ -262,9 +262,12 @@ comprobar que ya no puede y que su histórico sigue consultable.
 - [ ] T089 [P] Actualizar `README.md`: estado del módulo `timetracking` como implementado, y cómo ejercitarlo (principio IX). Incluir que el login real sigue pendiente y que `POST /api/dev/token` emite el token de pruebas
 - [ ] T090 [P] Actualizar `docs/ARCHITECTURE.md`: el módulo en el diagrama, la separación hechos/estado del principio III v1.1.0, y por qué las migraciones comparten numeración
 - [ ] T091 **Deuda declarada en la constitución**: estrechar `inventory/.../HistorialMaterialRepository.kt` para que no extienda `JpaRepository` y declare solo `save` y `findAllByMaterialIdOrderByFechaDesc`. Hoy nadie llama a `delete`/`deleteAll` —verificado—, pero la interfaz ofrece la fuga sobre una tabla append-only. Es **prerrequisito de dar `timetracking` por terminado**, para no replicar el patrón
-- [ ] T092 [P] Auditar `timetracking/src/main/kotlin/com/granatum/core/` completo y confirmar que **ningún** log, mensaje de excepción ni `toString` escribe documento de identidad, ubicación ni tokens (principio VI)
+- [ ] T092 Crear `timetracking/src/test/kotlin/com/granatum/core/SinDatosPersonalesEnLogsIT.kt`: engancha un appender de captura al logger raíz, ejercita el alta de empleado y una jornada completa con un DNI y una ubicación **conocidos y distintivos**, y afirma que ninguno de los dos aparece en la salida de log, ni en el `toString` de las entidades, ni en el cuerpo de las respuestas de error. **Tiene que ser un test y no una revisión manual**: el principio V exige que los invariantes de los principios III, IV, VI y VII tengan un test que falle si se rompen, porque "una regla sin test es una intención, no una garantía"
 - [ ] T093 Ejecutar `./gradlew clean build` y confirmar que **todos** los tests pasan, con las 10 migraciones aplicadas y `RowLevelSecurityIT` en verde
 - [ ] T094 Recorrer los 8 escenarios de [quickstart.md](quickstart.md) contra la app arrancada y confirmar cada resultado esperado, en especial el escenario 7 (**540 minutos** en el cambio de hora, no 480)
+- [ ] T095 Crear `app/src/test/kotlin/com/granatum/core/EsquemaCompletoRlsIT.kt`: el **único** sitio donde el esquema está completo, porque `app` depende de todos los módulos y por tanto ve las 10 migraciones. Afirma que ninguna tabla de `public` carece de RLS, excluyendo solo `flyway_schema_history`. Los tests por módulo (T018 y el de `inventory`) nunca pueden ser totales: cada uno solo ve las migraciones de su propio classpath, así que un módulo futuro que olvide RLS no lo detectaría ninguno
+- [ ] T096 [P] Crear `timetracking/src/test/kotlin/com/granatum/core/SinBorradoIT.kt`: afirma por reflexión que **ninguno** de los cinco repositorios del módulo expone un método cuyo nombre empiece por `delete` o `remove`, y que `FichajeEventoRepository` no expone tampoco `saveAll`. Cubre FR-031 para fichajes, pausas, solicitudes y eventos; hoy solo `Empleado` tiene esa comprobación (T080). Un test por reflexión no se queda obsoleto cuando alguien añada un repositorio nuevo
+- [ ] T097 Medir SC-007 y SC-008 con volumen representativo (plantilla de 50 personas × 1 fichaje diario × 1 mes ≈ 1.100 fichajes con pausas) y registrar los tiempos en `specs/001-timetracking/quickstart.md`. Si alguno no se cumple, **no** relajar el criterio: corregir la consulta. Hasta que exista esta tarea, SC-007 y SC-008 son objetivos declarados pero no verificados
 
 ---
 
@@ -361,10 +364,15 @@ tocar una sola de las dos.
 
 ## Notes
 
-- **94 tareas**, de las cuales 24 son de test y son obligatorias.
-- Los invariantes de los principios III, IV, VI y VII tienen test propio: T052
-  (inmutabilidad), T053 (derivabilidad), T065 (autorización), T092 (datos
-  personales en logs) y T018 (RLS).
+- **97 tareas**, de las cuales 21 son de test y son obligatorias.
+- Los invariantes de los principios III, IV, VI y VII tienen **test
+  automatizado**, no revisión manual: T052 (inmutabilidad), T053
+  (derivabilidad), T065 (autorización), T092 (datos personales en logs), T096
+  (ausencia de borrado) y T018 + T095 (RLS).
+- T095, T096 y T097 se añadieron tras `/speckit-analyze`, que encontró dos
+  garantías que el plan afirmaba tener y no tenía: el RLS de las tablas nuevas
+  no lo verificaba nadie, y el invariante del principio VI tenía una revisión
+  manual donde la constitución exige un test.
 - **Nada se fusiona con la CI en rojo** (principio V). Un test que falla no se
   desactiva: se arregla o se revierte el cambio.
 - Dos huecos del encargo se resuelven explícitamente, en T063 (consulta de

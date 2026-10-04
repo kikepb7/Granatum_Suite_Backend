@@ -86,8 +86,9 @@ Modifica los datos laborales. **FR-027.**
 **Petición**: mismos campos que el alta, salvo que `documentoIdentidad`
 **no es modificable** — corregir el documento de una persona ya registrada es un
 caso excepcional que merece su propia operación auditada, no un `PUT` genérico.
-Si llega, se ignora o se rechaza con `422`; a decidir en implementación, pero
-nunca se aplica en silencio.
+Si llega en el cuerpo, **se rechaza con `422 VALIDATION_ERROR`**; no se ignora
+en silencio. Ignorarlo devolvería `200` a un cliente convencido de haber
+cambiado el dato, y la divergencia no se descubriría hasta mucho después.
 
 `activo` tampoco se cambia aquí: tiene su propio endpoint, para que una baja sea
 una acción explícita y no el efecto colateral de una edición de datos.

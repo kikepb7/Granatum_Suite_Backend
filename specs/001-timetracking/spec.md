@@ -258,6 +258,7 @@ sigue consultable.
 - **Fichaje**: una jornada de trabajo. Instante de entrada y, cuando termina, de salida; ubicación opcional en cada uno; estado (`EN_CURSO`, `CERRADO`, `INCOMPLETO`); horas trabajadas una vez cerrada. Pertenece a una persona empleada y agrupa sus pausas.
 - **Pausa**: una interrupción dentro de un fichaje. Tipo (comida, descanso, otro), instante de inicio y de fin. Pertenece a un único fichaje.
 - **SolicitudCorreccionFichaje**: petición de modificar un fichaje finalizado. Motivo, valores propuestos, estado (`PENDIENTE`, `APROBADA`, `RECHAZADA`), quién la solicitó, quién la resolvió y cuándo. Referencia al fichaje afectado y conserva sus valores originales.
+- **RegistroDeOperacion**: constancia inmutable de cada operación recibida (entrada, inicio o fin de pausa, salida), con el instante en que ocurrió, el instante en que llegó y el identificador de operación que aportó el cliente. Nunca se modifica ni se borra. Es la prueba documental del registro horario —lo que la persona fichó y cuándo— frente al estado agregado de la jornada, y es además lo que permite que reenviar una operación no la duplique.
 
 ## Success Criteria *(mandatory)*
 
