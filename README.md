@@ -188,6 +188,37 @@ aunque el resto de la app use el pooler.)
 En producción, usa el perfil `prod` (`SPRING_PROFILES_ACTIVE=prod`), que pone
 `ddl-auto: validate` y no formatea el SQL en logs.
 
+### Row Level Security
+
+Supabase publica automáticamente una API REST (PostgREST) sobre el esquema
+`public`. Una tabla sin RLS ahí queda legible desde Internet con la clave
+anónima, que es **pública por diseño** — y eso es independiente de la
+autorización que haga el backend.
+
+Por eso todas las tablas de aplicación llevan RLS activado desde su migración
+(`V5__enable_row_level_security.sql`), sin ninguna política: eso significa
+denegar por defecto, así que `anon` y `authenticated` no ven ni una fila. El
+backend conecta como propietario de las tablas, y los propietarios no están
+sujetos a RLS, así que sigue funcionando sin cambios.
+
+> No se usa `FORCE ROW LEVEL SECURITY` a propósito: aplicaría RLS también al
+> propietario y dejaría a la aplicación sin acceso a sus propios datos.
+
+`RowLevelSecurityIT` falla el build si alguna tabla se queda sin RLS, así que
+una migración futura que cree una tabla y lo olvide no llega a `main`.
+
+**Un paso manual pendiente por entorno.** La tabla de control de Flyway,
+`flyway_schema_history`, también vive en `public` y PostgREST la serviría
+(versiones y descripciones de las migraciones; no hay datos personales ni
+credenciales, pero sí información de reconocimiento). No se puede arreglar
+desde una migración, porque Flyway mantiene un lock sobre esa tabla durante
+toda su ejecución y el `ALTER TABLE` se bloquearía contra sí mismo
+indefinidamente. Ejecútalo una vez, a mano, en cada entorno con Supabase:
+
+```sql
+ALTER TABLE flyway_schema_history ENABLE ROW LEVEL SECURITY;
+```
+
 ## Comandos habituales
 
 ```bash

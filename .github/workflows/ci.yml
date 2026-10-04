@@ -6,9 +6,34 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # :app:test boots the full Spring context, which needs a real Postgres.
+    # Credentials and database name match the defaults in application.yml and
+    # docker-compose.yml so no extra configuration is needed.
+    # (The inventory integration tests do not use this service - Testcontainers
+    # starts its own throwaway container via the runner's Docker daemon.)
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: granatum
+          POSTGRES_USER: granatum
+          POSTGRES_PASSWORD: granatum
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U granatum"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,10 +42,20 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - uses: gradle/actions/setup-gradle@v3
+      # Verifies the committed gradle-wrapper.jar against Gradle's published
+      # checksums. A tampered wrapper would otherwise execute arbitrary code
+      # with full access to the build and its secrets.
+      - uses: gradle/actions/wrapper-validation@v3
 
-      - name: Regenerate Gradle wrapper
-        run: gradle wrapper
+      - uses: gradle/actions/setup-gradle@v3
 
       - name: Build
         run: ./gradlew build
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: "**/build/reports/tests/test/"
+          retention-days: 7
