@@ -232,6 +232,9 @@ sigue consultable.
 - **FR-021**: El sistema MUST permitir consultar los fichajes de una persona empleada en un rango de fechas.
 - **FR-022**: El sistema MUST restringir a las personas con rol `EMPLEADO` el acceso exclusivamente a sus propios fichajes y solicitudes, determinando la identidad a partir de la sesión autenticada y nunca de un identificador aportado en la petición.
 - **FR-023**: El sistema MUST permitir a las personas con rol `ENCARGADO` y `ADMIN` consultar los fichajes de todo el personal.
+- **FR-023a**: El sistema MUST permitir a una persona con rol `REPRESENTANTE` consultar, **en modo lectura**, la jornada registrada de cualquier persona de la plantilla. Es la vía por la que se satisface la puesta a disposición del registro a la representación legal de los trabajadores.
+- **FR-023b**: El sistema MUST ocultar la ubicación de los fichajes a las personas con rol `REPRESENTANTE`. No es un dato exigido para la puesta a disposición y es el más intrusivo del registro, así que mostrarlo sería tratar datos personales sin obligación que lo sostenga.
+- **FR-023c**: El sistema MUST impedir a `REPRESENTANTE` toda operación de escritura: no puede fichar, ni solicitar correcciones en nombre de nadie, ni aprobarlas o rechazarlas, ni gestionar personal, ni acceder al inventario.
 
 **Operaciones diferidas e idempotencia**
 
@@ -248,9 +251,20 @@ sigue consultable.
 - **FR-029**: El sistema MUST impedir dar de alta a dos personas con el mismo documento de identidad.
 - **FR-030**: El sistema MUST representar la baja de una persona empleada marcándola como inactiva, y MUST impedir su borrado, conservando íntegro su histórico de jornadas.
 
-**Conservación**
+**Resumen mensual**
 
-- **FR-031**: El sistema MUST conservar los fichajes, sus pausas y sus correcciones durante al menos 4 años, y MUST impedir su borrado físico.
+- **FR-032**: El sistema MUST poder producir, para una persona empleada y un mes natural, un resumen de su jornada: cada día con su entrada, su salida, sus pausas y sus horas trabajadas, más el total del mes.
+- **FR-033**: El sistema MUST señalar en el resumen las jornadas completadas a posteriori y las que han sido objeto de una corrección aprobada, para que quien lo recibe sepa qué se reconstruyó y con qué autorización.
+- **FR-034**: El sistema MUST reflejar en el resumen los valores vigentes tras las correcciones aprobadas, no los originales.
+- **FR-035**: El sistema MUST producir el resumen de las personas con contrato a tiempo parcial con la periodicidad mensual que exige su entrega junto con el recibo de salarios. La **entrega** del documento queda fuera de este alcance y corresponde a la feature de exportación.
+
+**Conservación y depuración**
+
+- **FR-031**: El sistema MUST conservar los fichajes, sus pausas, sus eventos y sus correcciones durante **4 años contados desde la fecha de entrada de cada fichaje**.
+- **FR-031a**: El sistema MUST impedir, **dentro de ese plazo y sin excepción**, el borrado de cualquier registro: no puede existir ninguna ruta de API, ningún rol ni ninguna operación manual capaz de borrarlo.
+- **FR-031b**: El sistema MUST depurar los registros **una vez agotado por completo el plazo**, y MUST hacerlo exclusivamente desde un proceso automático de retención. Un registro al que le quede un solo día de plazo es intocable.
+- **FR-031c**: El sistema MUST anotar cada ejecución de la depuración en un registro propio e inmutable —fechas alcanzadas, número de filas eliminadas e instante de ejecución— que no contiene datos personales y que no se depura nunca.
+- **FR-031d**: El sistema MUST mantener la depuración deshabilitada mientras no esté disponible la descarga de los resúmenes mensuales. La base para poder destruir los registros es que hayan estado a disposición antes.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -274,6 +288,10 @@ sigue consultable.
 - **SC-008**: Una persona responsable obtiene los fichajes de todo el personal de un mes natural en menos de 3 segundos.
 - **SC-009**: Ningún fichaje permanece en estado `EN_CURSO` más allá del día siguiente a su entrada: tras la ejecución diaria del proceso, el 100% de los fichajes abiertos de días anteriores están marcados como `INCOMPLETO`.
 - **SC-010**: Un fichaje completado a posteriori es siempre distinguible de uno cerrado en su momento, de modo que un informe para la Inspección de Trabajo puede señalar qué jornadas se reconstruyeron y con qué autorización.
+- **SC-011**: Una persona con rol `REPRESENTANTE` obtiene la jornada registrada de cualquier persona de la plantilla **sin ninguna ubicación**, y el 100% de sus intentos de escritura —fichar, solicitar o resolver correcciones, gestionar personal— se rechazan.
+- **SC-012**: Ningún registro dentro del plazo de conservación se puede borrar: el 100% de los intentos por cualquier vía se rechazan, incluido el rol `ADMIN`.
+- **SC-013**: Agotado el plazo, la depuración elimina los registros vencidos y **solo** esos, y cada ejecución queda anotada de forma recuperable con el número de filas eliminadas.
+- **SC-014**: El resumen mensual de una persona cuadra con la suma de sus jornadas de ese mes, y señala cuáles se reconstruyeron o corrigieron.
 
 ## Assumptions
 
@@ -327,6 +345,18 @@ suposiciones pendientes de validar:
   definidos en el módulo común del proyecto.
 - **La exportación de jornadas queda fuera de este alcance** y se especifica
   como feature aparte, pero depende de las entidades que aquí se definen.
+- **El resumen mensual se reparte entre dos features, a propósito.** Su
+  **cálculo** vive aquí (FR-032 a FR-035), porque opera sobre los fichajes de
+  este módulo y aplica sus reglas de dominio: qué cuenta como tiempo trabajado,
+  cómo influyen las correcciones aprobadas, qué jornadas se reconstruyeron. Su
+  **entrega** —descarga, formato de fichero, periodicidad de envío— vive en la
+  feature de exportación. Poner el formato CSV aquí duplicaría lo que esa
+  feature ya posee; poner el cálculo allí haría que el módulo de exportación
+  tuviese que conocer las reglas de jornada, que es el acoplamiento peor de los
+  dos.
+- **La depuración a los 4 años depende de esa entrega** (FR-031d): no puede
+  habilitarse hasta que la descarga mensual exista. Mientras tanto no se borra
+  nada, que es el lado seguro del incumplimiento.
 
 ## Out of Scope
 

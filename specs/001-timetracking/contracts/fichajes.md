@@ -154,3 +154,51 @@ descendente. **Un rango sin fichajes devuelve `[]`, no un error.**
 > (data-model.md). No está paginado: el rango de fechas acota el resultado. Si
 > en el futuro se pagina, hay que cambiar la estrategia de carga, porque un
 > fetch join de colección no se pagina en base de datos.
+
+Para `REPRESENTANTE`: acceso a cualquier `empleadoId`, y la respuesta **omite
+los campos de ubicación** (FR-023b).
+
+---
+
+## `GET /api/fichajes/empleado/{empleadoId}/resumen?anio=&mes=`
+
+Resumen mensual de la jornada. **FR-032, FR-033, FR-034, FR-035.**
+
+**Roles**: el titular (`EMPLEADO`), `ENCARGADO`, `ADMIN` y `REPRESENTANTE`
+—este último sin ubicaciones.
+
+**`200 OK`**
+
+```json
+{
+  "empleadoId": "7c2e...",
+  "anio": 2026,
+  "mes": 10,
+  "tipoContrato": "PARCIAL",
+  "totalMinutosTrabajados": 7200,
+  "dias": [
+    {
+      "fecha": "2026-10-05",
+      "entrada": "2026-10-05T07:00:00Z",
+      "salida": "2026-10-05T16:00:00Z",
+      "minutosTrabajados": 480,
+      "minutosPausa": 60,
+      "reconstruido": false,
+      "corregido": true
+    }
+  ]
+}
+```
+
+- `reconstruido` refleja `fueIncompleto`: la jornada se completó a posteriori.
+- `corregido` indica que hubo al menos una corrección aprobada.
+- Los valores son los **vigentes** tras las correcciones, no los originales
+  (FR-034). Los originales se consultan en el histórico de correcciones.
+
+**Esta respuesta es el cálculo, no la entrega.** La descarga del resumen —su
+formato de fichero y su periodicidad de envío— corresponde a la feature de
+exportación. Aquí solo se expone el dato ya agregado, con las reglas de jornada
+de este módulo aplicadas.
+
+**Errores propios**: `403 FORBIDDEN`, `404 EMPLEADO_NOT_FOUND`,
+`400 VALIDATION_ERROR` (mes fuera de 1–12).

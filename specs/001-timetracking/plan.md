@@ -67,7 +67,7 @@ la retención de 4 años.
 | **I. Features independientes** | ✅ | Módulo Gradle propio que solo depende de `common`. No toca `inventory` ni es tocado por él. |
 | **II. Esquema versionado con Flyway** | ✅ | Tablas nuevas en migraciones numeradas. Ninguna migración existente se edita. `validate` en todos los perfiles. |
 | **III. Inmutabilidad del registro horario** | ✅ **Enmendado a v1.1.0** | Ver abajo. El diseño cumple la redacción enmendada, incluido el invariante de derivabilidad. |
-| **IV. Autorización por roles** | ✅ | FR-022 implementado comparando contra el sujeto del JWT, nunca contra un identificador de la petición. Empleados de `/api/empleados` solo `ADMIN`. |
+| **IV. Autorización por roles** | ✅ | FR-022 implementado comparando contra el sujeto del JWT, nunca contra un identificador de la petición. Empleados de `/api/empleados` solo `ADMIN`. El cuarto rol `REPRESENTANTE` (v2.0.0) se añade a `common` y es solo lectura sin ubicación (FR-023a–c). |
 | **V. Tests y CI en verde** | ✅ | MockK + Testcontainers, con test específico para cada invariante de los principios III, IV, VI y VII. |
 | **VI. Seguridad y secretos** | ✅ | DNI y ubicación fuera de `toString`, de logs y de mensajes de error. Sin secretos nuevos. |
 | **VII. RLS en todas las tablas** | ✅ | Las cinco tablas activan RLS en su propia migración, verificado por un `RowLevelSecurityIT` **propio de este módulo** (T018) más un test de esquema completo en `app` (T095). El de `inventory` no sirve aquí: solo ve las migraciones de su propio classpath. |
@@ -201,6 +201,7 @@ Cambios en módulos existentes, mínimos y aditivos:
 
 | Fichero | Cambio |
 |---------|--------|
+| `common/.../domain/type/Role.kt` | Añadir `REPRESENTANTE` (principio IV v2.0.0) |
 | `settings.gradle.kts` | `include("timetracking")` |
 | `app/build.gradle.kts` | `implementation(projects.timetracking)` |
 | `app/.../GranatumSuiteApplication.kt` | `@EnableScheduling` |

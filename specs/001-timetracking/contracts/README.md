@@ -62,6 +62,14 @@ Los mensajes **nunca** incluyen documento de identidad ni ubicación
 | `ADMIN` | Todo, incluido el CRUD de empleados |
 | `ENCARGADO` | Fichajes de todo el personal y resolución de correcciones. **No** gestiona empleados |
 | `EMPLEADO` | Solo sus propios fichajes y sus propias solicitudes |
+| `REPRESENTANTE` | **Solo lectura** de la jornada de toda la plantilla, **sin ubicación**. Ninguna escritura, en ningún endpoint |
+
+`REPRESENTANTE` recibe `403` en todo lo que no sea una consulta de jornada o un
+resumen mensual, incluidos `POST /api/fichajes/entrada` (no ficha, porque no es
+personal de la empresa a estos efectos) y toda operación sobre correcciones.
+Sus respuestas de fichaje **omiten los campos de ubicación**, no los devuelven a
+`null`: la diferencia importa, porque `null` sería indistinguible de un fichaje
+sin ubicación registrada.
 
 **La identidad sale del sujeto del JWT, nunca del cuerpo ni de la ruta**
 (FR-022). Donde un endpoint lleva `{empleadoId}` en la ruta, para un `EMPLEADO`

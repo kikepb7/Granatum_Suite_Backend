@@ -210,6 +210,28 @@ cliente reutilizó una clave para otra operación. Eso es un bug del cliente y s
 responde `409 Conflict`, nunca en silencio. Sin la huella, ese cliente recibiría
 la respuesta de otra operación y nadie se enteraría.
 
+### DepuracionRetencion → `depuraciones_retencion`
+
+Tabla **append-only** que anota cada ejecución del proceso de depuración
+(FR-031c). **No se depura nunca**, y por eso no contiene ningún dato personal:
+solo rangos de fecha y recuentos.
+
+| Campo | Tipo | Columna | Reglas |
+|-------|------|---------|--------|
+| `id` | `UUID` | `id` PK | |
+| `ejecutadaEn` | `Instant` | `ejecutada_en` `TIMESTAMPTZ` | No nulo |
+| `fechaCorte` | `LocalDate` | `fecha_corte` | Fecha hasta la que se depuró (entrada del fichaje) |
+| `fichajesEliminados` | `Int` | `fichajes_eliminados` | No nulo |
+| `pausasEliminadas` | `Int` | `pausas_eliminadas` | No nulo |
+| `eventosEliminados` | `Int` | `eventos_eliminados` | No nulo |
+| `solicitudesEliminadas` | `Int` | `solicitudes_eliminadas` | No nulo |
+
+**Por qué sin datos personales**: si el registro de depuración conservase
+identificadores de empleado o fechas de jornada concretas, sería él mismo un
+tratamiento de datos que sobrevive al plazo que la depuración viene a cumplir —
+se anularía su propósito. Con recuentos y una fecha de corte basta para
+demostrar ante una inspección qué se destruyó y cuándo.
+
 ### Ubicacion (`@Embeddable`)
 
 | Campo | Tipo | Columna |
@@ -288,7 +310,10 @@ frente a un bug de la aplicación o una corrección mal aplicada.
   fichajes cuya entrada sea de un día anterior (FR-012).
 - `INCOMPLETO → CERRADO` solo por corrección aprobada (FR-012b).
 - `CERRADO` es terminal salvo corrección aprobada (FR-018).
-- **No existe transición a borrado** en ningún estado (FR-031).
+- **No existe transición a borrado** por ninguna vía de la aplicación dentro del
+  plazo de conservación (FR-031a). Agotados los 4 años, el proceso de retención
+  elimina la fila completa —no hay estado "depurado"— y deja constancia del
+  recuento en `depuraciones_retencion` (FR-031b, FR-031c).
 
 ### SolicitudCorreccionFichaje
 

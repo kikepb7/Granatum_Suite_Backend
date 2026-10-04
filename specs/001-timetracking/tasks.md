@@ -268,6 +268,17 @@ comprobar que ya no puede y que su histórico sigue consultable.
 - [ ] T095 Crear `app/src/test/kotlin/com/granatum/core/EsquemaCompletoRlsIT.kt`: el **único** sitio donde el esquema está completo, porque `app` depende de todos los módulos y por tanto ve las 10 migraciones. Afirma que ninguna tabla de `public` carece de RLS, excluyendo solo `flyway_schema_history`. Los tests por módulo (T018 y el de `inventory`) nunca pueden ser totales: cada uno solo ve las migraciones de su propio classpath, así que un módulo futuro que olvide RLS no lo detectaría ninguno
 - [ ] T096 [P] Crear `timetracking/src/test/kotlin/com/granatum/core/SinBorradoIT.kt`: afirma por reflexión que **ninguno** de los cinco repositorios del módulo expone un método cuyo nombre empiece por `delete` o `remove`, y que `FichajeEventoRepository` no expone tampoco `saveAll`. Cubre FR-031 para fichajes, pausas, solicitudes y eventos; hoy solo `Empleado` tiene esa comprobación (T080). Un test por reflexión no se queda obsoleto cuando alguien añada un repositorio nuevo
 - [ ] T097 Medir SC-007 y SC-008 con volumen representativo (plantilla de 50 personas × 1 fichaje diario × 1 mes ≈ 1.100 fichajes con pausas) y registrar los tiempos en `specs/001-timetracking/quickstart.md`. Si alguno no se cumple, **no** relajar el criterio: corregir la consulta. Hasta que exista esta tarea, SC-007 y SC-008 son objetivos declarados pero no verificados
+- [ ] T098 Añadir `REPRESENTANTE` a `common/src/main/kotlin/com/granatum/core/domain/type/Role.kt` y actualizar su KDoc. Lo exige el principio IV desde v2.0.0, para dar soporte a la puesta a disposición del registro a la representación legal (art. 34.9)
+- [ ] T099 [US3] Implementar en `service/FichajeService.kt` el alcance de `REPRESENTANTE`: lectura de la jornada de cualquier persona, y **omisión de los campos de ubicación** en la respuesta (FR-023a, FR-023b). Omitir el campo, **no** devolverlo a `null`: `null` sería indistinguible de un fichaje sin ubicación registrada
+- [ ] T100 [US3] Crear `timetracking/src/test/kotlin/com/granatum/core/RepresentanteSoloLecturaIT.kt`: un `REPRESENTANTE` lee la jornada de cualquier persona y **ninguna respuesta contiene ubicación**; y el 100% de sus intentos de escritura —fichar, solicitar corrección, aprobar, rechazar, gestionar personal— devuelven `403` (FR-023c, SC-011)
+- [ ] T101 [US3] Añadir a `app/.../api/security/SecurityConfig.kt` que `REPRESENTANTE` no alcanza `/api/empleados/**` ni las rutas de inventario, y que en `/api/fichajes/**` y `/api/correcciones/**` solo se le permiten métodos de lectura
+- [ ] T102 [P] Crear `domain/service/CalculadoraResumenMensual.kt`: función pura que agrega los fichajes de una persona y un mes natural en el resumen de FR-032, con total del mes, y marcando por día `reconstruido` (desde `fueIncompleto`) y `corregido` (si hubo corrección aprobada). **Solo el cálculo**: la descarga y el formato de fichero son de la feature de exportación
+- [ ] T103 Añadir `GET /api/fichajes/empleado/{empleadoId}/resumen?anio=&mes=` a `api/controllers/FichajeController.kt` según `contracts/fichajes.md`, con las mismas reglas de visibilidad que el listado, incluida la omisión de ubicación para `REPRESENTANTE`
+- [ ] T104 [P] Crear `timetracking/src/test/kotlin/com/granatum/core/ResumenMensualTest.kt` (MockK): el total del mes cuadra con la suma de las jornadas; una jornada reconstruida se marca `reconstruido`; una corregida se marca `corregido` y refleja los valores **vigentes**, no los originales (FR-034, SC-014)
+- [ ] T105 Crear `db/migration/V11__create_depuraciones_retencion_table.sql`: `id UUID PK`, `ejecutada_en TIMESTAMPTZ NOT NULL`, `fecha_corte DATE NOT NULL`, y los cuatro recuentos `INTEGER NOT NULL`; **sin ningún dato personal** (un registro de depuración que conservase identificadores sobreviviría al plazo que la depuración viene a cumplir); más `ENABLE ROW LEVEL SECURITY`
+- [ ] T106 Crear `scheduling/DepuracionRetencionJob.kt`: proceso automático que elimina fichajes, pausas, eventos y solicitudes cuya fecha de entrada tenga **más de 4 años cumplidos por completo**, y anota el recuento en `depuraciones_retencion` (FR-031b, FR-031c). **Deshabilitado por defecto** mediante una propiedad de configuración, y con un arranque que falla si se habilita sin que la descarga mensual esté disponible (FR-031d)
+- [ ] T107 Crear `timetracking/src/test/kotlin/com/granatum/core/RetencionIT.kt`: un registro con el plazo **vencido por completo** se elimina y queda anotado con su recuento; uno al que le falta **un solo día** permanece intacto; y la ejecución deja constancia recuperable (SC-013)
+- [ ] T108 Crear `timetracking/src/test/kotlin/com/granatum/core/SinBorradoDentroDelPlazoIT.kt`: afirma que **ninguna vía** —ningún endpoint, ningún rol incluido `ADMIN`, ninguna operación de repositorio— borra un registro cuyo plazo de conservación sigue vigente (FR-031a, SC-012). Es el test que el principio III exige explícitamente desde v2.0.0
 
 ---
 
@@ -364,7 +375,11 @@ tocar una sola de las dos.
 
 ## Notes
 
-- **97 tareas**, de las cuales 21 son de test y son obligatorias.
+- **108 tareas**, de las cuales 26 son de test y son obligatorias.
+- T098–T108 responden a tres decisiones de producto posteriores al análisis:
+  el cuarto rol `REPRESENTANTE`, el resumen mensual y la depuración a los 4
+  años. Las dos últimas exigieron enmendar la constitución a v2.0.0, porque
+  chocaban con "tres roles" y con "ninguna fila se borra nunca".
 - Los invariantes de los principios III, IV, VI y VII tienen **test
   automatizado**, no revisión manual: T052 (inmutabilidad), T053
   (derivabilidad), T065 (autorización), T092 (datos personales en logs), T096
