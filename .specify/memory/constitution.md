@@ -87,8 +87,29 @@ imposible de cumplir:
   corrección, es que se escribió por una vía que no debería existir. Este
   invariante es verificable con un test que reconstruya el estado y lo compare,
   y **DEBE** tenerlo.
-- **Ninguna fila se borra nunca**, en ninguna tabla de estos módulos: ni
-  eventos, ni fichajes, ni pausas, ni solicitudes, ni empleados.
+- **Dentro del plazo legal de conservación ninguna fila se borra, sin
+  excepción**: ni eventos, ni fichajes, ni pausas, ni solicitudes, ni
+  empleados. No hay ruta de API, rol, ni anulación administrativa que lo
+  permita, y **DEBE** existir un test que lo demuestre.
+- **Agotado el plazo de conservación**, los registros **DEBEN** depurarse, y
+  solo de esta forma:
+  - La depuración la ejecuta **únicamente un proceso automático de retención**.
+    **NO DEBE** existir ningún endpoint, rol ni operación manual capaz de
+    borrar un registro, ni antes ni después del plazo.
+  - Solo alcanza registros cuyo plazo haya vencido **por completo**. Un
+    registro con un solo día de plazo restante es intocable.
+  - Cada ejecución **DEBE** quedar anotada en un registro de depuración
+    append-only —fechas alcanzadas, número de filas, instante— que no contiene
+    datos personales y que no se depura nunca.
+  - El proceso **NO DEBE** habilitarse en un entorno que no ofrezca la descarga
+    mensual de los registros: la base para poder destruirlos es que hayan
+    estado a disposición antes.
+
+Razón de la depuración: conservar indefinidamente no es "cumplir mejor". El
+RD-ley 8/2019 fija cuatro años, y pasados esos, el principio de limitación del
+plazo de conservación del RGPD (art. 5.1.e) convierte la conservación perpetua
+en un incumplimiento distinto. La obligación de destruir es tan real como la de
+conservar; lo que no admite excepción es el plazo.
 - Los repositorios de las tablas append-only **NO DEBEN** exponer operaciones
   de mutación. No basta con no llamarlas: si la interfaz las ofrece, un
   descuido futuro las usará sin que nada lo impida.
@@ -107,16 +128,28 @@ parche del fichaje.
 
 ### IV. Autorización por roles
 
-Tres roles, con fronteras cerradas:
+Cuatro roles, con fronteras cerradas:
 
 | Rol | Alcance |
 |-----|---------|
 | `ADMIN` | Todo. |
 | `ENCARGADO` | Inventario completo y aprobación de correcciones de fichaje. |
 | `EMPLEADO` | Únicamente sus propios fichajes: fichar y consultar su historial. |
+| `REPRESENTANTE` | **Solo lectura** del registro de jornada de toda la plantilla. Nada más. |
 
 - Un `EMPLEADO` **NO DEBE** poder leer ni modificar los fichajes de otra
   persona, ni acceder a ninguna ruta de inventario.
+- `REPRESENTANTE` existe porque el art. 34.9 del Estatuto nombra expresamente a
+  la representación legal de los trabajadores como destinataria del registro.
+  Su alcance es el mínimo que satisface esa obligación:
+  - **PUEDE** consultar la jornada registrada de cualquier persona de la
+    plantilla, en modo lectura.
+  - **NO DEBE** ver la ubicación de los fichajes. El art. 34.9 no la exige y es
+    el dato más intrusivo del registro: dárselo sería tratar datos personales
+    sin obligación que lo sostenga.
+  - **NO DEBE** aprobar ni rechazar correcciones, ni solicitarlas en nombre de
+    nadie, ni dar de alta o baja personal, ni acceder a inventario.
+  - **NO DEBE** poder escribir nada, en ninguna tabla.
 - La propiedad del recurso **DEBE** comprobarse en el servidor contra el
   sujeto del JWT, nunca aceptando un identificador de usuario que venga en el
   cuerpo o la query de la petición.
@@ -348,6 +381,15 @@ Excepciones y deuda vivas, todas acotadas y con su motivo:
    última regla del principio III. Es prerrequisito de dar `timetracking` por
    terminado, para no replicar el patrón en sus tablas append-only.
 
+3. **`Role` en `common` no incluye todavía `REPRESENTANTE`**, que el principio
+   IV ya exige desde v2.0.0. Hasta que se añada, la obligación del art. 34.9
+   de poner el registro a disposición de la representación legal no tiene
+   soporte técnico. Se cierra en la implementación de `timetracking`.
+4. **La depuración a los 4 años no existe aún.** El principio III la exige
+   desde v2.0.0, pero no puede habilitarse hasta que la descarga mensual esté
+   disponible (feature de exportación). Mientras tanto no se borra nada, que es
+   el lado seguro del incumplimiento: se conserva de más, no de menos.
+
 El principio III gobierna además un módulo (`timetracking`) que todavía no
 existe: eso no es deuda, es diseño vinculante para cuando se escriba.
 
@@ -355,4 +397,4 @@ existe: eso no es deuda, es diseño vinculante para cuando se escriba.
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-05
+**Version**: 2.0.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-05
