@@ -19,6 +19,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.flyway.core)
     testImplementation(libs.flyway.postgresql)
+    testImplementation(libs.spring.boot.flyway)
 
     testImplementation(platform(libs.testcontainers.bom))
     testImplementation(libs.testcontainers.junit.jupiter)

@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.jackson.datatype)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
+    implementation(libs.spring.boot.flyway)
     runtimeOnly(libs.postgresql)
     developmentOnly(libs.spring.boot.devtools)
 }

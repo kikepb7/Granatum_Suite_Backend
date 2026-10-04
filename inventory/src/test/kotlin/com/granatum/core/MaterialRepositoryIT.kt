@@ -7,11 +7,13 @@ import com.granatum.core.infrastructure.database.entities.MaterialEntity
 import com.granatum.core.infrastructure.database.entities.TamanoEmbeddable
 import com.granatum.core.infrastructure.database.repositories.CategoriaRepository
 import com.granatum.core.infrastructure.database.repositories.MaterialRepository
+import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -23,8 +25,14 @@ import kotlin.test.assertEquals
  * exercises the JPA mapping end to end. Confirms the entities and the SQL
  * migrations agree (Hibernate `ddl-auto: validate` would otherwise only
  * catch this at application boot).
+ *
+ * `@Transactional` keeps one persistence context open for the whole test (and
+ * rolls it back afterwards), so the lazy `fotos` @ElementCollection can still
+ * be read after the reload. The explicit flush + clear below is what makes
+ * that reload hit the database instead of the first-level cache.
  */
 @Testcontainers
+@Transactional
 @SpringBootTest(classes = [InventoryTestApplication::class])
 class MaterialRepositoryIT {
 
@@ -49,6 +57,9 @@ class MaterialRepositoryIT {
 
     @Autowired
     lateinit var materialRepository: MaterialRepository
+
+    @Autowired
+    lateinit var entityManager: EntityManager
 
     @Test
     fun `persists and reloads a material with its categoria and tamano`() {
@@ -75,6 +86,9 @@ class MaterialRepositoryIT {
                 fotos = mutableListOf("https://example.com/foto1.jpg")
             )
         )
+
+        entityManager.flush()
+        entityManager.clear()
 
         val reloaded = materialRepository.findById(material.id).orElseThrow()
 

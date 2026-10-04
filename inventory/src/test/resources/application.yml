@@ -1,0 +1,10 @@
+# Test-only properties for this module's Spring contexts.
+#
+# InventoryTestApplication is a @SpringBootApplication on com.granatum.core, so
+# it also component-scans `common` (JwtService / JwtAuthFilter). Those beans
+# need jwt.* to exist or the context fails to start - the real values live in
+# app/src/main/resources/application.yml, which is not on this module's
+# classpath. Throwaway key, never used outside tests.
+jwt:
+  secret: VGhpc0lzQURldk9ubHlEZWZhdWx0U2VjcmV0S2V5MTIzNA==
+  expiration-minutes: 15

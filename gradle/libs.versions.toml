@@ -39,6 +39,10 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib" }
 postgresql = { module = "org.postgresql:postgresql" }
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+# Boot 4 ships auto-configuration in per-technology modules, so flyway-core
+# alone does not wire Flyway up - without this the migrations never run and
+# Hibernate's `ddl-auto: validate` fails on the missing tables.
+spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
 
 # Test
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
