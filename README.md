@@ -70,6 +70,82 @@ curl -X POST http://localhost:8080/api/materiales \
   }"
 ```
 
+## Desarrollo guiado por especificaciones (SDD)
+
+Este repo usa [Spec Kit](https://github.com/github/spec-kit) para desarrollo
+guiado por especificaciones: antes de escribir código se escribe una
+especificación, de ahí sale un plan, del plan una lista de tareas, y solo
+entonces se implementa. La idea es que el *qué* y el *por qué* queden escritos
+y revisables, en vez de vivir en la cabeza de quien programó.
+
+### Requisito previo
+
+El flujo lo conduce un agente de código (Claude Code), pero el andamiaje lo
+genera la CLI `specify`, que no viene en el repo. Instálala una vez:
+
+```bash
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+```
+
+Si no tienes `uv`: `brew install uv`. Comprueba con `specify check`.
+
+No hace falta volver a ejecutar `specify init`: el repo ya está inicializado
+(integración `claude`, scripts `sh`, numeración secuencial de features).
+
+### El ciclo
+
+Cada paso es un comando que se invoca dentro del agente, no en la terminal:
+
+| Comando | Para qué |
+|---------|----------|
+| `/speckit-constitution` | Fija los principios del proyecto. **Se hace una vez**, antes de la primera spec. |
+| `/speckit-specify` | Escribe la especificación de una feature a partir de una descripción en lenguaje natural. Crea su rama y su carpeta. |
+| `/speckit-clarify` | *(opcional)* Hace preguntas dirigidas para cerrar ambigüedades. Mejor antes de `plan`. |
+| `/speckit-plan` | Convierte la spec en plan de implementación y artefactos de diseño. |
+| `/speckit-tasks` | Desglosa el plan en tareas ordenadas por dependencias. |
+| `/speckit-analyze` | *(opcional)* Informe de coherencia entre spec, plan y tareas. |
+| `/speckit-implement` | Ejecuta las tareas. |
+| `/speckit-converge` | Compara el código real con la spec y añade como tareas lo que falte. |
+
+`/speckit-specify` crea una rama y una carpeta por feature, numeradas de forma
+secuencial:
+
+```
+specs/
+└── 001-nombre-de-la-feature/
+    ├── spec.md
+    ├── plan.md
+    └── tasks.md
+```
+
+### Qué hay versionado
+
+- `.specify/` — plantillas, scripts y la **constitución** del proyecto
+  (`.specify/memory/constitution.md`).
+- `.claude/skills/speckit-*/` — los comandos de arriba.
+
+> La constitución está todavía **sin rellenar** (tiene marcadores como
+> `[PROJECT_NAME]` y `[PRINCIPLE_1_NAME]`). Es el primer paso pendiente:
+> ejecuta `/speckit-constitution` antes de la primera especificación.
+
+### Skills de terceros (no versionadas)
+
+Aparte de las de Spec Kit, el entorno de desarrollo usa skills de Supabase y
+JetBrains que **no están en el repo** a propósito (son ~744 KB de código ajeno;
+ver las reglas en `.gitignore`). Si las quieres, instálalas tú:
+
+```bash
+# Necesita Node: brew install node
+npx skills add supabase/agent-skills -a claude-code -y
+npx skills add Kotlin/kotlin-agent-skills -a claude-code -y
+```
+
+Son opcionales — el flujo SDD funciona sin ellas. Las útiles aquí son
+`kotlin-backend-jpa-entity-mapping` (entidades JPA, `LazyInitializationException`,
+fetch plans) y `supabase-postgres-best-practices` (esquema, migraciones, RLS,
+índices), relevante porque el `datasource` ya admite Supabase y hoy la
+autorización vive solo en `SecurityConfig`, sin nada a nivel de base de datos.
+
 ## Supabase
 
 Supabase es Postgres, así que no hace falta ningún cambio de esquema ni de
@@ -130,6 +206,9 @@ docker compose down -v   # apaga y limpia los volúmenes locales
 ├── inventory/      # dominio de inventario (Material, Categoria, HistorialMaterial)
 ├── build-logic/    # convention plugins de Gradle (composite build)
 ├── gradle/         # version catalog + gradle wrapper
+├── .specify/       # Spec Kit: plantillas, scripts y constitución del proyecto
+├── .claude/skills/ # comandos speckit-* (las skills de terceros van ignoradas)
+├── specs/          # una carpeta por feature, la crea /speckit-specify
 ├── docker-compose.yml
 └── docs/ARCHITECTURE.md
 ```

@@ -12,5 +12,19 @@
 # Env files
 .env
 
+# Agent skills vendorizadas desde repos de terceros (Supabase, JetBrains).
+# No se versionan: son ~744 KB de codigo ajeno que se reinstala con las
+# instrucciones de .claude/skills/README.md.
+#
+# Ojo: se ignoran una por una a proposito, NO toda .claude/skills/. Las skills
+# speckit-* que genera `specify init` si deben versionarse, porque son la
+# puerta de entrada al flujo SDD y acompanan a .specify/ (si se ignorasen,
+# quien clone el repo tendria las plantillas pero no los comandos).
+/.claude/skills/supabase/
+/.claude/skills/supabase-postgres-best-practices/
+/.claude/skills/kotlin-*/
+/.claude/skills/_licenses/
+/.claude/skills/README.md
+
 # OS
 .DS_Store
