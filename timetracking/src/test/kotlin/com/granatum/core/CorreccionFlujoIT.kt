@@ -65,6 +65,7 @@ class CorreccionFlujoIT {
     @Autowired lateinit var fichajeRepository: FichajeRepository
     @Autowired lateinit var empleadoRepository: EmpleadoRepository
     @Autowired lateinit var job: MarcadoFichajesIncompletosJob
+    @Autowired lateinit var correccionController: com.granatum.core.api.controllers.CorreccionController
 
     private val madrid = com.granatum.core.api.util.RangoFechas.ZONA
     private val encargado = UUID.randomUUID()
@@ -297,6 +298,48 @@ class CorreccionFlujoIT {
             "the flag must survive completion, or an inspection report could not " +
                 "tell a reconstructed day from one closed at the time"
         )
+    }
+
+    /**
+     * FR-020a. Checked at the controller, because that is where the refusal
+     * happens: the DTO declares `ubicacion` **only** so its presence can be
+     * detected. Leaving the field out looked cleaner and was wrong - Jackson
+     * ignores unknown properties, so the request would have been accepted
+     * silently and the client would believe it had corrected the location.
+     */
+    @Test
+    fun `a proposal carrying a location is refused rather than ignored`() {
+        val empleado = nuevoEmpleado()
+        val fichaje = jornadaCerrada(empleado)
+
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+            .authentication = org.springframework.security.authentication
+            .UsernamePasswordAuthenticationToken(
+                empleado.id, null,
+                listOf(org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLEADO"))
+            )
+
+        try {
+            assertFailsWith<com.granatum.core.domain.exception.UbicacionNoCorregibleException> {
+                correccionController.solicitar(
+                    fichaje.id,
+                    com.granatum.core.api.dto.CrearCorreccionRequest(
+                        motivo = "Quiero cambiar donde fiche",
+                        valoresPropuestos = com.granatum.core.api.dto.ValoresFichajeDto(
+                            entrada = madrid("2026-10-05", "07:00"),
+                            salida = madrid("2026-10-05", "16:00"),
+                            pausas = emptyList(),
+                            ubicacion = com.granatum.core.api.dto.UbicacionDto(
+                                latitud = java.math.BigDecimal("37.0"),
+                                longitud = java.math.BigDecimal("-5.0")
+                            )
+                        )
+                    )
+                )
+            }
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext()
+        }
     }
 
     /** A correction that removes a break must actually delete its row. */

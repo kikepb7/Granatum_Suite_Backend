@@ -160,6 +160,25 @@ los campos de ubicación** (FR-023b).
 
 ---
 
+## `GET /api/fichajes?desde=&hasta=`
+
+Jornadas de **toda la plantilla** en un rango. **FR-023, FR-023a.**
+
+**Roles**: `ENCARGADO`, `ADMIN` y `REPRESENTANTE`. Un `EMPLEADO` recibe `403`:
+no existe para él una vista agregada, ni siquiera limitada a lo suyo —para eso
+está el endpoint por empleado.
+
+**Parámetros**: `desde` y `hasta`, mismas reglas que el listado por empleado.
+
+**`200 OK`**: lista de fichajes de todas las personas, ordenada por entrada
+descendente, cada uno con su `empleadoId`. Para `REPRESENTANTE`, **sin
+ubicaciones**.
+
+> Este endpoint faltaba en esta documentación y existía en el código. Detectado
+> en la revisión de la spec, no por el contrato.
+
+---
+
 ## `GET /api/fichajes/empleado/{empleadoId}/resumen?anio=&mes=`
 
 Resumen mensual de la jornada. **FR-032, FR-033, FR-034, FR-035.**

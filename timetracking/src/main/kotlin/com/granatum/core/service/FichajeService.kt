@@ -190,12 +190,16 @@ class FichajeService(
         desde: LocalDate,
         hasta: LocalDate
     ): List<FichajeModel> {
-        if (hasta.isBefore(desde)) {
-            throw ValoresIncoherentesException("'hasta' es anterior a 'desde'")
-        }
-
+        // Authorization before input validation, deliberately. Nothing here
+        // leaks either way - the range describes the caller's own input - but
+        // refusing an unauthorized caller first means no work is done on their
+        // behalf and no response varies with what they sent.
         if (rol == Role.EMPLEADO && empleadoIdSolicitado != solicitanteId) {
             throw ForbiddenException("Solo puede consultar sus propios fichajes")
+        }
+
+        if (hasta.isBefore(desde)) {
+            throw ValoresIncoherentesException("'hasta' es anterior a 'desde'")
         }
 
         if (!empleadoRepository.findById(empleadoIdSolicitado).isPresent) {

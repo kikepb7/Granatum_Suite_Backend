@@ -27,14 +27,21 @@ data class CrearCorreccionRequest(
 /**
  * Proposed final state of the shift.
  *
- * **Has no `ubicacion` field, by design.** A request carrying one is rejected
- * with `UBICACION_NO_CORREGIBLE` rather than ignored, so a client never
- * believes it changed something it did not.
+ * [ubicacion] exists **only so its presence can be refused**. A correction may
+ * not change where someone clocked in (FR-020a): that is evidence, and an
+ * editable location is not evidence of anything.
+ *
+ * Declaring the field is what makes the refusal possible. Leaving it out looked
+ * cleaner and was wrong: Jackson ignores unknown properties by default, so a
+ * request carrying `ubicacion` would have been accepted silently and the client
+ * would believe it changed something it did not - the exact failure the
+ * contract rules out.
  */
 data class ValoresFichajeDto(
     @field:NotNull val entrada: Instant,
     @field:NotNull val salida: Instant,
-    @field:Valid val pausas: List<ValoresPausaDto> = emptyList()
+    @field:Valid val pausas: List<ValoresPausaDto> = emptyList(),
+    val ubicacion: UbicacionDto? = null
 )
 
 data class ValoresPausaDto(

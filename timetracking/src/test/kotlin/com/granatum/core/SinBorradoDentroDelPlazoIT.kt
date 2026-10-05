@@ -17,8 +17,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * **The test constitution principle III requires since v2.0.0**: inside the
- * retention period nothing can be deleted - no endpoint, no role including
+ * **The test constitution principle III requires since v2.0.0**, and SC-012:
+ * inside the retention period nothing can be deleted - no endpoint, no role including
  * ADMIN, and no repository operation.
  *
  * Asserted by reflection over the module's own interfaces rather than by trying

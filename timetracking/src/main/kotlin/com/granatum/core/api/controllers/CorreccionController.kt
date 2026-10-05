@@ -6,6 +6,7 @@ import com.granatum.core.api.dto.RechazarCorreccionRequest
 import com.granatum.core.api.mappers.toDto
 import com.granatum.core.api.mappers.toModel
 import com.granatum.core.api.util.requestUserId
+import com.granatum.core.domain.exception.UbicacionNoCorregibleException
 import com.granatum.core.api.util.requestUserRole
 import com.granatum.core.domain.type.EstadoSolicitud
 import com.granatum.core.service.CorreccionService
@@ -39,14 +40,22 @@ class CorreccionController(
     fun solicitar(
         @PathVariable id: UUID,
         @Valid @RequestBody request: CrearCorreccionRequest
-    ): CorreccionDto =
-        correccionService.solicitar(
+    ): CorreccionDto {
+        // Refused, not ignored (FR-020a). Ignoring it would return 201 to a
+        // client convinced it had corrected the location, and the divergence
+        // would surface only much later - if ever.
+        if (request.valoresPropuestos.ubicacion != null) {
+            throw UbicacionNoCorregibleException()
+        }
+
+        return correccionService.solicitar(
             fichajeId = id,
             solicitanteId = requestUserId,
             rol = requestUserRole,
             motivo = request.motivo,
             propuestos = request.valoresPropuestos.toModel()
         ).toDto()
+    }
 
     @PostMapping("/api/correcciones/{id}/aprobar")
     fun aprobar(@PathVariable id: UUID): CorreccionDto =
