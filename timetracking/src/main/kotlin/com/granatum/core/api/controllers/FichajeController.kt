@@ -4,10 +4,16 @@ import com.granatum.core.api.dto.EntradaRequest
 import com.granatum.core.api.dto.FichajeDto
 import com.granatum.core.api.dto.FinPausaRequest
 import com.granatum.core.api.dto.InicioPausaRequest
+import com.granatum.core.api.dto.ResumenMensualDto
 import com.granatum.core.api.dto.SalidaRequest
 import com.granatum.core.api.dto.UbicacionDto
 import com.granatum.core.api.mappers.toDto
 import com.granatum.core.api.util.requestUserId
+import java.time.LocalDate
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.GetMapping
+import com.granatum.core.domain.type.Role
+import com.granatum.core.api.util.requestUserRole
 import com.granatum.core.service.FichajeService
 import com.granatum.core.service.UbicacionInput
 import jakarta.validation.Valid
@@ -82,6 +88,67 @@ class FichajeController(
             occurredAt = request.occurredAt,
             ubicacion = request.ubicacion?.toInput()
         ).toDto()
+
+    @GetMapping("/empleado/{empleadoId}")
+    fun porEmpleadoYRango(
+        @PathVariable empleadoId: UUID,
+        @RequestParam desde: LocalDate,
+        @RequestParam hasta: LocalDate
+    ): List<FichajeDto> =
+        fichajeService.findPorEmpleadoYRango(
+            empleadoIdSolicitado = empleadoId,
+            solicitanteId = requestUserId,
+            rol = requestUserRole,
+            desde = desde,
+            hasta = hasta
+        ).map { it.toDto(incluirUbicacion = puedeVerUbicacion()) }
+
+    /** Whole workforce. ENCARGADO, ADMIN and REPRESENTANTE; never an EMPLEADO. */
+    @GetMapping
+    fun todosPorRango(
+        @RequestParam desde: LocalDate,
+        @RequestParam hasta: LocalDate
+    ): List<FichajeDto> =
+        fichajeService.findTodosPorRango(
+            rol = requestUserRole,
+            desde = desde,
+            hasta = hasta
+        ).map { it.toDto(incluirUbicacion = puedeVerUbicacion()) }
+
+    /**
+     * A month of someone's register, aggregated (FR-032 to FR-035).
+     *
+     * This is the calculation only. Downloading it as a file - and handing it to
+     * part-time staff with their payslip, as article 12.4.c requires - belongs
+     * to the export feature.
+     */
+    @GetMapping("/empleado/{empleadoId}/resumen")
+    fun resumenMensual(
+        @PathVariable empleadoId: UUID,
+        @RequestParam anio: Int,
+        @RequestParam mes: Int
+    ): ResumenMensualDto =
+        fichajeService.resumenMensual(
+            empleadoIdSolicitado = empleadoId,
+            solicitanteId = requestUserId,
+            rol = requestUserRole,
+            anio = anio,
+            mes = mes
+        ).toDto()
+
+    /**
+     * REPRESENTANTE never sees where someone clocked in (FR-023b).
+     *
+     * Article 34.9 entitles worker representatives to the register, not to each
+     * person's whereabouts, and location is the most intrusive datum in it:
+     * handing it over would be processing personal data with no obligation
+     * behind it.
+     *
+     * Decided here rather than in the service because it is a presentation
+     * concern - what this caller may be shown - and the service already returns
+     * the full model to callers who are entitled to it.
+     */
+    private fun puedeVerUbicacion(): Boolean = requestUserRole != Role.REPRESENTANTE
 
     private fun UbicacionDto.toInput() = UbicacionInput(
         latitud = latitud,
