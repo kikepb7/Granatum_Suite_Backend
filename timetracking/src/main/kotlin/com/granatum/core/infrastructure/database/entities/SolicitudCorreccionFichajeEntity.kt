@@ -69,7 +69,7 @@ class SolicitudCorreccionFichajeEntity(
 ) {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    lateinit var createdAt: Instant
+    var createdAt: Instant = Instant.now()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

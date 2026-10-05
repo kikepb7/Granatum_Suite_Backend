@@ -50,13 +50,16 @@ class EmpleadoEntity(
     @Column(nullable = false)
     var activo: Boolean = true
 ) {
+    // Defaulted rather than `lateinit`, matching `inventory`: the field is then
+    // never null even in a context without auditing enabled, and auditing
+    // overwrites it on insert where it is.
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    lateinit var createdAt: Instant
+    var createdAt: Instant = Instant.now()
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    lateinit var updatedAt: Instant
+    var updatedAt: Instant = Instant.now()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
