@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class JwtServiceTest {
 
     private val jwtService = JwtService(
-        secretBase64 = "VGhpc0lzQURldk9ubHlEZWZhdWx0U2VjcmV0S2V5MTIzNA==",
+        secretBase64 = randomTestJwtKeyBase64(),
         expirationMinutes = 15
     )
 

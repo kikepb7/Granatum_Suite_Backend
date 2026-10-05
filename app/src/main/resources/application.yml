@@ -13,7 +13,10 @@ spring:
     # see README.md#supabase.
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:granatum}?sslmode=${DB_SSLMODE:disable}&prepareThreshold=${DB_PREPARE_THRESHOLD:5}
     username: ${DB_USERNAME:granatum}
-    password: ${DB_PASSWORD:granatum}
+    # No default either: principle VI names the database password as a secret,
+    # and a fallback that happens to match docker-compose would still be a
+    # credential living in the repository.
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
     hikari:
@@ -52,5 +55,12 @@ management:
         include: health,info
 
 jwt:
-  secret: ${JWT_SECRET_BASE64:VGhpc0lzQURldk9ubHlEZWZhdWx0U2VjcmV0S2V5MTIzNA==}
+  # No default, deliberately. A fallback here would mean a missing
+  # JWT_SECRET_BASE64 in production boots the application with a signing key
+  # committed to the repository - enough for anyone with a clone to forge an
+  # ADMIN token. With no default the application refuses to start, which is the
+  # correct failure. `./gradlew :app:bootRun` picks the value up from .env (see
+  # build-logic/src/main/kotlin/DotEnv.kt); in production it comes from the
+  # platform.
+  secret: ${JWT_SECRET_BASE64}
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}

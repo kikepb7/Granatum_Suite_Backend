@@ -51,6 +51,15 @@ jobs:
 
       - name: Build
         run: ./gradlew build
+        env:
+          # application.yml has no fallback for the database password, so CI has
+          # to supply it like any other environment. It matches the postgres
+          # service above; it is a throwaway credential for an ephemeral
+          # container, not a secret.
+          DB_PASSWORD: granatum
+          # JWT_SECRET_BASE64 is deliberately absent: the Gradle test tasks
+          # generate a fresh key per run, so there is no signing key to store in
+          # the repository or in GitHub secrets for the build to work.
 
       - name: Upload test reports
         if: failure()

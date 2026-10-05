@@ -34,9 +34,24 @@ docker compose up -d
 # 2. Copia las variables de entorno de ejemplo
 cp .env.example .env
 
-# 3. Arranca la app (perfil "dev" por defecto, aplica las migraciones Flyway al arrancar)
+# 3. Genera tu clave de firma JWT y ponla en .env (JWT_SECRET_BASE64)
+openssl rand -base64 32
+
+# 4. Arranca la app (perfil "dev" por defecto, aplica las migraciones Flyway al arrancar)
 ./gradlew :app:bootRun
 ```
+
+> **El paso 3 no es opcional.** `application.yml` **no tiene valor por defecto**
+> para `JWT_SECRET_BASE64` ni para `DB_PASSWORD`, así que la app se niega a
+> arrancar si faltan. Es deliberado: un valor por defecto significa que, si la
+> variable no está puesta en producción, la aplicación arranca con una clave
+> committeada en este repositorio — y quien conozca esa clave puede emitir un
+> token con cualquier rol, lo que equivale a no tener autenticación.
+>
+> `.env` **sí se carga**: `bootRun` y las tareas de test lo leen y lo pasan como
+> variables de entorno de verdad (ver `build-logic/src/main/kotlin/DotEnv.kt`).
+> Spring Boot no lee `.env` por su cuenta, y Gradle tampoco. Los tests no
+> necesitan que pongas ninguna clave: se genera una nueva en cada ejecución.
 
 La app queda escuchando en `http://localhost:8080`.
 

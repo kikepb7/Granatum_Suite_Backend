@@ -1,10 +1,16 @@
 # Test-only properties for this module's Spring contexts.
 #
-# TimetrackingTestApplication is a @SpringBootApplication on com.granatum.core,
-# so it also component-scans `common` (JwtService / JwtAuthFilter). Those beans
-# need jwt.* to exist or the context fails to start - the real values live in
+# The test application is a @SpringBootApplication on com.granatum.core, so it
+# also component-scans `common` (JwtService / JwtAuthFilter). Those beans need
+# jwt.* to exist or the context fails to start, and the real values live in
 # app/src/main/resources/application.yml, which is not on this module's
-# classpath. Throwaway key, never used outside tests.
+# classpath.
+#
+# No literal key here: the Gradle test task generates a fresh one per run and
+# passes it as JWT_SECRET_BASE64 (see build-logic/src/main/kotlin/DotEnv.kt).
+# Tests only round-trip tokens, so they never need a stable key - and a
+# "throwaway" key committed to a repository is the one that ends up pasted into
+# a real deployment.
 jwt:
-  secret: VGhpc0lzQURldk9ubHlEZWZhdWx0U2VjcmV0S2V5MTIzNA==
+  secret: ${JWT_SECRET_BASE64}
   expiration-minutes: 15

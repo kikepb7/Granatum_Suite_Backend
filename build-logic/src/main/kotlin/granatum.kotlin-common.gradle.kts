@@ -53,4 +53,13 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+
+    // Nothing else loads `.env`, so without this the tests would depend on
+    // fallbacks baked into application.yml - which is exactly what was removed.
+    loadDotEnv(rootDir).forEach { (key, value) -> environment(key, value) }
+
+    // Always overrides whatever `.env` says: tests only round-trip tokens, so a
+    // key generated per run is strictly better than any committed one, and it
+    // keeps the repository free of signing keys even in test resources.
+    environment("JWT_SECRET_BASE64", randomJwtKeyBase64())
 }

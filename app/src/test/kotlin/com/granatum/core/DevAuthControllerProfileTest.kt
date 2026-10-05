@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.security.SecureRandom
+import java.util.Base64
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -29,15 +31,30 @@ import kotlin.test.assertTrue
  * annotated it with a profile that never matches - the test would be green
  * while silently protecting nothing.
  */
+/**
+ * A fresh key per run. Local to this file rather than a shared test fixture:
+ * four lines duplicated beats either adding the java-test-fixtures plugin or
+ * shipping test helpers inside `common`'s production jar, and test source sets
+ * are not shared across modules.
+ *
+ * Declared at file level because the nested @Configuration class below needs to
+ * call it, and a nested (non-inner) class cannot reach the outer class members.
+ */
+private fun randomTestJwtKeyBase64(): String {
+    val bytes = ByteArray(32)
+    SecureRandom().nextBytes(bytes)
+    return Base64.getEncoder().encodeToString(bytes)
+}
+
 class DevAuthControllerProfileTest {
 
     @Configuration
     class JwtServiceStub {
-        // The real class with a throwaway key; the test never mints a token, it
-        // only needs the dependency to be satisfiable under the `dev` profile.
+        // The real class with a key generated per run; the test never mints a
+        // token, it only needs the dependency to be satisfiable under `dev`.
         @Bean
         fun jwtService() = JwtService(
-            secretBase64 = "VGhpc0lzQURldk9ubHlEZWZhdWx0U2VjcmV0S2V5MTIzNA==",
+            secretBase64 = randomTestJwtKeyBase64(),
             expirationMinutes = 15
         )
     }
