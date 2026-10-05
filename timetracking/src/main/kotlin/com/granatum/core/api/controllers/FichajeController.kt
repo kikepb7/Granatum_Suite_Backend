@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.GetMapping
 import com.granatum.core.domain.type.Role
 import com.granatum.core.api.util.requestUserRole
+import com.granatum.core.domain.type.TipoOperacionFichaje
+import com.granatum.core.service.OperacionFichajeHandler
 import com.granatum.core.service.FichajeService
 import com.granatum.core.service.UbicacionInput
 import jakarta.validation.Valid
@@ -42,52 +44,85 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/fichajes")
 class FichajeController(
-    private val fichajeService: FichajeService
+    private val fichajeService: FichajeService,
+    private val handler: OperacionFichajeHandler
 ) {
 
     @PostMapping("/entrada")
     @ResponseStatus(HttpStatus.CREATED)
     fun registrarEntrada(@Valid @RequestBody request: EntradaRequest): FichajeDto =
-        fichajeService.registrarEntrada(
+        handler.ejecutar(
+            clientEventId = request.clientEventId,
             empleadoId = requestUserId,
+            tipoOperacion = TipoOperacionFichaje.ENTRADA,
             occurredAt = request.occurredAt,
-            ubicacion = request.ubicacion?.toInput()
-        ).toDto()
+            estadoRespuesta = HttpStatus.CREATED.value()
+        ) {
+            fichajeService.registrarEntrada(
+                empleadoId = requestUserId,
+                occurredAt = request.occurredAt,
+                ubicacion = request.ubicacion?.toInput()
+            ).toDto()
+        }
 
     @PostMapping("/{id}/pausa/inicio")
     fun iniciarPausa(
         @PathVariable id: UUID,
         @Valid @RequestBody request: InicioPausaRequest
     ): FichajeDto =
-        fichajeService.iniciarPausa(
-            fichajeId = id,
+        handler.ejecutar(
+            clientEventId = request.clientEventId,
             empleadoId = requestUserId,
+            tipoOperacion = TipoOperacionFichaje.INICIO_PAUSA,
             occurredAt = request.occurredAt,
-            tipo = request.tipo
-        ).toDto()
+            estadoRespuesta = HttpStatus.OK.value()
+        ) {
+            fichajeService.iniciarPausa(
+                fichajeId = id,
+                empleadoId = requestUserId,
+                occurredAt = request.occurredAt,
+                tipo = request.tipo
+            ).toDto()
+        }
 
     @PostMapping("/{id}/pausa/fin")
     fun finalizarPausa(
         @PathVariable id: UUID,
         @Valid @RequestBody request: FinPausaRequest
     ): FichajeDto =
-        fichajeService.finalizarPausa(
-            fichajeId = id,
+        handler.ejecutar(
+            clientEventId = request.clientEventId,
             empleadoId = requestUserId,
-            occurredAt = request.occurredAt
-        ).toDto()
+            tipoOperacion = TipoOperacionFichaje.FIN_PAUSA,
+            occurredAt = request.occurredAt,
+            estadoRespuesta = HttpStatus.OK.value()
+        ) {
+            fichajeService.finalizarPausa(
+                fichajeId = id,
+                empleadoId = requestUserId,
+                occurredAt = request.occurredAt
+            ).toDto()
+        }
 
     @PostMapping("/{id}/salida")
     fun registrarSalida(
         @PathVariable id: UUID,
         @Valid @RequestBody request: SalidaRequest
     ): FichajeDto =
-        fichajeService.registrarSalida(
-            fichajeId = id,
+        handler.ejecutar(
+            clientEventId = request.clientEventId,
             empleadoId = requestUserId,
+            tipoOperacion = TipoOperacionFichaje.SALIDA,
             occurredAt = request.occurredAt,
-            ubicacion = request.ubicacion?.toInput()
-        ).toDto()
+            estadoRespuesta = HttpStatus.OK.value()
+        ) {
+            fichajeService.registrarSalida(
+                fichajeId = id,
+                empleadoId = requestUserId,
+                occurredAt = request.occurredAt,
+                ubicacion = request.ubicacion?.toInput()
+            ).toDto()
+        }
 
     @GetMapping("/empleado/{empleadoId}")
     fun porEmpleadoYRango(
