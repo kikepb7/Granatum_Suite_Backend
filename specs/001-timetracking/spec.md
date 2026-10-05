@@ -218,7 +218,8 @@ sigue consultable.
 
 - **FR-013**: El sistema MUST permitir a una persona empleada solicitar la corrección de un fichaje ya finalizado, aportando obligatoriamente un motivo y los valores propuestos.
 - **FR-014**: El sistema MUST mantener las solicitudes de corrección en uno de estos tres estados: `PENDIENTE`, `APROBADA` o `RECHAZADA`.
-- **FR-015**: El sistema MUST permitir aprobar o rechazar una solicitud únicamente a personas con rol `ENCARGADO` o `ADMIN`, y MUST impedir que quien la creó la resuelva cuando su rol es `EMPLEADO`.
+- **FR-015**: El sistema MUST permitir aprobar o rechazar una solicitud únicamente a personas con rol `ENCARGADO` o `ADMIN`.
+- **FR-015a**: El sistema MUST impedir que quien creó una solicitud la resuelva, **con independencia de su rol**. Un `ENCARGADO` también tiene sus propios fichajes, así que podría corregir su jornada y aprobársela él mismo — que es exactamente la autoaprobación que el paso de aprobación existe para evitar. *(La redacción original de FR-015 solo lo impedía "cuando su rol es `EMPLEADO`", cláusula vacua: un `EMPLEADO` nunca llega a resolver. Detectado al implementar.)*
 - **FR-016**: El sistema MUST registrar, al resolver una solicitud, quién la resolvió y en qué instante.
 - **FR-017**: El sistema MUST conservar los valores originales del fichaje tras aplicar una corrección aprobada, de modo que sigan siendo consultables.
 - **FR-018**: El sistema MUST impedir toda modificación o borrado de un fichaje finalizado que no proceda de una corrección aprobada.
