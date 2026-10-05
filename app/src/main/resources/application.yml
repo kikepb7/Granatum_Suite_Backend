@@ -48,6 +48,24 @@ spring:
     user: ${FLYWAY_DB_USERNAME:${spring.datasource.username}}
     password: ${FLYWAY_DB_PASSWORD:${spring.datasource.password}}
 
+logging:
+  level:
+    # Principle VI: no personal data in logs. These two Hibernate loggers print
+    # entity and parameter values by reflection, so they bypass the carefully
+    # written `toString()` on each entity entirely:
+    #
+    # - EntityPrinter dumps every persistent property of an entity, which for
+    #   EmpleadoEntity means the identity document.
+    # - the jdbc.bind logger prints bound statement parameters, which means
+    #   every value that reaches the database, locations included.
+    #
+    # Pinned above DEBUG so raising the root level to diagnose a problem in
+    # production cannot expose them by accident - which is exactly the scenario
+    # a diagnostic session is. Found by SinDatosPersonalesEnLogsIT, which raises
+    # the root logger to DEBUG on purpose to prove these survive it.
+    org.hibernate.internal.util.EntityPrinter: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+
 management:
   endpoints:
     web:

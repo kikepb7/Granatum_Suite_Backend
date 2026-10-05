@@ -14,3 +14,13 @@
 jwt:
   secret: ${JWT_SECRET_BASE64}
   expiration-minutes: 15
+
+# Mirrors app/src/main/resources/application.yml: these two Hibernate loggers
+# print entity and parameter values by reflection, bypassing each entity's
+# `toString()`, so they would leak the identity document and the locations.
+# Pinned here too, because this module's test context does not read app's
+# configuration.
+logging:
+  level:
+    org.hibernate.internal.util.EntityPrinter: WARN
+    org.hibernate.orm.jdbc.bind: WARN

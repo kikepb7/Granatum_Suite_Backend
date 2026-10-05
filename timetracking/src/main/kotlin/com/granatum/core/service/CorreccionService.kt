@@ -96,13 +96,27 @@ class CorreccionService(
         solicitud.valoresOriginales = json.escribir(fichaje.aValores())
 
         aplicar(fichaje, propuestos, minutos)
-
-        solicitud.estado = EstadoSolicitud.APROBADA
-        solicitud.resueltaPorId = resolutorId
-        solicitud.resueltaEn = clock.instant()
-
         fichajeRepository.save(fichaje)
-        return solicitudRepository.save(solicitud).toModel(json)
+        solicitudRepository.save(solicitud)
+
+        // Claimed LAST, and conditionally.
+        //
+        // The order is deliberate: both of two simultaneous approvals would get
+        // this far, and then exactly one wins the conditional update while the
+        // loser sees zero rows and throws - rolling back everything it just did
+        // to the fichaje. Claiming first and applying afterwards would leave the
+        // winner's work outside the claim, so a failure in between would mark a
+        // request resolved without its correction applied.
+        reclamar(
+            solicitudId = solicitudId,
+            nuevoEstado = EstadoSolicitud.APROBADA,
+            resolutorId = resolutorId,
+            motivoResolucion = null
+        )
+
+        return solicitudRepository.findById(solicitudId).orElseThrow {
+            SolicitudNotFoundException(solicitudId)
+        }.toModel(json)
     }
 
     @Transactional
@@ -112,16 +126,20 @@ class CorreccionService(
         rol: Role,
         motivoResolucion: String
     ): SolicitudCorreccionModel {
-        val solicitud = cargarResoluble(solicitudId, resolutorId, rol)
+        cargarResoluble(solicitudId, resolutorId, rol)
 
-        solicitud.estado = EstadoSolicitud.RECHAZADA
-        solicitud.resueltaPorId = resolutorId
-        solicitud.resueltaEn = clock.instant()
-        solicitud.motivoResolucion = motivoResolucion
         // valoresOriginales stays null: nothing was ever applied, so there is no
         // "before" to record.
+        reclamar(
+            solicitudId = solicitudId,
+            nuevoEstado = EstadoSolicitud.RECHAZADA,
+            resolutorId = resolutorId,
+            motivoResolucion = motivoResolucion
+        )
 
-        return solicitudRepository.save(solicitud).toModel(json)
+        return solicitudRepository.findById(solicitudId).orElseThrow {
+            SolicitudNotFoundException(solicitudId)
+        }.toModel(json)
     }
 
     @Transactional(readOnly = true)
@@ -132,6 +150,28 @@ class CorreccionService(
     @Transactional(readOnly = true)
     fun findByEstado(estado: EstadoSolicitud): List<SolicitudCorreccionModel> =
         solicitudRepository.findAllByEstado(estado).map { it.toModel(json) }
+
+    /**
+     * Moves the request out of PENDIENTE, or fails if someone else already did.
+     *
+     * The row count is the whole mechanism: zero means another transaction won
+     * the race, and throwing here rolls back this one's work.
+     */
+    private fun reclamar(
+        solicitudId: UUID,
+        nuevoEstado: EstadoSolicitud,
+        resolutorId: UUID,
+        motivoResolucion: String?
+    ) {
+        val filas = solicitudRepository.resolverSiSiguePendiente(
+            id = solicitudId,
+            nuevoEstado = nuevoEstado,
+            resolutorId = resolutorId,
+            resueltaEn = clock.instant(),
+            motivoResolucion = motivoResolucion
+        )
+        if (filas == 0) throw SolicitudYaResueltaException()
+    }
 
     private fun cargarResoluble(
         solicitudId: UUID,

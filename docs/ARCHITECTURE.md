@@ -15,9 +15,11 @@ su vez está extraído de [Squadfy_Backend](https://github.com/kikepb7/squadfy_b
                          │ depende de
          ┌───────────────┼───────────────────┐
          ▼               ▼                   ▼
-   ┌──────────┐   ┌─────────────┐    (timetracking,
-   │  common  │◄──│  inventory  │     pendiente)
-   └──────────┘   └─────────────┘
+   ┌──────────┐   ┌─────────────┐   ┌────────────────┐
+   │  common  │◄──│  inventory  │   │  timetracking  │
+   └──────────┘   └─────────────┘   └────────────────┘
+        ▲                                   │
+        └───────────────────────────────────┘
 ```
 
 - **`app`**: único módulo con `main()`. Seguridad global (`SecurityConfig`),
@@ -27,9 +29,8 @@ su vez está extraído de [Squadfy_Backend](https://github.com/kikepb7/squadfy_b
   `ForbiddenException`, `UnauthorizedException`, `InvalidOperationException`),
   `Role` (`ADMIN` / `ENCARGADO` / `EMPLEADO`), `JwtService` y `JwtAuthFilter`.
 - **`inventory`**: dominio de inventario de material de trabajo.
-- **`timetracking`** (pendiente): dominio de fichaje de personal. Se añadirá
-  como módulo independiente, sin acoplarse a `inventory`, una vez validado
-  este último.
+- **`timetracking`**: dominio de registro horario. Depende solo de `common`;
+  `inventory` y `timetracking` no se conocen entre sí.
 
 A diferencia del skeleton original, este proyecto **no incluye Redis ni
 RabbitMQ**: el MVP no los necesita (no hay caché ni comunicación asíncrona
@@ -106,3 +107,59 @@ por una entidad `SolicitudCorreccionFichaje` con estado
 (`PENDIENTE`/`APROBADA`/`RECHAZADA`) que registra quién la aprobó y cuándo —
 mismo patrón de "tabla de auditoría inmutable + solicitud explícita" que usa
 `HistorialMaterial` para el inventario.
+
+
+## Registro horario: hechos frente a estado
+
+El módulo `timetracking` separa dos cosas con reglas distintas, y esa
+separación es lo que hace implementable el principio III de la constitución:
+
+| Tabla | Naturaleza | Se actualiza |
+|-------|-----------|--------------|
+| `fichaje_eventos` | append-only: una fila por operación recibida, con la hora del hecho y la de llegada | **Nunca** dentro del plazo de conservación |
+| `fichajes`, `pausas` | proyección del estado actual | Sí, pero solo por las cinco transiciones enumeradas |
+| `solicitudes_correccion_fichaje` | append-only una vez resuelta; conserva los valores originales | No, tras resolverse |
+| `depuraciones_retencion` | auditoría de la depuración; sin datos personales | Nunca |
+
+La prueba documental es el log de eventos: ante la Inspección lo que importa es
+qué fichó la persona y cuándo, no el estado agregado. La proyección existe
+porque un fichaje nace `EN_CURSO` y necesariamente se actualiza para registrar
+su salida — prohibir todo `UPDATE` sin distinguir hecho de estado haría
+imposible cerrar una jornada.
+
+El invariante que lo sostiene: **el estado de cualquier fichaje debe poder
+derivarse del log de eventos más sus correcciones aprobadas**. Si un valor no se
+explica por ninguno de los dos, se escribió por una vía que no debería existir.
+Lo verifica `DerivabilidadEstadoIT`.
+
+### Garantías que viven en el motor, no en el código
+
+Dos reglas no se pueden expresar en JPA y van escritas a mano en SQL, porque son
+las únicas a prueba de concurrencia:
+
+```sql
+CREATE UNIQUE INDEX uk_fichajes_empleado_en_curso
+    ON fichajes (empleado_id) WHERE estado = 'EN_CURSO';
+CREATE UNIQUE INDEX uk_pausas_fichaje_abierta
+    ON pausas (fichaje_id) WHERE fin IS NULL;
+```
+
+La comprobación en el servicio solo da un mensaje legible: dos peticiones
+simultáneas de entrada —el reintento de la app móvil— pasarían ambas la lectura
+antes de que cualquiera escriba.
+
+### Borrado
+
+Todo el borrado del producto vive en `RetencionPurgaRepository`, con cada método
+como consulta `@Modifying` acotada por la fecha de corte. Ningún otro
+repositorio expone operaciones de mutación destructiva, y
+`SinBorradoDentroDelPlazoIT` lo comprueba por reflexión sobre los seis.
+
+### Numeración de migraciones
+
+Flyway comparte un único histórico en `classpath:db/migration` para todos los
+módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5` y
+`timetracking` `V6`–`V11`. Es un acoplamiento real entre módulos — al añadir una
+migración hay que mirar qué número ocupa el otro — y se acepta porque la
+alternativa (esquemas o históricos separados) complica el despliegue mucho más
+de lo que ahorra.

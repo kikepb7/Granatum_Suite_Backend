@@ -20,8 +20,9 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 ## Estado del proyecto
 
 - ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway.
-- ⏳ `timetracking` (Fichaje, Empleado) — pendiente, se implementará como módulo independiente una vez validado `inventory`.
-- ⏳ Login real (`/api/auth/login`, `/api/auth/refresh`) — depende de la entidad `Empleado` del módulo `timetracking`. Mientras tanto, `POST /api/dev/token` (solo perfil `dev`) permite emitir un JWT de prueba con el rol que se indique.
+- ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
+- ⏳ Login real (`/api/auth/login`, `/api/auth/refresh`) — pendiente. Ya existe la entidad `Empleado` sobre la que construirlo, y su `id` es el sujeto del JWT. Mientras tanto, `POST /api/dev/token` (solo perfil `dev`) permite emitir un JWT de prueba con el rol que se indique.
+- ⏳ Exportación de fichajes a CSV — pendiente. **La depuración a los 4 años sale deshabilitada hasta que exista**, porque la base para destruir un registro es que haya estado descargable antes.
 
 ## Arranque rápido
 
