@@ -40,6 +40,14 @@ TOKEN_EMPLEADO=$(curl -s -X POST "http://localhost:8080/api/dev/token?role=EMPLE
 
 ---
 
+> **Las horas de los escenarios tienen que ser recientes.** El validador de
+> reloj rechaza cualquier `occurredAt` a más de 5 minutos en el futuro o a más
+> de 72 horas en el pasado, así que una fecha fija como `2026-10-05` deja de
+> funcionar en cuanto pasan tres días. Usa **ayer** u **hoy** al ejecutarlos a
+> mano. Detectado al recorrerlos por primera vez: con las horas fijas, el
+> `POST /salida` devolvía `422 DESVIACION_RELOJ`, que es el validador
+> funcionando bien y no un fallo.
+
 ## Escenario 1 — Jornada completa con dos pausas (SC-001)
 
 Es el criterio de éxito principal. Alta, entrada a las 07:00, dos pausas que
@@ -227,5 +235,24 @@ Importa más que en inventario: estas tablas contienen DNI, ubicación y jornada
 | SC-009 paso a INCOMPLETO | 6 |
 | SC-010 jornada reconstruida distinguible | 6 |
 
-SC-007 y SC-008 son objetivos de latencia: se miden en el escenario 1 y en el 4
-respectivamente, pero no son verificables de forma fiable a mano en local.
+### Latencia medida (SC-007 y SC-008)
+
+Medido el 2026-10-05 contra la aplicación arrancada en local, con **1.100
+fichajes** sembrados (50 personas × 22 jornadas, cada una con su pausa) para que
+las consultas no midieran una base vacía:
+
+| Criterio | Límite | Medido | Resultado |
+|----------|--------|--------|-----------|
+| SC-007 fichar entrada | < 5 s | **0,0125 s** (media de 5) | ✓ |
+| SC-007 fichar salida | < 5 s | **0,0098 s** (media de 5) | ✓ |
+| SC-008 plantilla completa, un mes | < 3 s | **0,028 s** (1.100 fichajes con pausas) | ✓ |
+| Un empleado, un mes | — | 0,0055 s | — |
+| Resumen mensual | — | 0,0062 s | — |
+
+Dos márgenes de interpretación, para que el número no se lea como más de lo que
+es: son medidas en local, sin latencia de red ni concurrencia, y contra un
+Postgres en Docker en la misma máquina. Lo que demuestran es que **no hay un
+problema estructural** —el `@EntityGraph` evita el N+1, y 1.100 filas con sus
+pausas salen en 28 ms—, no que esos tiempos se mantengan en producción. La
+siembra se hizo por SQL y no por la API, precisamente porque el validador de
+reloj rechaza fechas de hace un mes, que es su trabajo.

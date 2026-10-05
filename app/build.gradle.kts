@@ -22,4 +22,8 @@ dependencies {
     implementation(libs.spring.boot.flyway)
     runtimeOnly(libs.postgresql)
     developmentOnly(libs.spring.boot.devtools)
+
+    // MockMvc needs the test slice; spring-security-test is not used (tokens are
+    // minted with the real JwtService, which exercises the real filter).
+    testImplementation(libs.spring.boot.starter.test)
 }

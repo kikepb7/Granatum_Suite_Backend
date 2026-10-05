@@ -29,6 +29,12 @@ jwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jwt" }
 
 # Jackson
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+# Spring Boot 4's web layer uses Jackson 3, which lives in the `tools.jackson`
+# namespace. The Jackson 2 module above does nothing for it, so without this one
+# Jackson cannot use a Kotlin data class's primary constructor and every request
+# body fails to deserialize. Version comes from tools.jackson:jackson-bom, which
+# the Boot BOM already manages.
+jackson3-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
 jackson-datatype = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 
 # Kotlin
