@@ -257,13 +257,13 @@ sirven.
 
 Decisiones tomadas por defecto ante detalles no especificados:
 
-- **Vida de los tokens: 15 minutos el de acceso y 30 días el de renovación.** Son
-  los valores que el emisor actual del proyecto ya usa, así que adoptarlos no
-  cambia nada del comportamiento existente y mantiene el token de acceso lo
+- **Vida de los tokens: 15 minutos el de acceso y 30 días el de renovación.**
+  **Confirmado por el responsable del producto el 2026-10-06**, con el criterio
+  de igualarlos a Squadfy_Backend: 15 min de acceso, 30 días de renovación, y en
+  el perfil `dev` un valor por defecto de 1000 min que la variable
+  `JWT_EXPIRATION_MINUTES` puede sobreescribir. Mantiene el token de acceso lo
   bastante corto para que su robo tenga ventana pequeña. Son configuración, no
-  diseño: se ajustan sin tocar código. *(El responsable del producto pidió
-  revisar este punto; se deja como supuesto explícito para que lo confirme o lo
-  cambie.)*
+  diseño: se ajustan sin tocar código.
 - **El correo se normaliza a minúsculas y sin espacios** antes de comprobar su
   unicidad, por el mismo motivo que el documento de identidad en la feature de
   jornada: sin normalizar, dos escrituras del mismo correo serían dos cuentas.

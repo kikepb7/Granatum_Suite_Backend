@@ -7,6 +7,9 @@ jakarta = "6.1.0"
 jwt = "0.12.6"
 mockk = "1.13.13"
 testcontainers = "1.20.4"
+# El BOM de Spring Boot 4 NO gestiona BouncyCastle (comprobado sobre
+# spring-boot-dependencies-4.0.0-SNAPSHOT.pom), asi que la version va aqui a mano.
+bouncycastle = "1.79"
 
 [libraries]
 # Spring Boot Starters
@@ -49,6 +52,12 @@ flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 # alone does not wire Flyway up - without this the migrations never run and
 # Hibernate's `ddl-auto: validate` fails on the missing tables.
 spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
+
+# Criptografia
+# Argon2PasswordEncoder de Spring Security delega en BouncyCastle: su bytecode
+# referencia org.bouncycastle.crypto.generators.Argon2BytesGenerator, asi que sin
+# este jar en runtime el bean de PasswordEncoder falla al construirse.
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 
 # Test
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }

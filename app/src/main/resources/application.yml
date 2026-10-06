@@ -81,4 +81,48 @@ jwt:
   # build-logic/src/main/kotlin/DotEnv.kt); in production it comes from the
   # platform.
   secret: ${JWT_SECRET_BASE64}
+  # Access token lifetime, aligned with Squadfy_Backend: 15 minutes, with the
+  # refresh token (auth.refresh-expiration-days, 30) doing the long-lived part.
+  # Production takes this value as-is; there is no override in
+  # application-prod.yml, so JWT_EXPIRATION_MINUTES is the only knob.
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}
+
+auth:
+  # Ninguno de estos valores es un secreto, asi que todos llevan defecto. El
+  # unico secreto de la feature sigue siendo JWT_SECRET_BASE64, arriba, que no
+  # lo lleva a proposito (principio VI).
+  refresh-expiration-days: ${AUTH_REFRESH_EXPIRATION_DAYS:30}
+
+  password:
+    argon2:
+      # Medido en un Mac mini de 10 nucleos: 64 MiB / t=3 cuesta ~110 ms, frente
+      # a los 16 ms de los valores por defecto de Spring Security y los 217 ms de
+      # BCrypt(12). RECALIBRAR en el hardware de destino antes de desplegar; el
+      # procedimiento esta en specs/002-auth/research.md (apartado "Como se midio").
+      memory-kb: ${AUTH_ARGON2_MEMORY_KB:65536}
+      iterations: ${AUTH_ARGON2_ITERATIONS:3}
+      # 1 y no 2: medido, no cambia el tiempo -Argon2 reparte la misma memoria
+      # entre los carriles- y solo consumiria mas CPU del pool bajo carga.
+      parallelism: ${AUTH_ARGON2_PARALLELISM:1}
+
+  hash:
+    # Techo de memoria reservada por verificaciones simultaneas: 4 x 64 MiB =
+    # 256 MiB. Sin este limite, los 200 hilos por defecto de Tomcat sobre un
+    # endpoint publico son 12,8 GiB que cualquiera puede provocar sin credencial.
+    #
+    # INVARIANT: the connection pool must be at least TWICE this value.
+    # A failed sign-in holds one connection for the lockout transition (which
+    # takes a row lock) while RegistradorEventosSeguridad opens a second,
+    # nested transaction for the security event. With N threads past the
+    # semaphore each needing two connections, a pool smaller than 2N deadlocks:
+    # every thread holds one and waits for another that nobody will release.
+    # Measured the hard way - 20 concurrent failures against a pool of 10 hung
+    # until the connection timeout.
+    # With 4 here and DB_POOL_MAX_SIZE at 10, the ceiling is 8 of 10.
+    concurrencia: ${AUTH_HASH_CONCURRENCIA:4}
+    # Cuanto espera un login en cola antes de recibir 503. Derivado del
+    # presupuesto de 2 s de SC-011: 1 s deja un segundo entero de margen.
+    espera-ms: ${AUTH_HASH_ESPERA_MS:1000}
+
+  purga-sesiones:
+    dias: ${AUTH_PURGA_SESIONES_DIAS:30}

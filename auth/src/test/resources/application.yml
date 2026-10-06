@@ -1,0 +1,59 @@
+# Test-only properties for this module's Spring contexts.
+#
+# The test application is a @SpringBootApplication on com.granatum.core, so it
+# also component-scans `common` (JwtService / JwtAuthFilter). Those beans need
+# jwt.* to exist or the context fails to start, and the real values live in
+# app/src/main/resources/application.yml, which is not on this module's
+# classpath.
+#
+# No literal key here: the Gradle test task generates a fresh one per run and
+# passes it as JWT_SECRET_BASE64 (see build-logic/src/main/kotlin/DotEnv.kt).
+jwt:
+  secret: ${JWT_SECRET_BASE64}
+  expiration-minutes: 15
+
+auth:
+  refresh-expiration-days: 30
+  password:
+    argon2:
+      # Deliberately far below production (64 MiB / t=3, ~110 ms measured).
+      # Every login in every test would pay that cost, and what these tests
+      # verify is the logic, not the work factor - the cost itself is asserted
+      # once, against the production parameters, in the quickstart.
+      #
+      # The salt and hash lengths are NOT reduced: they are part of the format
+      # that PasswordEncoderTest checks.
+      memory-kb: 1024
+      iterations: 1
+      parallelism: 1
+  hash:
+    # Must match production, and must satisfy `pool >= 2 x concurrencia` -
+    # see the note on this property in app/src/main/resources/application.yml.
+    # It was 16 here, which with Hikari's default pool of 10 deadlocked the
+    # pool under 20 concurrent failed sign-ins: every thread held one
+    # connection for the lockout transaction and waited for a second one for
+    # the security event. The bound itself is tested directly in
+    # VerificadorAcotadoTest with a semaphore of 1.
+    concurrencia: 4
+    espera-ms: 2000
+
+  purga-sesiones:
+    dias: 30
+
+spring:
+  datasource:
+    hikari:
+      # Stated explicitly rather than inherited from Hikari's default of 10,
+      # because the invariant above depends on it.
+      maximum-pool-size: 10
+
+# Mirrors app/src/main/resources/application.yml: these two Hibernate loggers
+# print entity and parameter values by reflection, bypassing each entity's
+# `toString()`, so they would leak the email address and the password hash.
+# Pinned here too, because this module's test context does not read app's
+# configuration - and SinDatosPersonalesEnLogsIT raises the root logger to
+# DEBUG on purpose to prove they survive it.
+logging:
+  level:
+    org.hibernate.internal.util.EntityPrinter: WARN
+    org.hibernate.orm.jdbc.bind: WARN

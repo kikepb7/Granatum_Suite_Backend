@@ -10,6 +10,7 @@ dependencies {
     implementation(projects.common)
     implementation(projects.inventory)
     implementation(projects.timetracking)
+    implementation(projects.auth)
 
     implementation(libs.kotlin.reflect)
     implementation(libs.spring.boot.starter.security)

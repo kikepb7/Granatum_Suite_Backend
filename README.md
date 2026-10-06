@@ -21,7 +21,8 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 
 - ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway.
 - ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
-- ⏳ Login real (`/api/auth/login`, `/api/auth/refresh`) — pendiente. Ya existe la entidad `Empleado` sobre la que construirlo, y su `id` es el sujeto del JWT. Mientras tanto, `POST /api/dev/token` (solo perfil `dev`) permite emitir un JWT de prueba con el rol que se indique.
+- ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
+- ⚠️ **Falta una vía para crear el primer `ADMIN` en producción** — ver [El primer administrador](#el-primer-administrador). Bloquea el primer despliegue.
 - ⏳ Exportación de fichajes a CSV — pendiente. **La depuración a los 4 años sale deshabilitada hasta que exista**, porque la base para destruir un registro es que haya estado descargable antes.
 
 ## Arranque rápido
@@ -58,6 +59,9 @@ La app queda escuchando en `http://localhost:8080`.
 
 ### Probar el módulo de inventario
 
+Lo de abajo usa el emisor de desarrollo por brevedad. Con una cuenta real, el
+token sale de `POST /api/auth/login` (ver [Autenticación](#autenticación)).
+
 ```bash
 # Consigue un token de desarrollo con rol ENCARGADO
 TOKEN=$(curl -s -X POST "http://localhost:8080/api/dev/token?role=ENCARGADO" | jq -r .accessToken)
@@ -85,6 +89,89 @@ curl -X POST http://localhost:8080/api/materiales \
     \"fotos\": []
   }"
 ```
+
+## Autenticación
+
+El ciclo completo, con comandos que se pueden copiar, está en
+[`specs/002-auth/quickstart.md`](specs/002-auth/quickstart.md); el contrato de
+cada ruta, en [`specs/002-auth/contracts/README.md`](specs/002-auth/contracts/README.md).
+En resumen:
+
+| Ruta | Quién | Qué hace |
+|------|-------|----------|
+| `POST /api/auth/login` | pública | Correo y contraseña → token de acceso (15 min) y de renovación (30 días) |
+| `POST /api/auth/refresh` | pública | Renueva; el token presentado deja de servir en el acto |
+| `POST /api/auth/logout` | pública | Cierra **esa** sesión; las de otros dispositivos siguen |
+| `POST /api/auth/change-password` | autenticada | Única operación permitida mientras la contraseña es temporal |
+| `POST /api/auth/cuentas` | `ADMIN` | Da acceso a una persona ya registrada; devuelve la contraseña temporal **una sola vez** |
+| `POST /api/auth/cuentas/{empleadoId}/restablecer` | `ADMIN` | Nueva temporal, cierra todas las sesiones, levanta el bloqueo |
+| `GET /api/auth/cuentas/huerfanas` | `ADMIN` | Cuentas cuya persona ya no existe |
+
+Cinco fallos seguidos bloquean la cuenta 1, 5, 15 y 60 minutos de forma
+creciente. Mientras dura el bloqueo, la respuesta es **idéntica** a la de una
+contraseña incorrecta: así el inicio de sesión no revela qué correos existen, a
+costa de que quien se equivoca no sepa cuánto esperar.
+
+### Variables de entorno
+
+Ninguna es un secreto, así que todas tienen valor por defecto. El único secreto
+sigue siendo `JWT_SECRET_BASE64`.
+
+| Variable | Defecto | Para qué |
+|----------|---------|----------|
+| `JWT_EXPIRATION_MINUTES` | 15 | Vida del token de acceso (igual que Squadfy_Backend; en `dev` el defecto es 1000) |
+| `AUTH_REFRESH_EXPIRATION_DAYS` | 30 | Vida del token de renovación |
+| `AUTH_ARGON2_MEMORY_KB` | 65536 | Memoria por verificación de contraseña |
+| `AUTH_ARGON2_ITERATIONS` | 3 | Iteraciones de Argon2id |
+| `AUTH_ARGON2_PARALLELISM` | 1 | Carriles de Argon2id |
+| `AUTH_HASH_CONCURRENCIA` | 4 | Verificaciones simultáneas como máximo |
+| `AUTH_HASH_ESPERA_MS` | 1000 | Espera en cola antes de responder `503` |
+| `AUTH_PURGA_SESIONES_DIAS` | 30 | Antigüedad para purgar sesiones ya muertas |
+
+> **Recalibra Argon2 en el hardware de destino antes de desplegar.** Los valores
+> por defecto cuestan ~110 ms en un Mac mini de 10 núcleos; en un contenedor
+> pequeño pueden costar mucho más. El programa de medición está en
+> [`specs/002-auth/research.md`](specs/002-auth/research.md#cómo-se-midió).
+> Si subes la memoria, recuerda que es memoria **por login simultáneo**.
+
+> **`DB_POOL_MAX_SIZE` tiene que ser al menos el doble de
+> `AUTH_HASH_CONCURRENCIA`.** Una petición de autenticación puede usar dos
+> conexiones a la vez (su transacción y la del registro de seguridad), y con un
+> pool menor las peticiones simultáneas se bloquean entre sí hasta el timeout.
+> La aplicación **se niega a arrancar** si no se cumple, con un mensaje que dice
+> cuál de las dos variables tocar.
+
+### El primer administrador
+
+**Hoy no existe una vía para crearlo en producción.** Dar acceso a alguien exige
+un token de `ADMIN`; en desarrollo se obtiene con `POST /api/dev/token`, pero ese
+endpoint no existe con el perfil `prod`, a propósito, y no hay ninguna cuenta
+sembrada. Así que el primer despliegue no tiene con qué empezar.
+
+No se ha resuelto aquí porque cada alternativa es una decisión de seguridad:
+
+- **Sembrar por variables de entorno al arrancar** (correo y contraseña inicial
+  del primer `ADMIN`): sencillo, pero deja una credencial en la configuración del
+  despliegue que alguien tiene que acordarse de rotar.
+- **Una tarea de línea de comandos** que genere el hash con el mismo encoder y
+  emita el `INSERT`: no deja nada en la configuración, pero requiere acceso a la
+  base de datos para el primer arranque.
+- **Una ruta de arranque de un solo uso** que solo funcione con la tabla de
+  cuentas vacía: cómoda, pero es una ruta pública mientras no se use.
+
+La cuenta tiene que estar vinculada a una persona de `empleados`, como todas.
+
+### Deuda declarada de esta feature
+
+- **`eventos_seguridad` no tiene plazo de conservación.** No es el registro de
+  jornada, así que el principio III no le aplica, pero el art. 5.1.e del RGPD sí:
+  una tabla de auditoría que crece para siempre es el mismo incumplimiento por el
+  otro lado. Fijar el plazo es decisión del responsable del producto.
+- **Desviación declarada del principio VIII.** El error `PASSWORD_DEBIL` lleva un
+  tercer campo, `requisitos`, además de `code` y `message`. Lo exige FR-023 —hay
+  que decir qué requisito falla, y un cliente que marque campos necesita
+  identificadores, no una frase—, pero el principio fija el formato en esos dos
+  campos exactamente, así que queda escrito aquí en lugar de pasar en silencio.
 
 ## Desarrollo guiado por especificaciones (SDD)
 
@@ -223,6 +310,9 @@ sujetos a RLS, así que sigue funcionando sin cambios.
 `RowLevelSecurityIT` falla el build si alguna tabla se queda sin RLS, así que
 una migración futura que cree una tabla y lo olvide no llega a `main`.
 
+Donde más importa es en `cuentas_acceso`, que guarda correos y hashes de
+contraseña: sin RLS, PostgREST la serviría a cualquiera con la clave anónima.
+
 **Un paso manual pendiente por entorno.** La tabla de control de Flyway,
 `flyway_schema_history`, también vive en `public` y PostgREST la serviría
 (versiones y descripciones de las migraciones; no hay datos personales ni
@@ -249,8 +339,10 @@ docker compose down -v   # apaga y limpia los volúmenes locales
 ```
 .
 ├── app/            # módulo ejecutable: main class, seguridad, config, application.yml
-├── common/         # kernel compartido: excepciones, JWT, roles
+├── common/         # kernel compartido: excepciones, JWT, roles y contratos entre features
 ├── inventory/      # dominio de inventario (Material, Categoria, HistorialMaterial)
+├── timetracking/   # registro de jornada (Empleado, Fichaje, Pausa, correcciones)
+├── auth/           # inicio de sesión, sesiones, bloqueo, alta y restablecimiento
 ├── build-logic/    # convention plugins de Gradle (composite build)
 ├── gradle/         # version catalog + gradle wrapper
 ├── .specify/       # Spec Kit: plantillas, scripts y constitución del proyecto

@@ -370,4 +370,25 @@ class ContratoHttpIT {
         )
         assertEquals(403, post("/api/empleados", representante, "{}").estado)
     }
+
+    // --- auth ---------------------------------------------------------------
+
+    /**
+     * The new routes cross the same boundary the Jackson 3 outage broke, so
+     * they get the same guard. No account is needed: a well-formed body for an
+     * unknown address must deserialise and come back as the stable 401, and a
+     * converter that could not build `LoginRequest` would answer 500 instead.
+     */
+    @Test
+    fun `the login body deserialises through the real chain`() {
+        val r = cliente.post().uri("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"nadie-${UUID.randomUUID()}@granatum.es","password":"Granatum-2026!"}""")
+            .exchange({ _, response ->
+                Respuesta(response.statusCode.value(), response.body.readAllBytes().decodeToString())
+            }, false)!!
+
+        assertEquals(401, r.estado, "a 500 here is the Jackson outage again: ${r.cuerpo}")
+        assertEquals("CREDENCIALES_INVALIDAS", campo(r.cuerpo, "code"))
+    }
 }

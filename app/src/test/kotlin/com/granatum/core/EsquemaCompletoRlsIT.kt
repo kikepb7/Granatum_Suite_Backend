@@ -26,13 +26,22 @@ class EsquemaCompletoRlsIT {
     @Autowired
     lateinit var dataSource: DataSource
 
-    /** Every table the eleven migrations create, across both feature modules. */
+    /**
+     * Every table the fourteen migrations create, across the three feature
+     * modules. This is the only test that sees them all together: each module's
+     * own `RowLevelSecurityIT` only has that module's migrations on its
+     * classpath.
+     */
     private val tablasEsperadas = setOf(
         // inventory
         "categorias", "materiales", "material_fotos", "historial_material",
         // timetracking
         "empleados", "fichajes", "pausas", "solicitudes_correccion_fichaje",
-        "fichaje_eventos", "depuraciones_retencion"
+        "fichaje_eventos", "depuraciones_retencion",
+        // auth - the tables where RLS matters most: email addresses and
+        // password hashes, which Supabase would otherwise publish to anyone
+        // holding the anon key
+        "cuentas_acceso", "sesiones_renovacion", "eventos_seguridad"
     )
 
     @Test

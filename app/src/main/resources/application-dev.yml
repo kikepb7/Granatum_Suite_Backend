@@ -6,7 +6,11 @@ spring:
         show_sql: true
 
 jwt:
-  expiration-minutes: 1440
+  # Same as Squadfy_Backend: a long default for local work, but a *default* -
+  # JWT_EXPIRATION_MINUTES still wins. Note that `.env.example` sets it to 15, so
+  # anyone who follows the README runs dev at 15 minutes, which is the useful
+  # setting for exercising token renewal.
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES:1000}
 
 logging:
   level:
