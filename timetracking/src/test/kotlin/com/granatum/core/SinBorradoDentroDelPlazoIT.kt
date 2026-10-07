@@ -2,6 +2,7 @@ package com.granatum.core
 
 import com.granatum.core.infrastructure.database.repositories.DepuracionRetencionRepository
 import com.granatum.core.infrastructure.database.repositories.EmpleadoRepository
+import com.granatum.core.infrastructure.database.repositories.ExportacionRepository
 import com.granatum.core.infrastructure.database.repositories.FichajeEventoRepository
 import com.granatum.core.infrastructure.database.repositories.FichajeRepository
 import com.granatum.core.infrastructure.database.repositories.PausaRepository
@@ -61,7 +62,10 @@ class SinBorradoDentroDelPlazoIT {
         PausaRepository::class.java,
         SolicitudCorreccionFichajeRepository::class.java,
         FichajeEventoRepository::class.java,
-        DepuracionRetencionRepository::class.java
+        DepuracionRetencionRepository::class.java,
+        // Feature 003. The list is fixed, so a repository missing from it is a
+        // repository nobody checks.
+        ExportacionRepository::class.java
     )
 
     @Test

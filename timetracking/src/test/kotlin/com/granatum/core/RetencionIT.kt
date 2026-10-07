@@ -185,6 +185,42 @@ class RetencionIT {
         )
     }
 
+    /** An export log row covering `[hoy - desdeDias, hoy - hastaDias]`. */
+    private fun exportacionAntigua(desdeDias: Long, hastaDias: Long): UUID {
+        val id = UUID.randomUUID()
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { s ->
+                s.execute(
+                    """
+                    INSERT INTO exportaciones (id, solicitante_id, rol_solicitante, alcance, empleado_id,
+                                               desde, hasta, generada_en, completada, filas, huella)
+                    VALUES ('$id', '${UUID.randomUUID()}', 'ADMIN', 'PLANTILLA', NULL,
+                            current_date - $desdeDias, current_date - $hastaDias, now(), FALSE, 0, NULL)
+                    """.trimIndent()
+                )
+            }
+        }
+        return id
+    }
+
+    /**
+     * D-013, FR-027: an export row goes when nothing it covers is left - its
+     * `hasta` is before the cut-off - and not a day earlier. One that still
+     * covers a single day inside the period is evidence of who obtained data
+     * that still exists.
+     */
+    @Test
+    fun `an export whose whole range is past the period is purged and counted, one still covering the period is not`() {
+        val vencida = exportacionAntigua(1600, 1490)
+        val aCaballo = exportacionAntigua(1500, 1430)
+
+        val registro = job.ejecutar()
+
+        assertEquals(0, contar("exportaciones", "id", vencida), "its whole range is past the period")
+        assertEquals(1, contar("exportaciones", "id", aCaballo), "it still covers days inside the period")
+        assertTrue(registro.exportacionesEliminadas >= 1, "the audit row must carry the count")
+    }
+
     /** The audit row holds counts and a date, never personal data. */
     @Test
     fun `the purge record carries no personal data`() {

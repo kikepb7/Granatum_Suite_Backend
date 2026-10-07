@@ -41,7 +41,11 @@ class DepuracionRetencionEntity(
     val eventosEliminados: Int,
 
     @Column(name = "solicitudes_eliminadas", nullable = false)
-    val solicitudesEliminadas: Int
+    val solicitudesEliminadas: Int,
+
+    /** Feature 003 (V16). Zero for runs from before the export log existed, which is true. */
+    @Column(name = "exportaciones_eliminadas", nullable = false)
+    val exportacionesEliminadas: Int = 0
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -1,6 +1,7 @@
 package com.granatum.core.scheduling
 
 import com.granatum.core.api.util.RangoFechas
+import com.granatum.core.service.PlazoConservacion
 import com.granatum.core.infrastructure.database.entities.DepuracionRetencionEntity
 import com.granatum.core.infrastructure.database.repositories.DepuracionRetencionRepository
 import com.granatum.core.infrastructure.database.repositories.RetencionPurgaRepository
@@ -10,8 +11,6 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
-import java.time.LocalDate
-import java.time.Period
 
 /**
  * Deletes records whose four-year retention period has fully elapsed
@@ -51,8 +50,11 @@ class DepuracionRetencionJob(
     @param:Value("\${timetracking.retencion.habilitada:false}")
     private val habilitada: Boolean,
 
-    @param:Value("\${timetracking.retencion.anios:4}")
-    private val anios: Int,
+    /**
+     * The boundary comes from here and nowhere else, so the purge and the export
+     * (feature 003) can never disagree about which records still exist.
+     */
+    private val plazo: PlazoConservacion,
 
     private val clock: Clock = Clock.systemUTC()
 ) {
@@ -77,13 +79,11 @@ class DepuracionRetencionJob(
      */
     @Transactional
     fun ejecutar(): DepuracionRetencionEntity {
-        val hoy = LocalDate.now(clock.withZone(RangoFechas.ZONA))
-
         // Strictly "fully elapsed": a record whose period ends tomorrow is
-        // untouchable. The cut-off is the start of the day exactly `anios` ago,
-        // and the queries use `<`, so a shift from precisely four years ago
-        // today survives one more day.
-        val fechaCorte = hoy.minus(Period.ofYears(anios))
+        // untouchable. The cut-off is the start of the day exactly the retention
+        // period ago, and the queries use `<`, so a shift from precisely four
+        // years ago today survives one more day.
+        val fechaCorte = plazo.fechaCorte()
         val corte = RangoFechas.inicioDelDia(fechaCorte)
 
         // Children first: the foreign keys are deliberately not ON DELETE
@@ -92,6 +92,9 @@ class DepuracionRetencionJob(
         val solicitudes = purga.borrarSolicitudesAnterioresA(corte)
         val eventos = purga.borrarEventosAnterioresA(corte)
         val fichajes = purga.borrarFichajesAnterioresA(corte)
+        // By date, not instant: an export covers whole days. `hasta` before the
+        // cut-off date means every day it covered is being purged right now.
+        val exportaciones = purga.borrarExportacionesAnterioresA(fechaCorte)
 
         val registro = depuraciones.save(
             DepuracionRetencionEntity(
@@ -100,18 +103,19 @@ class DepuracionRetencionJob(
                 fichajesEliminados = fichajes,
                 pausasEliminadas = pausas,
                 eventosEliminados = eventos,
-                solicitudesEliminadas = solicitudes
+                solicitudesEliminadas = solicitudes,
+                exportacionesEliminadas = exportaciones
             )
         )
 
         // Counts and a date, never an identifier: the audit row survives the
         // very period the purge exists to honour, so putting personal data in it
         // would defeat its own purpose.
-        if (fichajes > 0) {
+        if (fichajes > 0 || exportaciones > 0) {
             log.info(
                 "Depuracion de retencion: {} fichajes, {} pausas, {} eventos, " +
-                    "{} solicitudes (corte {})",
-                fichajes, pausas, eventos, solicitudes, fechaCorte
+                    "{} solicitudes, {} exportaciones (corte {})",
+                fichajes, pausas, eventos, solicitudes, exportaciones, fechaCorte
             )
         }
 

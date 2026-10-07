@@ -74,3 +74,17 @@ class UbicacionNoCorregibleException :
  */
 class DesviacionRelojException(detalle: String) :
     InvalidOperationException("Desviacion de reloj: $detalle")
+
+// --- Export (feature 003) --------------------------------------------------
+
+/**
+ * Every export slot is taken (D-002). Not a business rule being broken but a
+ * temporary limit, so it maps to 503 with `Retry-After` rather than to a 4xx:
+ * the same request will succeed a moment later.
+ */
+class ExportacionSaturadaException :
+    RuntimeException("Hay demasiadas exportaciones en curso; vuelve a intentarlo en unos segundos")
+
+/** The file sent for verification exceeds the configured limit (D-007). */
+class FicheroDemasiadoGrandeException(maxBytes: Long) :
+    RuntimeException("El fichero supera el tamaño máximo de $maxBytes bytes")

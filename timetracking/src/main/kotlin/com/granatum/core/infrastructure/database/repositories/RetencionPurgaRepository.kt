@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.Repository
 import org.springframework.data.repository.query.Param
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -62,4 +63,17 @@ interface RetencionPurgaRepository : Repository<FichajeEntity, UUID> {
     @Modifying
     @Query("DELETE FROM FichajeEntity f WHERE f.entrada < :corte")
     fun borrarFichajesAnterioresA(@Param("corte") corte: Instant): Int
+
+    /**
+     * The export log (feature 003, D-013). The **only** way a row of
+     * `exportaciones` can be deleted: its repository has no delete at all.
+     *
+     * A row goes once its whole covered range is past the period - `hasta`
+     * before the cut-off date, so every record it refers to is being purged in
+     * the same run. One that still covers a single day inside the period stays:
+     * it is evidence of who obtained data that still exists (FR-027).
+     */
+    @Modifying
+    @Query("DELETE FROM ExportacionEntity e WHERE e.hasta < :corte")
+    fun borrarExportacionesAnterioresA(@Param("corte") corte: LocalDate): Int
 }

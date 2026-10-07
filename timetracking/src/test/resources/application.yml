@@ -24,3 +24,14 @@ logging:
   level:
     org.hibernate.internal.util.EntityPrinter: WARN
     org.hibernate.orm.jdbc.bind: WARN
+
+# Export settings for this module's tests (feature 003). Same keys as
+# app/src/main/resources/application.yml; values chosen so no test queues by
+# accident - tests that exercise the bound override them explicitly.
+timetracking:
+  exportacion:
+    concurrencia: 2
+    espera-ms: 2000
+    timeout-segundos: 60
+    tamano-lote: 500
+    verificacion-max-bytes: 1048576

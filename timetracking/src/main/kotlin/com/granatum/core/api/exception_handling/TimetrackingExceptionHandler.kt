@@ -5,11 +5,13 @@ import com.granatum.core.domain.exception.DesviacionRelojException
 import com.granatum.core.domain.exception.DocumentoDuplicadoException
 import com.granatum.core.domain.exception.EmpleadoInactivoException
 import com.granatum.core.domain.exception.EmpleadoNotFoundException
+import com.granatum.core.domain.exception.ExportacionSaturadaException
 import com.granatum.core.domain.exception.FichajeInmutableException
 import com.granatum.core.domain.exception.FichajeNoEnCursoException
 import com.granatum.core.domain.exception.FichajeNoFinalizadoException
 import com.granatum.core.domain.exception.FichajeNotFoundException
 import com.granatum.core.domain.exception.FichajeYaEnCursoException
+import com.granatum.core.domain.exception.FicheroDemasiadoGrandeException
 import com.granatum.core.domain.exception.PausaAbiertaAlCerrarException
 import com.granatum.core.domain.exception.PausaNoAbiertaException
 import com.granatum.core.domain.exception.PausaYaAbiertaException
@@ -19,7 +21,9 @@ import com.granatum.core.domain.exception.UbicacionNoCorregibleException
 import com.granatum.core.domain.exception.ValoresIncoherentesException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -131,6 +135,20 @@ class TimetrackingExceptionHandler {
     @ExceptionHandler(DesviacionRelojException::class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     fun onDesviacionReloj(e: DesviacionRelojException) = error("DESVIACION_RELOJ", e.message)
+
+    // --- Export (feature 003) ---------------------------------------------
+
+    /** `Retry-After` tells a well-behaved client when to come back (D-002). */
+    @ExceptionHandler(ExportacionSaturadaException::class)
+    fun onExportacionSaturada(e: ExportacionSaturadaException): ResponseEntity<Map<String, String>> =
+        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .header(HttpHeaders.RETRY_AFTER, "1")
+            .body(error("EXPORTACION_SATURADA", e.message!!))
+
+    @ExceptionHandler(FicheroDemasiadoGrandeException::class)
+    @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
+    fun onFicheroDemasiadoGrande(e: FicheroDemasiadoGrandeException) =
+        error("FICHERO_DEMASIADO_GRANDE", e.message!!)
 
     private fun error(code: String, message: String) = mapOf(
         "code" to code,

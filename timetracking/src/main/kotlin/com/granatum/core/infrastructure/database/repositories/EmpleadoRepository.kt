@@ -21,6 +21,9 @@ interface EmpleadoRepository : Repository<EmpleadoEntity, UUID> {
     fun findById(id: UUID): Optional<EmpleadoEntity>
     fun findAll(): List<EmpleadoEntity>
     fun findAllByActivo(activo: Boolean): List<EmpleadoEntity>
+
+    /** Several people in one query: an export resolves who requested and who approved each correction of a batch this way. */
+    fun findAllByIdIn(ids: Collection<UUID>): List<EmpleadoEntity>
     fun findByDocumentoIdentidad(documentoIdentidad: String): EmpleadoEntity?
     fun existsByDocumentoIdentidad(documentoIdentidad: String): Boolean
 

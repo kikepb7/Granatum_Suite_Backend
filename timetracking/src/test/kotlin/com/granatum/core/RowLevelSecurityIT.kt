@@ -63,7 +63,9 @@ class RowLevelSecurityIT {
         "pausas",
         "solicitudes_correccion_fichaje",
         "fichaje_eventos",
-        "depuraciones_retencion"
+        "depuraciones_retencion",
+        // feature 003
+        "exportaciones"
     )
 
     @Test

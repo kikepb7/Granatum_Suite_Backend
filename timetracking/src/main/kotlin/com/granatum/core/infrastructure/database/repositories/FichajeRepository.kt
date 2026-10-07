@@ -2,8 +2,11 @@ package com.granatum.core.infrastructure.database.repositories
 
 import com.granatum.core.domain.type.EstadoFichaje
 import com.granatum.core.infrastructure.database.entities.FichajeEntity
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.EntityGraph
+import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.Repository
+import org.springframework.data.repository.query.Param
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
@@ -64,4 +67,49 @@ interface FichajeRepository : Repository<FichajeEntity, UUID> {
         desde: Instant,
         hasta: Instant
     ): List<FichajeEntity>
+
+    /**
+     * One batch of an export: the ids of a person's next [pagina] shifts with
+     * entry in `[inicio, fin)` after the key `(entradaPrevia, idPrevio)`, in
+     * `(entrada, id)` order (D-002).
+     *
+     * By key and not by `OFFSET`, whose cost grows with every page; the walk is
+     * served by `idx_fichajes_empleado_entrada`.
+     *
+     * Ids only, and the shifts with their breaks in [findAllConPausasByIdIn].
+     * Fetching the `pausas` collection here with an `@EntityGraph` would make
+     * Hibernate drop the `LIMIT` from the SQL and paginate **in memory** after
+     * reading every row of the range - the opposite of a batch.
+     */
+    @Query(
+        """
+        SELECT f.id FROM FichajeEntity f
+         WHERE f.empleado.id = :empleadoId
+           AND f.entrada >= :inicio AND f.entrada < :fin
+           AND (f.entrada > :entradaPrevia OR (f.entrada = :entradaPrevia AND f.id > :idPrevio))
+         ORDER BY f.entrada, f.id
+        """
+    )
+    fun findIdsSiguienteLote(
+        @Param("empleadoId") empleadoId: UUID,
+        @Param("inicio") inicio: Instant,
+        @Param("fin") fin: Instant,
+        @Param("entradaPrevia") entradaPrevia: Instant,
+        @Param("idPrevio") idPrevio: UUID,
+        pagina: Pageable
+    ): List<UUID>
+
+    /** The shifts of one batch with their breaks, in a single query. Unordered: the caller keeps the order of the ids. */
+    @Query("SELECT DISTINCT f FROM FichajeEntity f LEFT JOIN FETCH f.pausas WHERE f.id IN :ids")
+    fun findAllConPausasByIdIn(@Param("ids") ids: Collection<UUID>): List<FichajeEntity>
+
+    /**
+     * Everyone with at least one shift entering in `[inicio, fin)`, active or
+     * not: someone who has left still has a register to hand over (FR-015).
+     */
+    @Query("SELECT DISTINCT f.empleado.id FROM FichajeEntity f WHERE f.entrada >= :inicio AND f.entrada < :fin")
+    fun findEmpleadoIdsConFichajesEntre(
+        @Param("inicio") inicio: Instant,
+        @Param("fin") fin: Instant
+    ): List<UUID>
 }
