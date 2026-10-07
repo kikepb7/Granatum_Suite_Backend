@@ -5,6 +5,8 @@ import com.granatum.core.domain.exception.InvalidOperationException
 import com.granatum.core.domain.exception.NotFoundException
 import com.granatum.core.domain.exception.UnauthorizedException
 import org.springframework.http.HttpStatus
+import org.springframework.web.multipart.MaxUploadSizeExceededException
+import org.springframework.web.multipart.support.MissingServletRequestPartException
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
@@ -104,6 +106,25 @@ class CommonExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun onCuerpoIlegible(e: HttpMessageNotReadableException) =
         validacion("El cuerpo de la peticion no es legible o no es un JSON valido")
+
+    /** A multipart upload without the expected part (feature 004: no files at all). */
+    @ExceptionHandler(MissingServletRequestPartException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun onParteAusente(e: MissingServletRequestPartException) =
+        validacion("Falta la parte obligatoria '${e.requestPartName}'")
+
+    /**
+     * An upload over the configured request size (feature 004). Without this it
+     * would leave with Spring's default body; with Tomcat's max-swallow-size
+     * raised to the same limit, this 413 actually reaches the client instead of
+     * a reset connection (specs/004-invoices, findings I1 and T2).
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
+    fun onPeticionDemasiadoGrande(e: MaxUploadSizeExceededException) = mapOf(
+        "code" to "PETICION_DEMASIADO_GRANDE",
+        "message" to "La peticion supera el tamano maximo permitido"
+    )
 
     private fun validacion(message: String) = mapOf("code" to "VALIDACION", "message" to message)
 }

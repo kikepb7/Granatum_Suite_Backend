@@ -1,6 +1,7 @@
 package com.granatum.core.domain.service
 
 import com.granatum.core.api.util.RangoFechas
+import com.granatum.core.csv.FormatoCsv
 import com.granatum.core.domain.model.FilaRegistro
 import com.granatum.core.domain.model.TramoPausa
 import com.granatum.core.domain.type.TipoContrato
@@ -44,11 +45,6 @@ import java.time.format.DateTimeFormatter
  */
 object EscritorCsv {
 
-    private val BOM = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte())
-    private const val SEPARADOR = ";"
-    private const val FIN_DE_LINEA = "\r\n"
-    private val PELIGROSOS = setOf('=', '+', '-', '@', '\t', '\r')
-
     private val FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     private val FECHA_HORA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(RangoFechas.ZONA)
     private val HORA = DateTimeFormatter.ofPattern("HH:mm").withZone(RangoFechas.ZONA)
@@ -70,7 +66,7 @@ object EscritorCsv {
         if (incluirDocumento) COLUMNAS else COLUMNAS - DOCUMENTO
 
     fun escribirCabecera(out: OutputStream, incluirDocumento: Boolean) {
-        out.write(BOM)
+        FormatoCsv.escribirBom(out)
         escribirLinea(out, columnas(incluirDocumento))
     }
 
@@ -121,7 +117,7 @@ object EscritorCsv {
         fun fila(vararg valores: Pair<Int, String>): List<String> =
             MutableList(columnas.size) { "" }.also { celdas -> valores.forEach { (i, v) -> celdas[i] = v } }
 
-        out.write(FIN_DE_LINEA.toByteArray(Charsets.UTF_8))
+        FormatoCsv.escribirLineaVacia(out)
         escribirLinea(
             out,
             fila(
@@ -134,16 +130,10 @@ object EscritorCsv {
         escribirLinea(out, fila(0 to "Mes cerrado", 1 to siNo(mesCerrado)))
     }
 
-    private fun escribirLinea(out: OutputStream, celdas: List<String>) {
-        out.write((celdas.joinToString(SEPARADOR, transform = ::celda) + FIN_DE_LINEA).toByteArray(Charsets.UTF_8))
-    }
-
-    private fun celda(valor: String): String {
-        val peligroso = valor.isNotEmpty() && valor[0] in PELIGROSOS
-        val texto = if (peligroso) "'$valor" else valor
-        val comillas = peligroso || texto.any { it == ';' || it == '"' || it == '\r' || it == '\n' }
-        return if (comillas) "\"" + texto.replace("\"", "\"\"") + "\"" else texto
-    }
+    // Cell rules (BOM, quoting, formula guard) live in common's FormatoCsv,
+    // shared with the invoice reports of feature 004.
+    private fun escribirLinea(out: OutputStream, celdas: List<String>) =
+        FormatoCsv.escribirLineaDeTexto(out, celdas)
 
     /** `H:MM`, never padded on the hours: `0:05`, `8:30`, `26:30`. */
     private fun horas(minutos: Int): String = "${minutos / 60}:${(minutos % 60).toString().padStart(2, '0')}"

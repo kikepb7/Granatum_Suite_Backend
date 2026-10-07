@@ -87,6 +87,13 @@ class SecurityConfig {
                     // register to everyone with read access.
                     .requestMatchers("/api/exportaciones", "/api/exportaciones/**")
                     .hasRole("ADMIN")
+                    // Invoicing (feature 004): ADMIN only, every route under
+                    // one prefix and one rule, so no route added later can be
+                    // left unprotected by a forgotten matcher. Invoices say
+                    // whom the company buys from and sells to, and carry the
+                    // DNI of self-employed suppliers (research.md D-017).
+                    .requestMatchers("/api/facturacion", "/api/facturacion/**")
+                    .hasRole("ADMIN")
                     .requestMatchers("/api/materiales/**", "/api/categorias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO")
                     // Staff management is ADMIN only: ENCARGADO runs inventory
