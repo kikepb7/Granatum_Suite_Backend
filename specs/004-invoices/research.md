@@ -138,9 +138,19 @@ de la API. Tiempo máximo de 120 s por llamada, más los reintentos del SDK. Si
 falla, la factura queda `PENDIENTE_RECONOCER` con el error anotado, y el `ADMIN`
 puede reintentar o rellenarla a mano (FR-006).
 
-**Pendiente de comprobar al implementar** (hallazgo U1): que el respaldo del
-servidor sea compatible con la salida estructurada, y cómo se expresa con el SDK
-de Java. Si no lo es, se prescinde de él y se anota aquí.
+**Respaldo del servidor, sin verificar contra la API real** (hallazgo U1): con
+el SDK de Java se expresa con la cabecera `anthropic-beta:
+server-side-fallback-2026-07-01` y el campo `fallbacks: "default"` añadido al
+cuerpo, y `ReconocedorClaudeTest` comprueba que se envían. Que sea compatible con
+la salida estructurada no se ha podido comprobar sin clave. Por eso es
+configurable (`INVOICES_CLAUDE_FALLBACKS`, activo por defecto). La primera
+ejecución de `claudeRealTest` lo confirma; si la API lo rechazara, se desactiva
+sin tocar el código.
+
+**Tope de intentos**: el reintento programado envía cada factura pendiente como
+mucho tres veces en total. Una que el modelo rechaza siempre, o que siempre
+falla, se enviaría (y se pagaría) cada pocos minutos indefinidamente; tras el
+tercer intento queda para rellenar a mano, que siempre es posible.
 
 **Rechazos del modelo**: si la respuesta trae `stop_reason: refusal`, se trata
 como "no reconocida" y se anota la categoría. En el código de Opus 5.5 se activa
@@ -195,12 +205,20 @@ de la petición (50 MB), y `server.tomcat.max-swallow-size` se sube al mismo val
 con los 2 MB por defecto de Tomcat, una petición que excede el máximo puede
 terminar en una conexión cortada en lugar del 413 (hallazgo T2).
 
+**Límites comprobados en la documentación de visión de la API (2026-10-08)**:
+imágenes de hasta 10 MB en base64 y 8000×8000 px; por encima de 2576 px en el lado
+largo, los modelos actuales reducen la imagen igualmente. PDF: 32 MB por petición y
+600 páginas.
+
 **Preparación antes de enviar a reconocer**, sin tocar nunca el original guardado:
 
-- **Imagen** más grande de lo que acepta la API: se reduce y se vuelve a
-  comprimir como JPEG solo para el envío. Los límites exactos de tamaño y
-  dimensiones se comprueban en la documentación al implementar, y la prueba usa
-  una foto de móvil real de más de 5 MB.
+- **JPEG o PNG** de más de 2576 px en el lado largo, o demasiado pesada: se
+  reduce a 2576 px y se vuelve a comprimir como JPEG, solo para el envío. Es el
+  mismo resultado que la reducción que haría la API, con menos bytes en el envío.
+  La prueba usa una foto sintética de 6000×8000 px y varios MB.
+- **WebP**: la JVM no sabe decodificarla, así que no se puede reducir. Una cuyo
+  base64 superaría los 10 MB se rechaza al subirla (`DEMASIADO_GRANDE`), en lugar
+  de fallar después en el reconocimiento.
 - **PDF**: se rechaza si está cifrado (el modelo no puede leerlo) o si tiene más
   de 20 páginas (no es una factura). Para eso se abre con Apache PDFBox (D-010).
 

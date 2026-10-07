@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.jackson.datatype)
+    implementation(libs.jackson.module.kotlin)
 
     // Reading invoices (research.md D-002) and the PDF of the reports / checking
     // uploaded PDFs (D-010).

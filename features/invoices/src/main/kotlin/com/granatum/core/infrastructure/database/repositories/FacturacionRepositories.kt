@@ -8,12 +8,14 @@ import com.granatum.core.infrastructure.database.entities.FacturaReconocimientoE
 import com.granatum.core.infrastructure.database.entities.TrimestreEntity
 import com.granatum.core.infrastructure.database.entities.TrimestreEventoEntity
 import com.granatum.core.infrastructure.database.entities.TrimestreId
+import com.granatum.core.domain.model.EstadoFactura
 import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.Repository
 import org.springframework.data.repository.query.Param
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -62,6 +64,16 @@ interface FacturaRepository : Repository<FacturaEntity, UUID> {
     fun save(factura: FacturaEntity): FacturaEntity
     fun saveAndFlush(factura: FacturaEntity): FacturaEntity
     fun findById(id: UUID): Optional<FacturaEntity>
+
+    /** The live invoice (not discarded) with this exact file, if any: the duplicate check (D-015). */
+    fun findFirstByDocumentoSha256AndEstadoNot(documentoSha256: String, estado: EstadoFactura): FacturaEntity?
+
+    /** Pending invoices uploaded before [antesDe]: the retry job's candidates. */
+    @Query("SELECT f.id FROM FacturaEntity f WHERE f.estado = :estado AND f.subidaEn < :antesDe ORDER BY f.subidaEn")
+    fun findIdsPorEstadoSubidasAntesDe(
+        @Param("estado") estado: EstadoFactura,
+        @Param("antesDe") antesDe: Instant
+    ): List<UUID>
 }
 
 interface FacturaDocumentoRepository : Repository<FacturaDocumentoEntity, UUID> {
@@ -72,6 +84,8 @@ interface FacturaDocumentoRepository : Repository<FacturaDocumentoEntity, UUID> 
 interface FacturaReconocimientoRepository : Repository<FacturaReconocimientoEntity, UUID> {
     fun save(reconocimiento: FacturaReconocimientoEntity): FacturaReconocimientoEntity
     fun findAllByFacturaIdOrderByCreadoEnAsc(facturaId: UUID): List<FacturaReconocimientoEntity>
+    fun findFirstByFacturaIdOrderByCreadoEnDesc(facturaId: UUID): FacturaReconocimientoEntity?
+    fun countByFacturaId(facturaId: UUID): Long
 }
 
 interface FacturaCambioRepository : Repository<FacturaCambioEntity, UUID> {

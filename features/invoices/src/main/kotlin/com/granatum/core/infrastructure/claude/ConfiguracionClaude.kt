@@ -19,7 +19,16 @@ class ConfiguracionClaude(
     @param:Value("\${invoices.claude.api-key:}") private val apiKey: String,
     @param:Value("\${invoices.claude.model:claude-opus-5-5}") val modelo: String,
     @param:Value("\${invoices.claude.effort:medium}") val esfuerzo: String,
-    @param:Value("\${invoices.reconocimiento.timeout-segundos:120}") val timeoutSegundos: Long
+    @param:Value("\${invoices.reconocimiento.timeout-segundos:120}") val timeoutSegundos: Long,
+    /** Empty = the SDK's default. Set only by ReconocedorClaudeTest, to its local mock server. */
+    @param:Value("\${invoices.claude.base-url:}") val baseUrl: String = "",
+    @param:Value("\${invoices.claude.max-reintentos:2}") val maxReintentos: Int = 2,
+    /**
+     * Server-side fallback on refusal (research.md D-005). On by default; a
+     * switch in case it proves incompatible with structured outputs, which
+     * could not be checked without API access (finding U1).
+     */
+    @param:Value("\${invoices.claude.fallbacks:true}") val fallbacks: Boolean = true
 ) {
     val activo: Boolean get() = apiKey.isNotBlank()
 
