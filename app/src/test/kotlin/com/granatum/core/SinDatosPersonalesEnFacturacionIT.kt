@@ -36,7 +36,7 @@ import kotlin.test.assertTrue
  * is a DNI.
  *
  * Covers the upload, the recognition, a correction, the confirmation and the
- * original's download; the reports are added with US3 (T064).
+ * original's download, and the report as JSON, CSV and PDF.
  *
  * Validated by mutation (2026-10-08): a temporary
  * `log.debug("confirmando {}", f.emisorNif)` in `RevisionFacturas.confirmar`
@@ -77,7 +77,7 @@ class SinDatosPersonalesEnFacturacionIT {
     }
 
     @Test
-    fun `uploading, recognising, correcting, confirming and downloading log no invoice data`() {
+    fun `uploading, recognising, correcting, confirming, downloading and reporting log no invoice data`() {
         json("PUT", "/api/facturacion/empresa", """{"razonSocial":"Floristeria Granatum S.L.","nif":"B12345674"}""")
 
         appender.start()
@@ -109,6 +109,14 @@ class SinDatosPersonalesEnFacturacionIT {
         val nueva = campo(json("GET", "/api/facturacion/facturas/$id").second, "version")!!
         assertEquals(200, json("POST", "/api/facturacion/facturas/$id/confirmar", """{"version":$nueva}""").first)
         json("GET", "/api/facturacion/facturas/$id/original")
+        assertEquals(200, json("GET", "/api/facturacion/reportes?periodo=TRIMESTRAL&anio=2026&trimestre=4").first)
+        val csv = json("GET", "/api/facturacion/reportes?periodo=TRIMESTRAL&anio=2026&trimestre=4&formato=csv")
+        assertEquals(200, csv.first)
+        // app tests share a persistent database, so the quarter may hold earlier
+        // runs' invoices too: the report counts at least this one.
+        val recibidas = Regex("Recibidas;Facturas;(\\d+)").find(csv.second)?.groupValues?.get(1)?.toInt() ?: 0
+        assertTrue(recibidas >= 1, "the report carries this invoice: ${csv.second.take(400)}")
+        assertEquals(200, json("GET", "/api/facturacion/reportes?periodo=TRIMESTRAL&anio=2026&trimestre=4&formato=pdf").first)
         assertTrue(version.isNotEmpty() && appender.list.isNotEmpty(), "DEBUG was on and something was logged")
 
         val delServidor = appender.list.filterNot { it.loggerName.startsWith("org.springframework.web.client") }

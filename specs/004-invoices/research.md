@@ -323,6 +323,14 @@ DNI sería la misma duplicación que en D-011.
 `NUMERIC(12,2)` en la base de datos. Los totales de los reportes se suman en SQL
 sobre `NUMERIC`.
 
+**Al implementar, la suma no se hace en SQL sino en `CalculadoraReporte`**, una
+función pura en Kotlin con `BigDecimal`, igual de exacta. Es la única fuente de las
+cifras de la pantalla, del CSV, del PDF y de la copia de los totales que se guarda
+al cerrar un trimestre, así que no pueden discrepar (SC-010), y se prueba sin base
+de datos. Con el volumen de una pequeña empresa, cargar las facturas confirmadas
+de un periodo no tiene coste apreciable. Si algún día lo tuviera, el sitio para
+cambiarlo es `ReportesFacturacion`, no la calculadora.
+
 **Motivo**: FR-020 y SC-004 exigen exactitud al céntimo. `Double` no puede
 representar 0,10 exactamente, y la suma de cien facturas acabaría a un céntimo.
 Tolerancia de cuadre: 0,01 € por factura (FR-011), porque las facturas reales

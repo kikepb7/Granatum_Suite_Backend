@@ -190,19 +190,19 @@ coincide al céntimo con la suma manual, y el CSV y el PDF con la pantalla.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T056 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/CalculadoraReporteTest.kt` (unitario): sumas exactas con `BigDecimal`, IVA por tipo, recargo, retenciones, rectificativas que restan, `sinCuota` por causa, `pendientes`, y que tres mensuales suman el trimestral y cuatro trimestrales el anual (FR-020)
-- [ ] T057 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/ReportesFacturacionIT.kt`: solo cuentan las confirmadas; los límites de trimestre (31 de marzo en el 1T, 1 de abril en el 2T); `PERIODO_INVALIDO` y `VALIDACION` según `contracts/README.md`; y 100 facturas con céntimos que suman exacto (SC-004)
-- [ ] T058 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/EscritorReporteCsvTest.kt`: usa `FormatoCsv`, importes con coma decimal en celdas numéricas, un total **negativo** por rectificativas que sale `-150,00` y no `'-150,00` (hallazgo I2), las mismas cifras que el JSON, y nombre de fichero `reporte-facturacion_2026-T3.csv`
-- [ ] T059 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/EscritorReportePdfTest.kt`: genera el PDF, extrae su texto con PDFBox y comprueba que cada cifra coincide con la del reporte JSON y el CSV (SC-010)
+- [X] T056 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/CalculadoraReporteTest.kt` (unitario): sumas exactas con `BigDecimal`, IVA por tipo, recargo, retenciones, rectificativas que restan, `sinCuota` por causa, `pendientes`, y que tres mensuales suman el trimestral y cuatro trimestrales el anual (FR-020)
+- [X] T057 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/ReportesFacturacionIT.kt`: solo cuentan las confirmadas; los límites de trimestre (31 de marzo en el 1T, 1 de abril en el 2T); `PERIODO_INVALIDO` y `VALIDACION` según `contracts/README.md`; y 100 facturas con céntimos que suman exacto (SC-004)
+- [X] T058 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/EscritorReporteCsvTest.kt`: usa `FormatoCsv`, importes con coma decimal en celdas numéricas, un total **negativo** por rectificativas que sale `-150,00` y no `'-150,00` (hallazgo I2), las mismas cifras que el JSON, y nombre de fichero `reporte-facturacion_2026-T3.csv`
+- [X] T059 [P] [US3] Crear `features/invoices/src/test/kotlin/com/granatum/core/EscritorReportePdfTest.kt`: genera el PDF, extrae su texto con PDFBox y comprueba que cada cifra coincide con la del reporte JSON y el CSV (SC-010)
 
 ### Implementation for User Story 3
 
-- [ ] T060 [US3] Añadir a los repositorios las consultas agregadas por grupo y tipo de IVA, sumando en SQL sobre `NUMERIC` (D-013). Si un filtro es opcional, usar SQL nativo con `CAST` explícito (lección de la feature 003)
-- [ ] T061 [P] [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/domain/service/CalculadoraReporte.kt`
-- [ ] T062 [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/service/ReportesFacturacion.kt`
-- [ ] T063 [P] [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/infrastructure/reportes/EscritorReporteCsv.kt` y `EscritorReportePdf.kt` (PDFBox, D-010)
-- [ ] T064 [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/api/controllers/ReporteFacturacionController.kt` (`GET /api/facturacion/reportes`, `formato` `json`, `csv` o `pdf`, con su `Content-Disposition`)
-- [ ] T065 [US3] Verificar US3 con `./gradlew :features:invoices:test`
+- [X] T060 [US3] Añadir a los repositorios las consultas agregadas por grupo y tipo de IVA, sumando en SQL sobre `NUMERIC` (D-013). Si un filtro es opcional, usar SQL nativo con `CAST` explícito (lección de la feature 003). *Al implementar*: la consulta carga las facturas confirmadas del periodo y la suma la hace `CalculadoraReporte` con `BigDecimal`, igual de exacta y única fuente de todas las cifras (research.md D-013)
+- [X] T061 [P] [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/domain/service/CalculadoraReporte.kt`
+- [X] T062 [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/service/ReportesFacturacion.kt`
+- [X] T063 [P] [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/infrastructure/reportes/EscritorReporteCsv.kt` y `EscritorReportePdf.kt` (PDFBox, D-010)
+- [X] T064 [US3] Crear `features/invoices/src/main/kotlin/com/granatum/core/api/controllers/ReporteFacturacionController.kt` (`GET /api/facturacion/reportes`, `formato` `json`, `csv` o `pdf`, con su `Content-Disposition`)
+- [X] T065 [US3] Verificar US3 con `./gradlew :features:invoices:test`
 
 **Checkpoint**: reportes exactos en los tres formatos.
 

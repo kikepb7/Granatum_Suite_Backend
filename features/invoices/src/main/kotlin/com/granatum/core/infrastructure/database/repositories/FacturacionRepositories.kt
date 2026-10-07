@@ -84,6 +84,27 @@ interface FacturaRepository : Repository<FacturaEntity, UUID> {
         @Param("excluir") excluir: UUID
     ): Boolean
 
+    /** The confirmed invoices of a period, with their VAT lines, for its report (FR-018). */
+    @Query(
+        """
+        SELECT DISTINCT f FROM FacturaEntity f LEFT JOIN FETCH f.lineas
+         WHERE f.estado = com.granatum.core.domain.model.EstadoFactura.CONFIRMADA
+           AND f.fechaEmision BETWEEN :desde AND :hasta
+        """
+    )
+    fun findConfirmadasEntre(@Param("desde") desde: java.time.LocalDate, @Param("hasta") hasta: java.time.LocalDate): List<FacturaEntity>
+
+    /** Not yet confirmed nor discarded, dated in the period: they do not count, and the report says so (FR-021). */
+    @Query(
+        """
+        SELECT count(f) FROM FacturaEntity f
+         WHERE f.estado IN (com.granatum.core.domain.model.EstadoFactura.PENDIENTE_RECONOCER,
+                            com.granatum.core.domain.model.EstadoFactura.BORRADOR)
+           AND f.fechaEmision BETWEEN :desde AND :hasta
+        """
+    )
+    fun contarPendientesEntre(@Param("desde") desde: java.time.LocalDate, @Param("hasta") hasta: java.time.LocalDate): Long
+
     /** Pending invoices uploaded before [antesDe]: the retry job's candidates. */
     @Query("SELECT f.id FROM FacturaEntity f WHERE f.estado = :estado AND f.subidaEn < :antesDe ORDER BY f.subidaEn")
     fun findIdsPorEstadoSubidasAntesDe(
