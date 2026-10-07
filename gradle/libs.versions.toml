@@ -2,7 +2,10 @@
 kotlin = "2.2.0"
 spring-boot = "4.0.0-SNAPSHOT"
 spring-dependency-management = "1.1.7"
-jackson = "2.17.0"
+# Aligned with the jackson-databind the build already resolved (2.20.1) when
+# the Anthropic SDK came in, which needs >= 2.19.4: until then jsr310 sat at
+# 2.17.0 next to a 2.20.1 databind. Feature 004, tasks.md T003.
+jackson = "2.20.1"
 jakarta = "6.1.0"
 jwt = "0.12.6"
 mockk = "1.13.13"
@@ -10,6 +13,11 @@ testcontainers = "1.20.4"
 # El BOM de Spring Boot 4 NO gestiona BouncyCastle (comprobado sobre
 # spring-boot-dependencies-4.0.0-SNAPSHOT.pom), asi que la version va aqui a mano.
 bouncycastle = "1.79"
+anthropic = "2.69.0"
+pdfbox = "3.0.8"
+# Must match the OkHttp the Anthropic SDK brings (4.x), or the mock server and
+# the client disagree on the wire classes.
+okhttp = "4.12.0"
 
 [libraries]
 # Spring Boot Starters
@@ -68,6 +76,11 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
+
+# Invoicing (feature 004)
+anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -2,6 +2,18 @@ spring:
   application:
     name: granatum-suite
 
+  servlet:
+    multipart:
+      # Feature 004 uploads photos and PDFs of invoices. Spring's defaults (1 MB
+      # per file, 10 MB per request) would reject any phone photo. Both limits
+      # are the REQUEST's on purpose: the 10 MB per FILE is enforced by the
+      # invoices service, so one oversized file comes back as DEMASIADO_GRANDE
+      # while the others in the same upload are accepted. A per-file limit here
+      # would fail the whole batch before reaching the controller
+      # (specs/004-invoices research.md D-007, finding I1).
+      max-file-size: ${INVOICES_MAX_REQUEST_SIZE:50MB}
+      max-request-size: ${INVOICES_MAX_REQUEST_SIZE:50MB}
+
   mvc:
     async:
       # The record export streams through StreamingResponseBody, which runs as
@@ -164,3 +176,25 @@ server:
     # request's headers and between keep-alive requests, for which 10 s is
     # ample for this API.
     connection-timeout: ${SERVER_TOMCAT_CONNECTION_TIMEOUT:10s}
+    # How much of a rejected request body Tomcat reads and discards before
+    # answering. At its 2 MB default, an upload over the multipart limit can end
+    # in a reset connection instead of the 413 (feature 004, finding T2).
+    max-swallow-size: ${INVOICES_MAX_REQUEST_SIZE:50MB}
+
+# Invoicing (feature 004). Only api-key is a secret, and it has no value here,
+# ever (principle VI): empty means manual mode - invoices are stored and filled
+# in by hand, nothing is sent to Claude (research.md D-006).
+invoices:
+  claude:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${INVOICES_CLAUDE_MODEL:claude-opus-5-5}
+    effort: ${INVOICES_CLAUDE_EFFORT:medium}
+  reconocimiento:
+    concurrencia: ${INVOICES_RECONOCIMIENTO_CONCURRENCIA:3}
+    timeout-segundos: ${INVOICES_RECONOCIMIENTO_TIMEOUT_SEGUNDOS:120}
+    # Picks up invoices left pending by a restart or a failure.
+    reintento-cron: ${INVOICES_REINTENTO_CRON:0 */5 * * * *}
+    reintento-tras-minutos: ${INVOICES_REINTENTO_TRAS_MINUTOS:10}
+  documentos:
+    max-bytes-por-fichero: ${INVOICES_MAX_BYTES_POR_FICHERO:10485760}
+    pdf-max-paginas: ${INVOICES_PDF_MAX_PAGINAS:20}

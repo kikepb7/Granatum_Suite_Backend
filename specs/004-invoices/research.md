@@ -51,6 +51,16 @@ más el pensamiento). Eso son unos **0,04–0,06 $ por factura**: con 200 factur
 al mes, unos **10 $ al mes**. Se guardan los tokens de cada reconocimiento
 (D-009) para medir el coste real en lugar de estimarlo.
 
+**Versiones fijadas al implementar (T002, T003)**: `anthropic-java` 2.69.0, la
+publicada en Maven Central el 2026-10-08 (la referencia de la API aún citaba la
+2.34.0); `pdfbox` 3.0.8; `mockwebserver` 4.12.0, la misma OkHttp que trae el SDK.
+El SDK necesita Jackson 2 ≥ 2.19.4. El build ya resolvía `jackson-databind` 2.20.1,
+pero con `jackson-datatype-jsr310` forzado a la 2.17.0 del catálogo, un desajuste
+que existía antes de esta feature. El catálogo pasa a la 2.20.1 y la familia queda
+alineada. `CorreccionFlujoIT` (11/11) y `ReenvioDuplicadoIT` (8/8), que leen
+documentos ya guardados con el `ObjectMapper` propio de `timetracking`, siguen en
+verde.
+
 **Alternativa a decidir por el responsable del producto, no aquí**: Claude
 Haiku 5.5 cuesta unas cuarenta veces menos (0,10 $ / 0,50 $). Cambiar es
 configuración, pero solo debe hacerse midiendo antes la precisión con el

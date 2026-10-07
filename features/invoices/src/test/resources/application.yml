@@ -1,0 +1,31 @@
+# Test-only properties for this module's Spring contexts. The real values live
+# in app/src/main/resources/application.yml, which is not on this classpath.
+jwt:
+  secret: ${JWT_SECRET_BASE64}
+  expiration-minutes: 15
+
+# Hibernate loggers that print entity values by reflection, bypassing each
+# entity's toString(). Pinned as in app's configuration (principle VI).
+logging:
+  level:
+    org.hibernate.internal.util.EntityPrinter: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+
+invoices:
+  claude:
+    # A LITERAL empty value, never ${ANTHROPIC_API_KEY:}. The Gradle test task
+    # loads .env into the environment (granatum.kotlin-common.gradle.kts), so a
+    # key put there for development must not reach the suite: no test of this
+    # module calls the real API (research.md D-006, D-019; finding S2).
+    api-key: ""
+    model: claude-opus-5-5
+    effort: medium
+  reconocimiento:
+    concurrencia: 3
+    timeout-segundos: 20
+    # Effectively never during a test run; tests drive the retry job directly.
+    reintento-cron: "0 0 4 1 1 *"
+    reintento-tras-minutos: 10
+  documentos:
+    max-bytes-por-fichero: 10485760
+    pdf-max-paginas: 20
