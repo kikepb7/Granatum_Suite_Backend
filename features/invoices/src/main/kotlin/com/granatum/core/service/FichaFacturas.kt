@@ -12,6 +12,8 @@ import java.util.UUID
 @Service
 class FichaFacturas(
     private val lecturas: FacturaLecturas,
+    private val revision: RevisionFacturas,
+    private val trimestres: BloqueoTrimestres,
     private val json: JsonFacturacion
 ) {
     fun ficha(id: UUID): FacturaDto {
@@ -20,6 +22,10 @@ class FichaFacturas(
         val resumen = ultimo?.let {
             ReconocimientoResumenDto(it.resultado, it.camposDudosos?.let { c -> json.mapper.readValue<List<String>>(c) } ?: emptyList())
         }
-        return factura.aDto(trimestreCerrado = false, reconocimiento = resumen, avisos = emptyList())
+        return factura.aDto(
+            trimestreCerrado = factura.fechaEmision?.let(trimestres::estaCerrado) ?: false,
+            reconocimiento = resumen,
+            avisos = revision.avisosDe(id)
+        )
     }
 }

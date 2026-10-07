@@ -13,7 +13,10 @@ import java.util.UUID
 
 data class ResultadoSubidaDto(val fichero: Int, val resultado: String, val facturaId: UUID?)
 
-data class ParteDto(val nombre: String?, val nif: String?) {
+data class ParteDto(
+    @field:jakarta.validation.constraints.Size(max = 200) val nombre: String?,
+    @field:jakarta.validation.constraints.Size(max = 20) val nif: String?
+) {
     override fun toString(): String = "ParteDto(***)"
 }
 
@@ -75,3 +78,35 @@ fun Factura.aDto(trimestreCerrado: Boolean, reconocimiento: ReconocimientoResume
     reconocimiento = reconocimiento,
     avisos = avisos.map { AvisoDto(it.campo, it.codigo.name, it.bloquea, it.mensaje) }
 )
+
+private const val DECIMAL = "^-?\\d{1,10}(\\.\\d{1,2})?$"
+
+data class LineaIvaRequest(
+    @field:jakarta.validation.constraints.Pattern(regexp = DECIMAL) val tipoIva: String,
+    @field:jakarta.validation.constraints.Pattern(regexp = DECIMAL) val base: String,
+    @field:jakarta.validation.constraints.Pattern(regexp = DECIMAL) val cuota: String,
+    @field:jakarta.validation.constraints.Pattern(regexp = DECIMAL) val recargo: String = "0.00",
+    val causaSinCuota: com.granatum.core.domain.model.CausaSinCuota? = null
+) {
+    override fun toString(): String = "LineaIvaRequest(***)"
+}
+
+/** `PUT …/facturas/{id}`: every editable field, the breakdown whole, and the version read. */
+data class FacturaRequest(
+    val tipo: TipoFactura? = null,
+    @field:jakarta.validation.Valid val emisor: ParteDto? = null,
+    @field:jakarta.validation.Valid val destinatario: ParteDto? = null,
+    @field:jakarta.validation.constraints.Size(max = 60) val numero: String? = null,
+    val fechaEmision: java.time.LocalDate? = null,
+    @field:jakarta.validation.constraints.Size(max = 500) val concepto: String? = null,
+    @field:jakarta.validation.constraints.Pattern(regexp = "^[A-Z]{3}$") val moneda: String = "EUR",
+    val rectificativa: Boolean = false,
+    @field:jakarta.validation.Valid val lineas: List<LineaIvaRequest> = emptyList(),
+    @field:jakarta.validation.constraints.Pattern(regexp = DECIMAL) val retenciones: String = "0.00",
+    @field:jakarta.validation.constraints.Pattern(regexp = DECIMAL) val total: String? = null,
+    val version: Int
+) {
+    override fun toString(): String = "FacturaRequest(version=$version)"
+}
+
+data class VersionRequest(val version: Int)

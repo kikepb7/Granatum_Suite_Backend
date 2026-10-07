@@ -86,8 +86,11 @@ NOTHING`, y después se bloquea con `SELECT … FOR UPDATE` (D-016).
   AND numero IS NOT NULL AND fecha_emision IS NOT NULL AND total IS NOT NULL
   AND moneda = 'EUR'))`: la base de datos tampoco admite una confirmada
   incompleta (FR-013).
-- `CHECK ((estado = 'CONFIRMADA') = (confirmada_en IS NOT NULL))` y lo mismo
-  para `DESCARTADA`.
+- `CHECK (estado <> 'CONFIRMADA' OR confirmada_en IS NOT NULL)`: una confirmada
+  tiene su fecha de confirmación y la conserva si luego se descarta, porque es
+  historial. *(Al implementar: la primera versión exigía la igualdad en los dos
+  sentidos e impedía descartar una confirmada.)*
+- `CHECK ((estado = 'DESCARTADA') = (descartada_en IS NOT NULL))`.
 
 **Índices**:
 

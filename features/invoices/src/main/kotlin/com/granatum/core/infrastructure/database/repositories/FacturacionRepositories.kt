@@ -68,6 +68,22 @@ interface FacturaRepository : Repository<FacturaEntity, UUID> {
     /** The live invoice (not discarded) with this exact file, if any: the duplicate check (D-015). */
     fun findFirstByDocumentoSha256AndEstadoNot(documentoSha256: String, estado: EstadoFactura): FacturaEntity?
 
+    /** Another confirmed invoice with the same issuer, number and date: the logical duplicate (D-015). */
+    @Query(
+        """
+        SELECT count(f) > 0 FROM FacturaEntity f
+         WHERE f.estado = com.granatum.core.domain.model.EstadoFactura.CONFIRMADA
+           AND f.emisorNifNormalizado = :nif AND f.numero = :numero AND f.fechaEmision = :fecha
+           AND f.id <> :excluir
+        """
+    )
+    fun existeConfirmadaIgual(
+        @Param("nif") nifNormalizado: String,
+        @Param("numero") numero: String,
+        @Param("fecha") fecha: java.time.LocalDate,
+        @Param("excluir") excluir: UUID
+    ): Boolean
+
     /** Pending invoices uploaded before [antesDe]: the retry job's candidates. */
     @Query("SELECT f.id FROM FacturaEntity f WHERE f.estado = :estado AND f.subidaEn < :antesDe ORDER BY f.subidaEn")
     fun findIdsPorEstadoSubidasAntesDe(

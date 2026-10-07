@@ -115,10 +115,12 @@ Cada elemento es el resumen: `id`, `estado`, `tipo`, `emisor`, `destinatario`,
 **`avisos`** forma parte del recurso, no es un error: es lo que impide confirmar,
 o lo que conviene revisar. Códigos: `OBLIGATORIO`, `NO_CUADRA`, `NIF_INVALIDO`,
 `DUDOSO`, `DUPLICADA` (misma factura confirmada con otro fichero), `MONEDA`,
+`IMPORTE_NEGATIVO` (importes negativos en una factura que no es rectificativa;
+*añadido al implementar*),
 `FECHA_FUTURA`, `FECHA_ANTIGUA`, `NO_ES_DE_LA_EMPRESA`, `SIN_CAUSA_CUOTA_CERO`,
 `NO_ES_FACTURA`, `VARIAS_FACTURAS`, `TRIMESTRE_CERRADO`. Unos **bloquean** la
 confirmación (`OBLIGATORIO`, `NO_CUADRA`, `NIF_INVALIDO`, `DUPLICADA`, `MONEDA`,
-`SIN_CAUSA_CUOTA_CERO`, `TRIMESTRE_CERRADO`) y otros solo avisan (`bloquea: true`
+`IMPORTE_NEGATIVO`, `SIN_CAUSA_CUOTA_CERO`, `TRIMESTRE_CERRADO`) y otros solo avisan (`bloquea: true`
 / `false` en cada aviso).
 
 `404 FACTURA_NOT_FOUND` si no existe.

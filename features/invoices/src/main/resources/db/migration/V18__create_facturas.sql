@@ -36,7 +36,9 @@ CREATE TABLE facturas (
             AND fecha_emision IS NOT NULL AND total IS NOT NULL AND moneda = 'EUR'
         )
     ),
-    CONSTRAINT ck_facturas_confirmada_en CHECK ((estado = 'CONFIRMADA') = (confirmada_en IS NOT NULL)),
+    -- One way only: a confirmed invoice has its confirmation time, and keeps it
+    -- if it is discarded later - when it was confirmed is history too.
+    CONSTRAINT ck_facturas_confirmada_en CHECK (estado <> 'CONFIRMADA' OR confirmada_en IS NOT NULL),
     CONSTRAINT ck_facturas_descartada_en CHECK ((estado = 'DESCARTADA') = (descartada_en IS NOT NULL))
 );
 
