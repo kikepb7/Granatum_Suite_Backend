@@ -1,7 +1,9 @@
 # Granatum Suite Backend
 
-Backend de gestión para Granatum: inventario de material de trabajo (flores/eventos)
-y, próximamente, fichaje de personal conforme al RD-ley 8/2019.
+Backend de gestión para Granatum: inventario de material de trabajo (flores/eventos),
+registro de jornada del personal conforme al RD-ley 8/2019 con su exportación,
+acceso con correo y contraseña, y facturación con reconocimiento automático de
+facturas.
 
 Extraído a partir de [Spring_Boot_Skeleton](https://github.com/kikepb7/Spring_Boot_Skeleton),
 adaptando el kernel compartido (JWT, manejo de errores) al dominio de Granatum y
@@ -14,7 +16,9 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - Spring Boot 4 (Web, Security, Data JPA, Validation, Actuator)
 - Gradle multi-módulo con convention plugins propios (`build-logic/`)
 - PostgreSQL + Flyway
-- JWT (jjwt) con roles `ADMIN` / `ENCARGADO` / `EMPLEADO`
+- JWT (jjwt) con roles `ADMIN` / `ENCARGADO` / `EMPLEADO` / `REPRESENTANTE`
+- Argon2 (Spring Security) para las contraseñas
+- SDK de Anthropic para Java (lectura de facturas) y PDFBox (PDF)
 - JUnit 5 + MockK; Testcontainers para tests de integración con Postgres real
 
 ## Estado del proyecto
@@ -330,7 +334,7 @@ Cada paso es un comando que se invoca dentro del agente, no en la terminal:
 
 | Comando | Para qué |
 |---------|----------|
-| `/speckit-constitution` | Fija los principios del proyecto. **Se hace una vez**, antes de la primera spec. |
+| `/speckit-constitution` | Fija o enmienda los principios del proyecto. Ya está hecho; solo se vuelve a usar para enmendarlos. |
 | `/speckit-specify` | Escribe la especificación de una feature a partir de una descripción en lenguaje natural. Crea su rama y su carpeta. |
 | `/speckit-clarify` | *(opcional)* Hace preguntas dirigidas para cerrar ambigüedades. Mejor antes de `plan`. |
 | `/speckit-plan` | Convierte la spec en plan de implementación y artefactos de diseño. |
@@ -339,8 +343,7 @@ Cada paso es un comando que se invoca dentro del agente, no en la terminal:
 | `/speckit-implement` | Ejecuta las tareas. |
 | `/speckit-converge` | Compara el código real con la spec y añade como tareas lo que falte. |
 
-`/speckit-specify` crea una rama y una carpeta por feature, numeradas de forma
-secuencial:
+`/speckit-specify` crea una carpeta por feature, numerada de forma secuencial:
 
 ```
 specs/
@@ -356,9 +359,9 @@ specs/
   (`.specify/memory/constitution.md`).
 - `.claude/skills/speckit-*/` — los comandos de arriba.
 
-> La constitución está todavía **sin rellenar** (tiene marcadores como
-> `[PROJECT_NAME]` y `[PRINCIPLE_1_NAME]`). Es el primer paso pendiente:
-> ejecuta `/speckit-constitution` antes de la primera especificación.
+La constitución está ratificada (versión y fecha al pie del fichero) y
+prevalece sobre este README y sobre `docs/ARCHITECTURE.md` si se contradicen.
+Cambiarla es una enmienda con su propio PR, no un efecto de una feature.
 
 ### Skills de terceros (no versionadas)
 
