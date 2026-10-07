@@ -349,8 +349,11 @@ class ContratoHttpIT {
         val representante = token(Role.REPRESENTANTE)
         val hoy = java.time.LocalDate.now(java.time.ZoneId.of("Europe/Madrid"))
 
+        // From yesterday: the shift started 40 minutes ago, which in the first
+        // 40 minutes after midnight is still yesterday, and a today-only range
+        // made this test fail every night between 00:00 and 00:40.
         val lectura = get(
-            "/api/fichajes/empleado/$empleadoId?desde=$hoy&hasta=$hoy",
+            "/api/fichajes/empleado/$empleadoId?desde=${hoy.minusDays(1)}&hasta=$hoy",
             representante
         )
         assertEquals(200, lectura.estado, lectura.cuerpo.take(300))
