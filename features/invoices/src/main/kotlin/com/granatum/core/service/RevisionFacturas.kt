@@ -69,6 +69,7 @@ class RevisionFacturas(
             val bloqueantes = ValidadorFactura.bloqueantes(avisos(nueva, conDuplicado = true))
             if (bloqueantes.isNotEmpty()) throw FacturaIncoherenteException(resumen(bloqueantes))
             val soloTipo = antes.copy(tipo = nueva.tipo, version = 0) == nueva.copy(version = 0)
+            sonda.trasComprobar(id)
             registrarCambio(id, if (soloTipo) FacturaCambioEntity.RECLASIFICACION else FacturaCambioEntity.CORRECCION, antes, autor)
         } else {
             aplicar(f, valores)
@@ -107,6 +108,7 @@ class RevisionFacturas(
             EstadoFactura.DESCARTADA -> throw EstadoFacturaNoPermitidoException("La factura ya esta descartada")
             EstadoFactura.CONFIRMADA -> {
                 f.fechaEmision?.let(trimestres::exigirAbierto)
+                sonda.trasComprobar(id)
                 registrarCambio(id, FacturaCambioEntity.DESCARTE, f.aDominio(), autor)
             }
             else -> Unit
