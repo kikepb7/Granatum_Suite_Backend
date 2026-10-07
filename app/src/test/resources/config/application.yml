@@ -1,0 +1,15 @@
+# Test-only overrides for app's Spring contexts.
+#
+# In config/ and not at the classpath root ON PURPOSE: Spring merges
+# classpath:/config/application.yml over classpath:/application.yml, whereas a
+# test application.yml at the root would REPLACE production's whole file
+# (specs/004-invoices, finding S2).
+
+invoices:
+  claude:
+    # A literal empty value: no test of app ever calls the real Claude API, even
+    # with ANTHROPIC_API_KEY in .env - which Gradle loads into every test task.
+    # The real client is built only from this property, never from the SDK's
+    # own credential lookup (research.md D-006). SinLlamadasRealesEnTestsIT
+    # guards it.
+    api-key: ""
