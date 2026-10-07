@@ -238,12 +238,12 @@ corregir y cerrar, y ver los tres eventos.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T071 [P] [US5] Crear `features/invoices/src/test/kotlin/com/granatum/core/ConsultaFacturasIT.kt`: filtros `desde`/`hasta`, `parte` (nombre o NIF, sin distinguir mayúsculas), `tipo` y `estado`, combinables; orden por fecha descendente con las que no tienen fecha primero; paginación; el original idéntico byte a byte con `Content-Disposition: attachment; filename="factura-<id>.<ext>"` (nunca el nombre original); y el historial con reconocimientos y cambios
+- [X] T071 [P] [US5] Crear `features/invoices/src/test/kotlin/com/granatum/core/ConsultaFacturasIT.kt`: filtros `desde`/`hasta`, `parte` (nombre o NIF, sin distinguir mayúsculas), `tipo` y `estado`, combinables; orden por fecha descendente con las que no tienen fecha primero; paginación; el original idéntico byte a byte con `Content-Disposition: attachment; filename="factura-<id>.<ext>"` (nunca el nombre original); y el historial con reconocimientos y cambios
 
 ### Implementation for User Story 5
 
-- [ ] T072 [US5] Añadir la consulta filtrada (SQL nativo con `CAST` en los filtros opcionales) y `GET /api/facturacion/facturas`, `GET …/{id}/original` y `GET …/{id}/historial` a `FacturaController.kt`
-- [ ] T073 [US5] Verificar US5 con `./gradlew :features:invoices:test`
+- [X] T072 [US5] Añadir la consulta filtrada (SQL nativo con `CAST` en los filtros opcionales) y `GET /api/facturacion/facturas`, `GET …/{id}/original` y `GET …/{id}/historial` a `FacturaController.kt`
+- [X] T073 [US5] Verificar US5 con `./gradlew :features:invoices:test`
 
 ---
 

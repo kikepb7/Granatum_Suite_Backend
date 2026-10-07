@@ -4,7 +4,18 @@ import com.granatum.core.api.dto.FacturaDto
 import com.granatum.core.api.dto.FacturaRequest
 import com.granatum.core.api.dto.ResultadoSubidaDto
 import com.granatum.core.api.dto.VersionRequest
+import com.granatum.core.domain.model.EstadoFactura
 import com.granatum.core.domain.model.LineaIva
+import com.granatum.core.domain.model.TipoFactura
+import com.granatum.core.service.ConsultaFacturas
+import com.granatum.core.service.FiltroFacturas
+import com.granatum.core.service.Historial
+import com.granatum.core.service.Pagina
+import com.granatum.core.service.ResumenFactura
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.RequestParam
 import com.granatum.core.service.RevisionFacturas
 import com.granatum.core.service.ValoresFactura
 import jakarta.validation.Valid
@@ -33,7 +44,8 @@ import java.util.UUID
 class FacturaController(
     private val subida: SubidaFacturas,
     private val ficha: FichaFacturas,
-    private val revision: RevisionFacturas
+    private val revision: RevisionFacturas,
+    private val consulta: ConsultaFacturas
 ) {
 
     /**
@@ -46,6 +58,31 @@ class FacturaController(
     fun subir(@RequestPart("ficheros") ficheros: List<MultipartFile>): List<ResultadoSubidaDto> =
         subida.subir(ficheros.map { FicheroSubido(it.originalFilename, it.bytes) }, requestUserId)
             .map { ResultadoSubidaDto(it.fichero, it.resultado, it.facturaId) }
+
+    /** FR-024: filters optional and combinable, newest first, paginated. */
+    @GetMapping
+    fun listar(
+        @RequestParam(required = false) desde: java.time.LocalDate?,
+        @RequestParam(required = false) hasta: java.time.LocalDate?,
+        @RequestParam(required = false) parte: String?,
+        @RequestParam(required = false) tipo: TipoFactura?,
+        @RequestParam(required = false) estado: EstadoFactura?,
+        @RequestParam(defaultValue = "0") pagina: Int,
+        @RequestParam(defaultValue = "50") tamano: Int
+    ): Pagina<ResumenFactura> = consulta.listar(FiltroFacturas(desde, hasta, parte, tipo, estado, pagina, tamano))
+
+    /** FR-025: the original byte for byte, named by the invoice's id. */
+    @GetMapping("/{id}/original")
+    fun original(@PathVariable id: UUID): ResponseEntity<ByteArray> {
+        val o = consulta.original(id)
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(o.documento.mediaType))
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(o.nombre).build().toString())
+            .body(o.documento.contenido)
+    }
+
+    @GetMapping("/{id}/historial")
+    fun historial(@PathVariable id: UUID): Historial = consulta.historial(id)
 
     @GetMapping("/{id}")
     fun consultar(@PathVariable id: UUID): FacturaDto = ficha.ficha(id)

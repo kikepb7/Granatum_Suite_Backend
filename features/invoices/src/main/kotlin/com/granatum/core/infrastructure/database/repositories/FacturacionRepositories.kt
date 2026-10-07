@@ -105,6 +105,62 @@ interface FacturaRepository : Repository<FacturaEntity, UUID> {
     )
     fun contarPendientesEntre(@Param("desde") desde: java.time.LocalDate, @Param("hasta") hasta: java.time.LocalDate): Long
 
+    /**
+     * FR-024: the list, every filter optional and combinable. Native with explicit
+     * casts, because a null parameter in `:p IS NULL` reaches Postgres without a
+     * type and is refused (the lesson of feature 003). [parte] arrives already
+     * escaped for LIKE. Newest first, undated ones (not read yet) before all.
+     */
+    @Query(
+        value = """
+        SELECT * FROM facturas f
+         WHERE (CAST(:desde AS date) IS NULL OR f.fecha_emision >= CAST(:desde AS date))
+           AND (CAST(:hasta AS date) IS NULL OR f.fecha_emision <= CAST(:hasta AS date))
+           AND (CAST(:tipo AS text) IS NULL OR f.tipo = CAST(:tipo AS text))
+           AND (CAST(:estado AS text) IS NULL OR f.estado = CAST(:estado AS text))
+           AND (CAST(:parte AS text) IS NULL
+                OR f.emisor_nombre ILIKE CAST(:parte AS text) ESCAPE '\'
+                OR f.emisor_nif ILIKE CAST(:parte AS text) ESCAPE '\'
+                OR f.destinatario_nombre ILIKE CAST(:parte AS text) ESCAPE '\'
+                OR f.destinatario_nif ILIKE CAST(:parte AS text) ESCAPE '\')
+         ORDER BY f.fecha_emision DESC NULLS FIRST, f.subida_en DESC, f.id
+         LIMIT :limite OFFSET :desplazamiento
+        """,
+        nativeQuery = true
+    )
+    fun buscar(
+        @Param("desde") desde: java.time.LocalDate?,
+        @Param("hasta") hasta: java.time.LocalDate?,
+        @Param("tipo") tipo: String?,
+        @Param("estado") estado: String?,
+        @Param("parte") parte: String?,
+        @Param("limite") limite: Int,
+        @Param("desplazamiento") desplazamiento: Int
+    ): List<FacturaEntity>
+
+    @Query(
+        value = """
+        SELECT count(*) FROM facturas f
+         WHERE (CAST(:desde AS date) IS NULL OR f.fecha_emision >= CAST(:desde AS date))
+           AND (CAST(:hasta AS date) IS NULL OR f.fecha_emision <= CAST(:hasta AS date))
+           AND (CAST(:tipo AS text) IS NULL OR f.tipo = CAST(:tipo AS text))
+           AND (CAST(:estado AS text) IS NULL OR f.estado = CAST(:estado AS text))
+           AND (CAST(:parte AS text) IS NULL
+                OR f.emisor_nombre ILIKE CAST(:parte AS text) ESCAPE '\'
+                OR f.emisor_nif ILIKE CAST(:parte AS text) ESCAPE '\'
+                OR f.destinatario_nombre ILIKE CAST(:parte AS text) ESCAPE '\'
+                OR f.destinatario_nif ILIKE CAST(:parte AS text) ESCAPE '\')
+        """,
+        nativeQuery = true
+    )
+    fun contar(
+        @Param("desde") desde: java.time.LocalDate?,
+        @Param("hasta") hasta: java.time.LocalDate?,
+        @Param("tipo") tipo: String?,
+        @Param("estado") estado: String?,
+        @Param("parte") parte: String?
+    ): Long
+
     /** Pending invoices uploaded before [antesDe]: the retry job's candidates. */
     @Query("SELECT f.id FROM FacturaEntity f WHERE f.estado = :estado AND f.subidaEn < :antesDe ORDER BY f.subidaEn")
     fun findIdsPorEstadoSubidasAntesDe(

@@ -73,6 +73,9 @@ class RevisionFacturas(
             registrarCambio(id, if (soloTipo) FacturaCambioEntity.RECLASIFICACION else FacturaCambioEntity.CORRECCION, antes, autor)
         } else {
             aplicar(f, valores)
+            if (f.tipo == null) {
+                f.tipo = empresa.buscar()?.let { ClasificadorFactura.clasificar(it.nifNormalizado, f.emisorNif, f.destinatarioNif) }
+            }
             // FR-006: filling a pending invoice in by hand makes it a draft.
             f.estado = EstadoFactura.BORRADOR
         }

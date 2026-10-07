@@ -4,6 +4,7 @@ import com.granatum.core.domain.model.CausaSinCuota
 import com.granatum.core.domain.model.EstadoFactura
 import com.granatum.core.domain.model.PropuestaReconocida
 import com.granatum.core.domain.port.AlmacenDocumentos
+import com.granatum.core.domain.service.ClasificadorFactura
 import com.granatum.core.domain.port.ReconocedorFacturas
 import com.granatum.core.domain.port.ResultadoReconocimiento
 import com.granatum.core.infrastructure.database.JsonFacturacion
@@ -53,6 +54,7 @@ class ColaReconocimiento(
     private val almacen: AlmacenDocumentos,
     private val preparador: PreparadorDocumento,
     private val json: JsonFacturacion,
+    private val empresa: EmpresaService,
     transactionManager: PlatformTransactionManager,
     @param:Value("\${invoices.reconocimiento.concurrencia:3}") concurrencia: Int,
     private val clock: Clock = Clock.systemUTC()
@@ -155,6 +157,9 @@ class ColaReconocimiento(
         f.retenciones = importe(p.retenciones) ?: BigDecimal.ZERO.setScale(2)
         f.total = importe(p.total)
         f.rectificativa = p.rectificativa ?: false
+        // FR-008: issued or received as soon as the tax ids are known; the
+        // reviewer can still change it.
+        f.tipo = empresa.buscar()?.let { ClasificadorFactura.clasificar(it.nifNormalizado, f.emisorNif, f.destinatarioNif) }
         f.reemplazarLineas(p.lineas.mapNotNull { l ->
             val tipo = importe(l.tipoIva) ?: return@mapNotNull null
             val base = importe(l.base) ?: return@mapNotNull null
