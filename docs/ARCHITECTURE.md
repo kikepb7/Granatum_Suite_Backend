@@ -130,6 +130,20 @@ formato único `{code, message}`, y distingue `TOKEN_ACCESO_EXPIRADO` de
 `POST /api/dev/token` sigue existiendo solo con el perfil `dev`, pero ya no hace
 falta para usar la aplicación.
 
+**Errores de validación.** `CommonExceptionHandler` (`common`) responde todos los
+`400` de validación de la API —cuerpo inválido, parámetro ausente o de tipo
+incorrecto, JSON ilegible— con `{code: "VALIDACION", message}`, sin traza y sin el
+valor rechazado. Hasta la feature 003 salían con el cuerpo por defecto de Spring,
+que en `dev` traía la traza y el valor enviado.
+
+**Descargas en streaming.** Una respuesta `StreamingResponseBody` termina con un
+*async dispatch* que vuelve a pasar por la cadena de seguridad, y `JwtAuthFilter`
+no actúa en él. `SecurityConfig` permite `DispatcherType.ASYNC`: solo reanuda una
+petición ya autorizada. Sin eso, la descarga se denegaba con el fichero ya
+enviado y la conexión se cortaba (`ExportacionHttpIT`). Y el
+`server.tomcat.connection-timeout` explícito es lo que libera la conexión a la
+base de datos cuando un cliente deja de leer (`ClienteLentoExportacionIT`).
+
 ## Colaboración entre features: contratos en `common`
 
 **Patrón nuevo, introducido por `auth`.** Cuando una feature necesita un dato que
@@ -230,8 +244,17 @@ El borrado del producto vive en **dos** sitios, ambos como consultas
 los alcance — solo un proceso programado:
 
 - `RetencionPurgaRepository` (`timetracking`): la depuración del registro de
-  jornada a los cuatro años. `SinBorradoDentroDelPlazoIT` comprueba por reflexión
-  que ningún otro de sus seis repositorios expone mutación destructiva.
+  jornada a los cuatro años, y desde la feature 003 también de las
+  `exportaciones` anotadas cuyo periodo cubierto (`hasta`) ha salido entero del
+  plazo; cada ejecución anota cuántas borró (`exportaciones_eliminadas`, V16).
+  `SinBorradoDentroDelPlazoIT` comprueba por reflexión que ningún otro de sus
+  siete repositorios expone mutación destructiva.
+  El límite del plazo se calcula en **un solo sitio**, `PlazoConservacion`, que
+  usan a la vez la depuración y la exportación: si cada una lo calculara por su
+  cuenta, un cambio en una y no en la otra haría que la exportación anunciara
+  datos ya borrados o escondiera datos que existen.
+  La depuración sale **desactivada** (`timetracking.retencion.habilitada`) y
+  activarla es una decisión explícita de cada entorno.
 - `SesionRenovacionRepository.purgarMuertasAntesDe` (`auth`): sesiones ya
   usadas, revocadas o caducadas hace más de 30 días. Una sesión viva no se toca
   por antigua que sea. Es un añadido del plan de `auth`, no de su spec, porque
@@ -246,7 +269,8 @@ declaran `delete`.
 
 Flyway comparte un único histórico en `classpath:db/migration` para todos los
 módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
-`timetracking` `V6`–`V11` y `auth` `V12`–`V14`. Es un acoplamiento real entre módulos — al añadir una
+`timetracking` `V6`–`V11`, `auth` `V12`–`V14` y la exportación de
+`timetracking` `V15`–`V16`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

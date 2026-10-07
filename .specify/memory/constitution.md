@@ -373,28 +373,26 @@ Excepciones y deuda vivas, todas acotadas y con su motivo:
 1. **`flyway_schema_history` sin RLS** (principio VII), por la limitación
    técnica descrita allí. Se mitiga con un paso manual por entorno recogido en
    `README.md`.
-2. **`HistorialMaterialRepository` extiende `JpaRepository`**, que expone
-   `delete` y `deleteAll` sobre una tabla append-only. Hoy nadie los llama —
-   verificado: el servicio solo inserta y lee—, así que no hay incumplimiento
-   efectivo, pero la interfaz ofrece la fuga. Debe estrecharse a una interfaz
-   que declare únicamente las operaciones que la tabla admite, conforme a la
-   última regla del principio III. Es prerrequisito de dar `timetracking` por
-   terminado, para no replicar el patrón en sus tablas append-only.
+2. **La depuración a los 4 años existe y está desbloqueada, pero desactivada.**
+   El principio III la exige desde v2.0.0; la feature 001 la construyó, y la
+   feature 003 cumplió la condición que la bloqueaba (la descarga mensual). Sigue
+   apagada por defecto (`timetracking.retencion.habilitada`) porque activarla es
+   la única operación del producto que destruye registros con valor legal, y esa
+   decisión corresponde a cada entorno. Mientras no se active se conserva de más,
+   que es el lado seguro del incumplimiento. `DepuracionPorDefectoIT` fija que
+   desplegar no la enciende.
 
-3. **`Role` en `common` no incluye todavía `REPRESENTANTE`**, que el principio
-   IV ya exige desde v2.0.0. Hasta que se añada, la obligación del art. 34.9
-   de poner el registro a disposición de la representación legal no tiene
-   soporte técnico. Se cierra en la implementación de `timetracking`.
-4. **La depuración a los 4 años no existe aún.** El principio III la exige
-   desde v2.0.0, pero no puede habilitarse hasta que la descarga mensual esté
-   disponible (feature de exportación). Mientras tanto no se borra nada, que es
-   el lado seguro del incumplimiento: se conserva de más, no de menos.
+Deuda cerrada, conservada aquí como historial:
 
-El principio III gobierna además un módulo (`timetracking`) que todavía no
-existe: eso no es deuda, es diseño vinculante para cuando se escriba.
+- **`HistorialMaterialRepository` extendía `JpaRepository`** (principio III).
+  Estrechado a `Repository<T, ID>` sin `delete` en la feature 001.
+- **`Role` no incluía `REPRESENTANTE`** (principio IV). Añadido en la feature
+  001, con acceso de solo lectura al registro.
 
 **Guía de desarrollo en tiempo de ejecución.** Los agentes de código leen esta
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-05
+**Version**: 2.0.1 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-07
+
+*v2.0.1 (PATCH): actualiza la lista de deuda declarada sin cambiar ningún principio. Las deudas 2 y 3 se cerraron en la feature 001, y la 4 cambió de naturaleza con la feature 003: la depuración ya existe y puede activarse.*

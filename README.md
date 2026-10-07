@@ -23,7 +23,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
 - ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
 - ⚠️ **Falta una vía para crear el primer `ADMIN` en producción** — ver [El primer administrador](#el-primer-administrador). Bloquea el primer despliegue.
-- ⏳ Exportación de fichajes a CSV — pendiente. **La depuración a los 4 años sale deshabilitada hasta que exista**, porque la base para destruir un registro es que haya estado descargable antes.
+- ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
 
 ## Arranque rápido
 
@@ -172,6 +172,70 @@ La cuenta tiene que estar vinculada a una persona de `empleados`, como todas.
   que decir qué requisito falla, y un cliente que marque campos necesita
   identificadores, no una frase—, pero el principio fija el formato en esos dos
   campos exactamente, así que queda escrito aquí en lugar de pasar en silencio.
+
+## Exportación del registro de jornada
+
+El ciclo completo está en
+[`specs/003-timetracking-export/quickstart.md`](specs/003-timetracking-export/quickstart.md);
+el contrato, en
+[`specs/003-timetracking-export/contracts/README.md`](specs/003-timetracking-export/contracts/README.md).
+
+| Ruta | Quién | Qué hace |
+|------|-------|----------|
+| `GET /api/fichajes/export?desde=&hasta=[&empleadoId=]` | los cuatro roles | El registro de un rango. `EMPLEADO`: solo el suyo. El resto: una persona o, sin `empleadoId`, toda la plantilla (incluidas las personas dadas de baja) |
+| `GET /api/fichajes/empleado/{id}/resumen/descarga?anio=&mes=` | la propia persona, `ENCARGADO`, `ADMIN`, `REPRESENTANTE` | El mes natural con su total, tipo de contrato y si el mes ha terminado. Es el resumen del art. 12.4.c para contratos a tiempo parcial |
+| `GET /api/exportaciones` | `ADMIN` | Quién exportó qué. Filtros: `empleadoId` (incluye las exportaciones de toda la plantilla), `generadaDesde`/`generadaHasta`, `cubreDesde`/`cubreHasta` (por solapamiento) |
+| `POST /api/exportaciones/verificar` | `ADMIN` | Envía un fichero como cuerpo (`text/csv`) y dice si salió de aquí y cuándo. No se guarda nada del fichero |
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" -OJ \
+  "http://localhost:8080/api/fichajes/export?desde=2026-10-01&hasta=2026-10-31"
+```
+
+El fichero es CSV en UTF-8 con BOM, separador `;` y fin de línea CRLF, para que se
+abra sin asistente en una hoja de cálculo con configuración española. Ninguna celda
+se ejecuta como fórmula. La ubicación no sale nunca, y con rol `REPRESENTANTE` la
+columna del documento de identidad no existe. Dos exportaciones iguales sin cambios
+entre medias dan el mismo fichero byte a byte.
+
+### La depuración a los 4 años: desbloqueada, no activada
+
+La feature 001 dejó la depuración apagada hasta que el registro se pudiera
+descargar. Esta feature cumple esa condición, **pero no la activa**: borrar
+registros con valor legal es una decisión de cada entorno. Para activarla:
+
+```yaml
+timetracking:
+  retencion:
+    habilitada: true
+```
+
+> **Es irreversible.** Lo que la depuración borra no se recupera. Antes de
+> activarla en un entorno, asegúrate de que la descarga mensual se ha puesto a
+> disposición de cada persona.
+
+La depuración borra también las exportaciones anotadas cuyo periodo cubierto ya
+ha salido entero del plazo, y cuenta cuántas en `depuraciones_retencion`.
+
+### Variables de entorno
+
+Ninguna es un secreto.
+
+| Variable | Defecto | Para qué |
+|----------|---------|----------|
+| `TIMETRACKING_EXPORTACION_CONCURRENCIA` | 2 | Exportaciones simultáneas como máximo; cada una ocupa una conexión mientras se descarga |
+| `TIMETRACKING_EXPORTACION_ESPERA_MS` | 1000 | Espera antes de responder `503 EXPORTACION_SATURADA` con `Retry-After` |
+| `TIMETRACKING_EXPORTACION_TIMEOUT_SEGUNDOS` | 120 | Tiempo máximo de la lectura de una exportación |
+| `TIMETRACKING_EXPORTACION_TAMANO_LOTE` | 500 | Fichajes por lote al recorrer el registro |
+| `TIMETRACKING_VERIFICACION_MAX_BYTES` | 104857600 | Tamaño máximo de un fichero a verificar (`413` por encima) |
+| `SERVER_TOMCAT_CONNECTION_TIMEOUT` | 10s | Además, lo que puede retener una conexión a la base de datos un cliente que deja de leer una descarga |
+
+### Errores de validación
+
+Todos los `400` de validación de la API, de cualquier módulo, responden ahora
+`{"code": "VALIDACION", "message": …}`, sin traza y sin el valor rechazado.
+Antes salían con el cuerpo por defecto de Spring, que en `dev` incluía la traza y
+el valor enviado (un correo, o una contraseña demasiado larga).
 
 ## Desarrollo guiado por especificaciones (SDD)
 
