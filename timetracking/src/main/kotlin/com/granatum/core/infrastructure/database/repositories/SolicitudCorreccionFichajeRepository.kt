@@ -21,6 +21,36 @@ interface SolicitudCorreccionFichajeRepository :
     fun existsByFichajeIdAndEstado(fichajeId: UUID, estado: EstadoSolicitud): Boolean
 
     /**
+     * Which of [fichajeIds] carry a request in [estado]: ids only, never the
+     * requests themselves, served by `idx_solicitudes_fichaje_estado`.
+     *
+     * Bounded by the caller's own fichajes on purpose. The monthly summary used
+     * [findAllByEstado] and so read every approved correction in the history of
+     * the company to flag the days of one month (D-011).
+     */
+    @Query(
+        """
+        SELECT DISTINCT s.fichaje.id
+          FROM SolicitudCorreccionFichajeEntity s
+         WHERE s.fichaje.id IN :ids
+           AND s.estado = :estado
+        """
+    )
+    fun findFichajeIdsConEstado(
+        @Param("ids") fichajeIds: Collection<UUID>,
+        @Param("estado") estado: EstadoSolicitud
+    ): List<UUID>
+
+    /**
+     * The requests in [estado] on [fichajeIds], oldest resolution first, so an
+     * export can show each correction in the order it was applied.
+     */
+    fun findAllByFichajeIdInAndEstadoOrderByResueltaEnAsc(
+        fichajeIds: Collection<UUID>,
+        estado: EstadoSolicitud
+    ): List<SolicitudCorreccionFichajeEntity>
+
+    /**
      * Claims a request for resolution, atomically.
      *
      * Returns the number of rows changed: **1** if this call won it, **0** if it

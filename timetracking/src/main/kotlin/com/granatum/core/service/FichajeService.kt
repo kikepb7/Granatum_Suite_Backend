@@ -272,15 +272,26 @@ class FichajeService(
             .findAllByEmpleadoIdAndEntradaBetweenOrderByEntradaDesc(
                 empleadoIdSolicitado, inicio, fin
             )
+            // Spring Data's `Between` includes both ends, and `fin` is 00:00 on
+            // the first of the next month: a shift starting at exactly that
+            // instant - a round time a correction readily sets - belongs to the
+            // next month, and counting it here made this total disagree with the
+            // monthly download (FR-020 of feature 003, DescargaMensualIT).
+            .filter { it.entrada.isBefore(fin) }
             .map { it.toModel() }
 
-        // Which days carry an approved correction. Resolved with one query over
-        // the month rather than one per day, so the summary does not reintroduce
-        // the N+1 the listing avoids.
-        val corregidos = solicitudRepository
-            .findAllByEstado(EstadoSolicitud.APROBADA)
-            .map { it.fichaje.id }
-            .toSet()
+        // Which days carry an approved correction: one query, bounded by this
+        // month's fichajes, returning ids only. One per day would be an N+1; an
+        // unbounded one read every approved correction in the company's history
+        // for each summary, which is what this used to do (D-011).
+        val idsDelMes = fichajes.map { it.id }
+        val corregidos = if (idsDelMes.isEmpty()) {
+            emptySet()
+        } else {
+            solicitudRepository
+                .findFichajeIdsConEstado(idsDelMes, EstadoSolicitud.APROBADA)
+                .toSet()
+        }
 
         return CalculadoraResumenMensual.calcular(
             empleadoId = empleadoIdSolicitado,
