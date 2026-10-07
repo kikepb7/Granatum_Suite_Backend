@@ -17,6 +17,11 @@ rootProject.name = "granatum-suite"
 
 include("app")
 include("common")
-include("inventory")
-include("timetracking")
-include("auth")
+
+// Every business feature is its own Gradle module under features/, depending
+// only on :common (constitution principle I). Grouped in one directory so the
+// root shows at a glance what is product and what is plumbing; the folder is
+// not a module of its own, and nothing may be added to it but feature modules.
+include("features:inventory")
+include("features:timetracking")
+include("features:auth")

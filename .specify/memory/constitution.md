@@ -4,8 +4,10 @@
 
 ### I. Features independientes
 
-Cada dominio de negocio vive en su propio módulo Gradle (`inventory`,
-`timetracking`, …) y se compila y testea por separado. Reglas:
+Cada dominio de negocio vive en su propio módulo Gradle bajo `features/`
+(`:features:inventory`, `:features:timetracking`, …) y se compila y testea por
+separado. La carpeta `features/` solo agrupa: no es un módulo con código ni
+puede aportar dependencias a las features. Reglas:
 
 - Un módulo de feature **DEBE** depender únicamente de `common`. Dos features
   **NO DEBEN** depender la una de la otra ni importar sus clases.
@@ -13,8 +15,8 @@ Cada dominio de negocio vive en su propio módulo Gradle (`inventory`,
   o exponerse como contrato explícito, nunca mediante una dependencia directa.
 - Solo `app` tiene `main()`; es el único módulo que agrega features y declara
   la seguridad global.
-- Añadir una feature **DEBE** consistir en crear su módulo y registrarlo en
-  `settings.gradle.kts`, sin tocar los módulos de las demás.
+- Añadir una feature **DEBE** consistir en crear su módulo en `features/` y
+  registrarlo en `settings.gradle.kts`, sin tocar los módulos de las demás.
 
 Razón: el inventario y el fichaje tienen ciclos de vida y riesgos distintos.
 Mantenerlos desacoplados permite que uno evolucione o falle sin arrastrar al
@@ -393,6 +395,8 @@ Deuda cerrada, conservada aquí como historial:
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.0.1 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-07
+**Version**: 2.0.2 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+
+*v2.0.2 (PATCH): el principio I dice dónde viven los módulos de feature (`features/`), tras agruparlos ahí. Ninguna regla cambia: cada feature sigue siendo un módulo propio que solo depende de `common`.*
 
 *v2.0.1 (PATCH): actualiza la lista de deuda declarada sin cambiar ningún principio. Las deudas 2 y 3 se cerraron en la feature 001, y la 4 cambió de naturaleza con la feature 003: la depuración ya existe y puede activarse.*

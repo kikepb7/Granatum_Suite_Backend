@@ -8,7 +8,7 @@ dependencies {
     // Principio I: este modulo depende de `common` y de nada mas. La informacion
     // que necesita sobre la persona empleada -si existe y si esta activa- llega
     // por el contrato DirectorioEmpleados, declarado en `common` e implementado
-    // por `timetracking`. Anadir aqui `projects.timetracking` seria la violacion
+    // por `timetracking`. Anadir aqui `projects.features.timetracking` seria la violacion
     // que el contrato existe para evitar, y el compilador es quien lo sostiene.
     implementation(projects.common)
 

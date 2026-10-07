@@ -23,7 +23,10 @@ su vez está extraído de [Squadfy_Backend](https://github.com/kikepb7/squadfy_b
       └────────────────────────────────────────────────┘
 ```
 
-Las tres features dependen **solo** de `common`. `auth` necesita saber si una
+Las features viven en `features/` (`:features:inventory`,
+`:features:timetracking`, `:features:auth`), cada una como módulo Gradle propio.
+La carpeta solo agrupa: no es un módulo, no tiene código y no añade
+dependencias. Las tres features dependen **solo** de `common`. `auth` necesita saber si una
 persona existe y está en activo, y ese dato es de `timetracking`; lo obtiene a
 través de un contrato declarado en `common`, nunca importando a `timetracking`.
 Ver [Colaboración entre features](#colaboración-entre-features-contratos-en-common).
@@ -97,7 +100,7 @@ cambio de stock quede auditado.
 
 ## Migraciones
 
-Flyway (`<módulo>/src/main/resources/db/migration` en cada feature) sustituye al
+Flyway (`features/<feature>/src/main/resources/db/migration` en cada feature) sustituye al
 `ddl-auto: update` del skeleton — `application.yml` usa
 `ddl-auto: validate`, así que un mapeo JPA que no coincida con el esquema
 falla rápido al arrancar en vez de alterar la tabla silenciosamente.

@@ -394,6 +394,7 @@ ALTER TABLE flyway_schema_history ENABLE ROW LEVEL SECURITY;
 ```bash
 ./gradlew build          # compila y ejecuta tests de todos los módulos
 ./gradlew test           # solo tests
+./gradlew :features:timetracking:test   # tests de una sola feature
 ./gradlew :app:bootRun   # arranca la app
 docker compose down -v   # apaga y limpia los volúmenes locales
 ```
@@ -404,9 +405,10 @@ docker compose down -v   # apaga y limpia los volúmenes locales
 .
 ├── app/            # módulo ejecutable: main class, seguridad, config, application.yml
 ├── common/         # kernel compartido: excepciones, JWT, roles y contratos entre features
-├── inventory/      # dominio de inventario (Material, Categoria, HistorialMaterial)
-├── timetracking/   # registro de jornada (Empleado, Fichaje, Pausa, correcciones)
-├── auth/           # inicio de sesión, sesiones, bloqueo, alta y restablecimiento
+├── features/       # un módulo Gradle por feature, cada uno depende solo de common
+│   ├── inventory/      # dominio de inventario (Material, Categoria, HistorialMaterial)
+│   ├── timetracking/   # registro de jornada (Empleado, Fichaje, Pausa, correcciones, exportación)
+│   └── auth/           # inicio de sesión, sesiones, bloqueo, alta y restablecimiento
 ├── build-logic/    # convention plugins de Gradle (composite build)
 ├── gradle/         # version catalog + gradle wrapper
 ├── .specify/       # Spec Kit: plantillas, scripts y constitución del proyecto
