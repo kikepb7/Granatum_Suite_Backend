@@ -27,4 +27,11 @@ dependencies {
     // MockMvc needs the test slice; spring-security-test is not used (tokens are
     // minted with the real JwtService, which exercises the real filter).
     testImplementation(libs.spring.boot.starter.test)
+
+    // Only ClienteLentoExportacionIT uses these: it seeds tens of thousands of
+    // shifts, which must not land in the developer's database that the other
+    // tests here run against.
+    testImplementation(platform(libs.testcontainers.bom))
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.testcontainers.postgresql)
 }

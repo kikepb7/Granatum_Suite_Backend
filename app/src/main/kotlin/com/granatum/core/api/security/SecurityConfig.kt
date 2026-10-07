@@ -71,8 +71,22 @@ class SecurityConfig {
                     // corrections, but does not hand out access.
                     .requestMatchers("/api/auth/cuentas/**", "/api/auth/cuentas")
                     .hasRole("ADMIN")
-                    .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD)
+                    // ASYNC (feature 003): a streamed download ends with an async
+                    // dispatch that runs the chain again, and JwtAuthFilter, a
+                    // OncePerRequestFilter, skips it - so it arrived anonymous,
+                    // was denied after the file had been sent, and the
+                    // connection was dropped. An async dispatch only resumes a
+                    // request whose REQUEST dispatch was already authorised; no
+                    // client can start one. `ExportacionHttpIT` guards it.
+                    .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD, DispatcherType.ASYNC)
                     .permitAll()
+                    // The export log and file verification (feature 003, D-014):
+                    // ADMIN only. Deliberately not under /api/fichajes, whose GET
+                    // rule admits all four roles - nesting it there would have
+                    // made one forgotten matcher order expose who exported whose
+                    // register to everyone with read access.
+                    .requestMatchers("/api/exportaciones", "/api/exportaciones/**")
+                    .hasRole("ADMIN")
                     .requestMatchers("/api/materiales/**", "/api/categorias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO")
                     // Staff management is ADMIN only: ENCARGADO runs inventory

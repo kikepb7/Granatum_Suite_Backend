@@ -27,7 +27,7 @@ class EsquemaCompletoRlsIT {
     lateinit var dataSource: DataSource
 
     /**
-     * Every table the fourteen migrations create, across the three feature
+     * Every table the sixteen migrations create, across the three feature
      * modules. This is the only test that sees them all together: each module's
      * own `RowLevelSecurityIT` only has that module's migrations on its
      * classpath.
@@ -38,6 +38,8 @@ class EsquemaCompletoRlsIT {
         // timetracking
         "empleados", "fichajes", "pausas", "solicitudes_correccion_fichaje",
         "fichaje_eventos", "depuraciones_retencion",
+        // timetracking, feature 003: who exported whose register
+        "exportaciones",
         // auth - the tables where RLS matters most: email addresses and
         // password hashes, which Supabase would otherwise publish to anyone
         // holding the anon key

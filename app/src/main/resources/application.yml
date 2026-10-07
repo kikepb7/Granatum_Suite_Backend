@@ -2,6 +2,15 @@ spring:
   application:
     name: granatum-suite
 
+  mvc:
+    async:
+      # The record export streams through StreamingResponseBody, which runs as
+      # an async request. Left unset, the container's own async timeout applies
+      # and cuts a large export off mid-file with no visible error. Set above
+      # timetracking.exportacion.timeout-segundos (120) so that, of the two, the
+      # export's own limit is the one that acts.
+      request-timeout: 130s
+
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
@@ -126,3 +135,32 @@ auth:
 
   purga-sesiones:
     dias: ${AUTH_PURGA_SESIONES_DIAS:30}
+
+timetracking:
+  exportacion:
+    # How many exports may run at once. Each holds ONE database connection for
+    # as long as it streams (a single snapshot transaction, so the file is
+    # coherent and two identical exports are byte-identical). Beyond this, 503
+    # with Retry-After. See specs/003-timetracking-export/research.md D-002.
+    concurrencia: ${TIMETRACKING_EXPORTACION_CONCURRENCIA:2}
+    espera-ms: ${TIMETRACKING_EXPORTACION_ESPERA_MS:1000}
+    timeout-segundos: ${TIMETRACKING_EXPORTACION_TIMEOUT_SEGUNDOS:120}
+    tamano-lote: ${TIMETRACKING_EXPORTACION_TAMANO_LOTE:500}
+    # Upper bound for POST /api/exportaciones/verificar, which hashes the body
+    # as it reads it and never stores it. 100 MB.
+    verificacion-max-bytes: ${TIMETRACKING_VERIFICACION_MAX_BYTES:104857600}
+
+server:
+  tomcat:
+    # Also the WRITE timeout of a blocking response write, and that is why it is
+    # set explicitly (feature 003, D-002). A record export holds a database
+    # connection while it streams; a client that stops reading leaves the
+    # writing thread blocked on the socket, where neither the transaction
+    # timeout (it only applies to queries) nor the async request timeout frees
+    # it. This one does: the blocked write fails, the export is recorded as
+    # interrupted and the connection goes back to the pool. Left at Tomcat's
+    # implicit 60 s, ClienteLentoExportacionIT measured 65 s of a connection
+    # held by a stalled client. It also bounds how long Tomcat waits for a
+    # request's headers and between keep-alive requests, for which 10 s is
+    # ample for this API.
+    connection-timeout: ${SERVER_TOMCAT_CONNECTION_TIMEOUT:10s}
