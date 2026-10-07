@@ -10,6 +10,7 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Every validation `400` in the API carries the contract's `{code, message}`
@@ -121,6 +122,66 @@ class ValidacionFormatoIT {
             http.get("/api/fichajes/export?desde=no-es-fecha&hasta=2026-10-31", token(Role.ADMIN)),
             valorEnviado = "no-es-fecha"
         )
+    }
+
+    /** Feature 004: invoicing's parameters and bodies answer like any other route. */
+    @Test
+    fun `invoicing answers VALIDACION for a missing year, no files or no reason`() {
+        comprobar(http.get("/api/facturacion/reportes?periodo=ANUAL", token(Role.ADMIN)))
+        comprobar(http.get("/api/facturacion/reportes?periodo=MENSUAL&anio=2026", token(Role.ADMIN)))
+        comprobar(http.post("/api/facturacion/trimestres/2026/1/reabrir", "{}", token(Role.ADMIN)))
+        val sinFicheros = org.springframework.web.client.RestClient.builder().baseUrl("http://localhost:$puerto").build()
+            .post().uri("/api/facturacion/facturas")
+            .header("Authorization", "Bearer ${token(Role.ADMIN)}")
+            .contentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA)
+            .body(org.springframework.util.LinkedMultiValueMap<String, Any>().apply { add("otra", "x") })
+            .exchange({ _, r -> ClientePruebaHttp.Respuesta(r.statusCode.value(), r.body.readAllBytes().decodeToString()) }, false)!!
+        comprobar(sinFicheros)
+    }
+
+    /**
+     * Findings I1 and T2: an upload over the request limit gets a real 413 with
+     * the contract's body, not a reset connection - which is what Tomcat's
+     * default max-swallow-size of 2 MB can produce.
+     *
+     * Over a raw socket that keeps sending the body while it reads the answer,
+     * as curl does. Java's HTTP clients cannot read a response that arrives
+     * while they are still sending, and reported the server's correct 413 as a
+     * broken connection; curl against the running application got the 413 for
+     * 51, 60 and 120 MB (2026-10-08).
+     */
+    @Test
+    fun `an upload over the limit receives 413 over HTTP`() {
+        val frontera = "----granatum-${UUID.randomUUID()}"
+        val inicio = "--$frontera\r\nContent-Disposition: form-data; name=\"ficheros\"; filename=\"enorme.pdf\"\r\n" +
+            "Content-Type: application/pdf\r\n\r\n"
+        val fin = "\r\n--$frontera--\r\n"
+        val tamano = 60L * 1024 * 1024
+        val longitud = inicio.length + tamano + fin.length
+
+        java.net.Socket("localhost", puerto).use { socket ->
+            socket.soTimeout = 30_000
+            val salida = socket.getOutputStream()
+            salida.write(
+                ("POST /api/facturacion/facturas HTTP/1.1\r\nHost: localhost\r\n" +
+                    "Authorization: Bearer ${token(Role.ADMIN)}\r\n" +
+                    "Content-Type: multipart/form-data; boundary=$frontera\r\n" +
+                    "Content-Length: $longitud\r\nConnection: close\r\n\r\n$inicio").toByteArray()
+            )
+            val envio = Thread {
+                runCatching {
+                    val bloque = ByteArray(64 * 1024)
+                    var enviado = 0L
+                    while (enviado < tamano) { salida.write(bloque); enviado += bloque.size }
+                    salida.write(fin.toByteArray())
+                }
+            }.apply { isDaemon = true; start() }
+
+            val respuesta = socket.getInputStream().bufferedReader().readText()
+            envio.join(5_000)
+            assertTrue(respuesta.startsWith("HTTP/1.1 413"), respuesta.take(200))
+            assertTrue(respuesta.contains("PETICION_DEMASIADO_GRANDE"), respuesta.take(400))
+        }
     }
 
     @Test

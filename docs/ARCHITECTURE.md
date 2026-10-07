@@ -43,6 +43,10 @@ Ver [Colaboración entre features](#colaboración-entre-features-contratos-en-co
   `DirectorioEmpleados`.
 - **`auth`**: inicio de sesión, sesiones, bloqueo por fuerza bruta, alta y
   restablecimiento de credenciales. Consume `DirectorioEmpleados`.
+- **`invoices`**: facturación. Sube, reconoce con Claude, revisa y confirma
+  facturas, saca reportes y cierra trimestres. No necesita nada de las otras
+  features; lo que comparte con `timetracking` (el formato CSV y la validación de
+  NIF) vive en `common` (`FormatoCsv`, `NifValidator`).
 
 Ninguna feature conoce a otra: lo verifica el compilador, porque ningún
 `build.gradle.kts` de feature menciona otro módulo que no sea `common`.
@@ -192,6 +196,30 @@ todos sus tests en verde. `auth` estuvo a punto de declarar un
 HTTP. `SinColisionDeClasesIT` (en `app`, el único sitio con todos los módulos
 en un classpath) lo vigila.
 
+## Integración con un servicio externo: el reconocimiento de facturas
+
+`invoices` es la primera feature que llama a un servicio externo (la API de
+Claude), y lo hace con unas reglas que conviene repetir en la siguiente:
+
+- **Detrás de un puerto.** `ReconocedorFacturas` es una interfaz del dominio. La
+  implementación real (`ReconocedorClaude`, SDK oficial de Java) solo se construye
+  si hay clave; sin ella, `ReconocedorDeshabilitado` deja la feature en modo
+  manual. En los tests, un doble: **ningún test de la suite llama a la API real**.
+- **La clave tiene una sola fuente**, la configuración. El cliente nunca se
+  construye con `fromEnv()`, porque el SDK buscaría credenciales por su cuenta
+  (variables, perfil de `ant` en disco) y un contexto "sin clave" podría gastar
+  dinero. Los contextos de test la fijan vacía con un valor literal, porque Gradle
+  carga el `.env` en los tests.
+- **Nunca con una transacción abierta mientras responde.** Una llamada tarda
+  decenas de segundos: la subida responde `202` tras confirmar, el reconocimiento
+  corre en un ejecutor acotado, lee en una transacción corta, llama sin ninguna
+  abierta y escribe en otra transacción corta. `SubidaFacturasIT` lo vigila.
+- **Lo que vuelve es un dato.** Salida estructurada con esquema cerrado, sin
+  herramientas: el contenido de un documento no puede provocar nada más que
+  rellenar un borrador que una persona revisa.
+- **Los fallos tienen tope.** Errores y rechazos se anotan por su tipo, nunca con
+  contenido; el reintento programado hace como mucho tres intentos por factura.
+
 ## Corrección de fichajes
 
 Los fichajes cerrados no se editan directamente. Cualquier corrección pasa
@@ -266,14 +294,16 @@ los alcance — solo un proceso programado:
 
 Las tablas de `auth` que no admiten borrado (`cuentas_acceso`,
 `eventos_seguridad`) tienen repositorios que extienden `Repository<T, ID>` y no
-declaran `delete`.
+declaran `delete`. Las de `invoices` tampoco admiten ninguno: una factura se
+conserva al menos seis años, descartarla no la borra y los historiales son de solo
+inserción (`SinBorradoFacturacionIT`).
 
 ### Numeración de migraciones
 
 Flyway comparte un único histórico en `classpath:db/migration` para todos los
 módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
-`timetracking` `V6`–`V11`, `auth` `V12`–`V14` y la exportación de
-`timetracking` `V15`–`V16`. Es un acoplamiento real entre módulos — al añadir una
+`timetracking` `V6`–`V11`, `auth` `V12`–`V14`, la exportación de
+`timetracking` `V15`–`V16` e `invoices` `V17`–`V19`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

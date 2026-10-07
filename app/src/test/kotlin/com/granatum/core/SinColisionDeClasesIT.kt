@@ -1,6 +1,9 @@
 package com.granatum.core
 
 import com.granatum.core.service.AutenticacionService
+import com.granatum.core.service.FichajeService
+import com.granatum.core.service.MaterialService
+import com.granatum.core.service.SubidaFacturas
 import org.junit.jupiter.api.Test
 import java.io.File
 import java.util.jar.JarFile
@@ -8,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * No class of the `auth` module exists twice on the application's classpath.
+ * No class of a feature module exists twice on the application's classpath.
  *
  * ## The failure this guards
  *
@@ -37,10 +40,21 @@ class SinColisionDeClasesIT {
 
     private val cargador: ClassLoader = Thread.currentThread().contextClassLoader
 
-    /** Every `.class` resource the `auth` module ships, as classpath paths. */
-    private fun clasesDeAuth(): List<String> {
-        val origen = AutenticacionService::class.java.protectionDomain.codeSource.location.toURI()
-        val raiz = File(origen)
+    /**
+     * One class of each feature module, to find its jar or classes directory.
+     * Feature 004 widened the check from `auth` alone to every feature: the
+     * invoicing module brought dozens of new names into the shared namespace.
+     */
+    private val modulos = mapOf(
+        "inventory" to MaterialService::class.java,
+        "timetracking" to FichajeService::class.java,
+        "auth" to AutenticacionService::class.java,
+        "invoices" to SubidaFacturas::class.java
+    )
+
+    /** Every `.class` resource a module ships, as classpath paths. */
+    private fun clasesDe(ancla: Class<*>): List<String> {
+        val raiz = File(ancla.protectionDomain.codeSource.location.toURI())
 
         return if (raiz.isDirectory) {
             raiz.walkTopDown()
@@ -58,18 +72,20 @@ class SinColisionDeClasesIT {
     }
 
     @Test
-    fun `the module actually contributes classes`() {
-        // Guards the guard: if the lookup above silently found nothing, the
-        // assertion below would pass over an empty list and prove nothing.
-        assertTrue(
-            clasesDeAuth().any { it.endsWith("AutenticacionService.class") },
-            "the scan must find auth's own classes, or the collision check is vacuous"
-        )
+    fun `every module actually contributes classes`() {
+        // Guards the guard: if a lookup silently found nothing, the assertion
+        // below would pass over an empty list and prove nothing.
+        modulos.forEach { (nombre, ancla) ->
+            assertTrue(
+                clasesDe(ancla).any { it.endsWith("${ancla.simpleName}.class") },
+                "the scan must find $nombre's own classes, or the collision check is vacuous"
+            )
+        }
     }
 
     @Test
-    fun `no class of auth is declared by any other module`() {
-        val colisiones = clasesDeAuth()
+    fun `no class of a feature module is declared by any other module`() {
+        val colisiones = modulos.values.flatMap(::clasesDe).distinct()
             .associateWith { ruta -> cargador.getResources(ruta).toList() }
             .filterValues { it.size > 1 }
             .map { (ruta, urls) -> "$ruta -> ${urls.map(::origenLegible)}" }

@@ -53,10 +53,13 @@ cmp foto.jpg original.jpg && echo "idéntico"
 
 ## 4. Rellenar a mano, avisos y confirmación — US2, FR-010 a FR-014
 
-Con `PUT …/facturas/$ID`, rellena los datos con un total que no cuadre y con un NIF
-de letra incorrecta. **Esperado**: `GET` muestra los avisos `NO_CUADRA` y
+Con `PUT …/facturas/$ID` (con la `version` que devuelve el `GET`), rellena los
+datos con un total que no cuadre y con un NIF de letra incorrecta. **Esperado**: `GET` muestra los avisos `NO_CUADRA` y
 `NIF_INVALIDO`, y `…/confirmar` → `422 FACTURA_INCOHERENTE`. Corrige ambos y
 confirma → `CONFIRMADA`, con `tipo` deducido del NIF de la empresa (D-014).
+
+Rellena también la del PDF, con fecha de octubre a diciembre de 2026, pero no la
+confirmes: queda en `BORRADOR`.
 
 ## 5. Reporte — US3, SC-004, SC-010
 
@@ -67,7 +70,8 @@ curl -s -o t4.pdf "$F/reportes?periodo=TRIMESTRAL&anio=2026&trimestre=4&formato=
 ```
 
 **Esperado**: los totales son la suma exacta de lo confirmado, con el IVA por
-tipo; la otra factura cuenta como pendiente. El CSV se abre en Excel o
+tipo; la del PDF cuenta en `pendientes`. Una factura sin fecha todavía (sin
+reconocer ni rellenar) no pertenece a ningún periodo y no cuenta. El CSV se abre en Excel o
 LibreOffice en español sin asistente y con los importes como números. El PDF
 muestra las mismas cifras.
 
@@ -77,8 +81,8 @@ muestra las mismas cifras.
 curl -s -X POST $F/trimestres/2026/4/cerrar -H "Authorization: Bearer $ADMIN"
 ```
 
-**Esperado**: `409 TRIMESTRE_CON_PENDIENTES` mientras quede la otra factura;
-descártala y cierra. Después, corregir la confirmada → `409 TRIMESTRE_CERRADO`.
+**Esperado**: `409 TRIMESTRE_CON_PENDIENTES` mientras quede el borrador del PDF;
+descártalo (`POST …/facturas/{id}/descartar` con su `version`) y cierra. Después, corregir la confirmada → `409 TRIMESTRE_CERRADO`.
 Reabrir sin motivo → `400 VALIDACION`; con motivo, sí, y
 `GET $F/trimestres?anio=2026` muestra el cierre y la reapertura.
 
@@ -95,7 +99,7 @@ done
 ## 8. RLS — principio VII
 
 ```bash
-docker exec granatum_suite_backend-postgres-1 psql -U granatum -d granatum -tAc \
+docker compose exec postgres psql -U granatum -d granatum -tAc \
   "SELECT relname, relrowsecurity FROM pg_class WHERE relname IN ('empresa','trimestres','trimestre_eventos','facturas','factura_lineas_iva','factura_documentos','factura_reconocimientos','factura_cambios')"
 ```
 

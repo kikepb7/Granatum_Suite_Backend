@@ -24,6 +24,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
 - ⚠️ **Falta una vía para crear el primer `ADMIN` en producción** — ver [El primer administrador](#el-primer-administrador). Bloquea el primer despliegue.
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
+- ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
 
 ## Arranque rápido
 
@@ -237,6 +238,70 @@ Todos los `400` de validación de la API, de cualquier módulo, responden ahora
 Antes salían con el cuerpo por defecto de Spring, que en `dev` incluía la traza y
 el valor enviado (un correo, o una contraseña demasiado larga).
 
+## Facturación
+
+El ciclo completo, con comandos que se pueden copiar, está en
+[`specs/004-invoices/quickstart.md`](specs/004-invoices/quickstart.md); el contrato,
+en [`specs/004-invoices/contracts/README.md`](specs/004-invoices/contracts/README.md).
+**Todas las rutas son solo `ADMIN`**, bajo `/api/facturacion`.
+
+| Ruta | Qué hace |
+|------|----------|
+| `PUT /api/facturacion/empresa` | Razón social y NIF de la empresa: deciden qué es emitido y qué recibido |
+| `POST /api/facturacion/facturas` | Sube una o varias (JPEG, PNG, WebP o PDF, hasta 10 MB cada una); `202` y se reconocen en segundo plano |
+| `GET /api/facturacion/facturas[?desde&hasta&parte&tipo&estado]` | Listado con filtros |
+| `GET / PUT /api/facturacion/facturas/{id}` | Ver una con sus avisos, o corregirla |
+| `POST …/{id}/confirmar`, `…/descartar`, `…/reconocer` | Confirmar (si no tiene avisos bloqueantes), descartar (no borra), reintentar el reconocimiento |
+| `GET …/{id}/original`, `…/{id}/historial` | El fichero tal cual se subió; lo que propuso el reconocimiento y cada cambio |
+| `GET /api/facturacion/reportes?periodo=MENSUAL\|TRIMESTRAL\|ANUAL&anio=…[&formato=csv\|pdf]` | Totales de emitidas y recibidas, IVA por tipo, retenciones |
+| `POST /api/facturacion/trimestres/{anio}/{t}/cerrar`, `…/reabrir` | Cerrar un trimestre declarado; reabrirlo exige un motivo |
+
+### El reconocimiento con Claude
+
+Cada factura se envía **una vez** a la API de Claude (`claude-opus-5-5`), que
+devuelve sus datos en un esquema cerrado. Lo que no lee con seguridad lo deja
+vacío; nunca se confirma nada sin la revisión del `ADMIN`. El texto de una
+factura no puede dar órdenes: la llamada no tiene herramientas y lo peor que
+puede pasar es un borrador con campos equivocados, que no se confirma si no
+cuadra.
+
+- **Coste**: unos 0,05 $ por factura con Opus 5.5 (unos 10 $ al mes con 200
+  facturas). Los tokens reales de cada reconocimiento quedan guardados en
+  `factura_reconocimientos`.
+- **Sin `ANTHROPIC_API_KEY` funciona en modo manual**: las facturas se guardan y
+  se rellenan a mano; no se envía nada a ningún sitio.
+- **Protección de datos**: las facturas de autónomos llevan su DNI. Anthropic
+  actúa como encargado del tratamiento; **antes de poner la clave en producción,
+  la empresa tiene que aceptar sus condiciones de tratamiento de datos**.
+- **Medir la precisión** con facturas reales (que no se versionan):
+
+```bash
+ANTHROPIC_API_KEY=... INVOICES_REFERENCIA_DIR=/ruta/a/facturas ./gradlew :features:invoices:claudeRealTest
+```
+
+> **Supabase**: los originales se guardan en Postgres. El plan gratuito de
+> Supabase (500 MB) se llenaría en unos meses de facturas; en producción hace
+> falta un plan de pago o pasar los originales a Supabase Storage (la interfaz
+> `AlmacenDocumentos` está para eso).
+
+### Variables de entorno
+
+Solo `ANTHROPIC_API_KEY` es un secreto, y nunca va en un fichero versionado.
+**Los tests nunca la usan**, aunque esté en tu `.env`: los contextos de test fijan
+la clave vacía y un test lo comprueba.
+
+| Variable | Defecto | Para qué |
+|----------|---------|----------|
+| `ANTHROPIC_API_KEY` | (vacía) | Clave de la API de Claude. Vacía = modo manual |
+| `INVOICES_CLAUDE_MODEL` | `claude-opus-5-5` | Modelo del reconocimiento |
+| `INVOICES_CLAUDE_EFFORT` | `medium` | Esfuerzo del modelo |
+| `INVOICES_CLAUDE_FALLBACKS` | `true` | Respaldo del servidor si el modelo rechaza; desactivable si la API lo rechazara |
+| `INVOICES_RECONOCIMIENTO_CONCURRENCIA` | 3 | Reconocimientos simultáneos |
+| `INVOICES_RECONOCIMIENTO_TIMEOUT_SEGUNDOS` | 120 | Tiempo máximo de una llamada |
+| `INVOICES_MAX_REQUEST_SIZE` | 50MB | Tamaño máximo de una subida (varios ficheros) |
+| `INVOICES_MAX_BYTES_POR_FICHERO` | 10485760 | Tamaño máximo de cada fichero |
+| `INVOICES_PDF_MAX_PAGINAS` | 20 | Páginas máximas de un PDF |
+
 ## Desarrollo guiado por especificaciones (SDD)
 
 Este repo usa [Spec Kit](https://github.com/github/spec-kit) para desarrollo
@@ -408,7 +473,8 @@ docker compose down -v   # apaga y limpia los volúmenes locales
 ├── features/       # un módulo Gradle por feature, cada uno depende solo de common
 │   ├── inventory/      # dominio de inventario (Material, Categoria, HistorialMaterial)
 │   ├── timetracking/   # registro de jornada (Empleado, Fichaje, Pausa, correcciones, exportación)
-│   └── auth/           # inicio de sesión, sesiones, bloqueo, alta y restablecimiento
+│   ├── auth/           # inicio de sesión, sesiones, bloqueo, alta y restablecimiento
+│   └── invoices/       # facturación: subida, reconocimiento con Claude, revisión, reportes, trimestres
 ├── build-logic/    # convention plugins de Gradle (composite build)
 ├── gradle/         # version catalog + gradle wrapper
 ├── .specify/       # Spec Kit: plantillas, scripts y constitución del proyecto
