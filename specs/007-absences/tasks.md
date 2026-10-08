@@ -32,8 +32,8 @@
 
 ## Phase 4: US2 - Sin solapamientos (P1)
 
-- [ ] T014 [US2] Test `SolapamientoAusenciasIT`: solapa con aprobada o pendiente → `409`; con rechazada o cancelada no; con baja abierta sí; 20 peticiones simultáneas solapadas de la misma persona → una sola admitida; dos personas distintas no se bloquean
-- [ ] T015 [US2] Comprobación de solapamiento en `AusenciaService` bajo el bloqueo (mutación: quitar el bloqueo debe poner el test en rojo)
+- [X] T014 [US2] Test `SolapamientoAusenciasIT`: solapa con aprobada o pendiente → `409`; con rechazada o cancelada no; con baja abierta sí; 20 peticiones simultáneas solapadas de la misma persona → una sola admitida; dos personas distintas no se bloquean
+- [X] T015 [US2] Comprobación de solapamiento en `AusenciaService` bajo el bloqueo (mutación: quitar el bloqueo debe poner el test en rojo)
 
 ## Phase 5: US3 - Bajas y permisos (P2)
 
