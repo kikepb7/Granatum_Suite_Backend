@@ -24,11 +24,11 @@
 
 ## Phase 3: US1 - Vacaciones y resolución (P1) 🎯 MVP
 
-- [ ] T009 [P] [US1] Test unitario `CalculadoraSaldoTest`: días naturales dentro del año, cruce de año, pendientes y aprobadas por separado, canceladas y rechazadas no cuentan, solo `VACACIONES` cuenta, baja abierta no cuenta
-- [ ] T010 [P] [US1] Implementar `CalculadoraSaldo` (pura) en `domain/service/CalculadoraSaldo.kt`
-- [ ] T011 [US1] Test `SolicitudVacacionesIT`: solicitud `PENDIENTE` y saldo; aprobar y rechazar (motivo obligatorio) por `ENCARGADO`; resolución propia `RESOLUCION_PROPIA`; resolver dos veces `AUSENCIA_NO_MODIFICABLE`; saldo insuficiente; vacaciones propias en el pasado `RANGO_INVALIDO`; persona inexistente o inactiva
-- [ ] T012 [US1] `AusenciaService` (solicitar, aprobar, rechazar) con `pg_advisory_xact_lock(7007, hashtext(empleado_id))` y `SaldoVacacionesService`
-- [ ] T013 [US1] `AusenciaController` y DTOs (`toString` sin comentario ni motivo)
+- [X] T009 [P] [US1] Test unitario `CalculadoraSaldoTest`: días naturales dentro del año, cruce de año, pendientes y aprobadas por separado, canceladas y rechazadas no cuentan, solo `VACACIONES` cuenta, baja abierta no cuenta
+- [X] T010 [P] [US1] Implementar `CalculadoraSaldo` (pura) en `domain/service/CalculadoraSaldo.kt`
+- [X] T011 [US1] Test `SolicitudVacacionesIT`: solicitud `PENDIENTE` y saldo; aprobar y rechazar (motivo obligatorio) por `ENCARGADO`; resolución propia `RESOLUCION_PROPIA`; resolver dos veces `AUSENCIA_NO_MODIFICABLE`; saldo insuficiente; vacaciones propias en el pasado `RANGO_INVALIDO`; persona inexistente o inactiva
+- [X] T012 [US1] `AusenciaService` (solicitar, aprobar, rechazar) con `pg_advisory_xact_lock(7007, hashtext(empleado_id))` y `SaldoVacacionesService`
+- [X] T013 [US1] `AusenciaController` y DTOs (`toString` sin comentario ni motivo)
 
 ## Phase 4: US2 - Sin solapamientos (P1)
 
