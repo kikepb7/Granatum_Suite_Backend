@@ -10,24 +10,15 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /src
 
-# Build scripts first: the Gradle cache mount below keeps dependencies between
-# builds, and this order keeps the layer cache useful when only code changes.
+# Build scripts first, then the code. Whole directories rather than a list of
+# modules: a list has to be kept in step with settings.gradle.kts, and the first
+# time a feature was added it was not (.dockerignore keeps build/ out anyway).
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle gradle
 COPY build-logic build-logic
-COPY app/build.gradle.kts app/
-COPY common/build.gradle.kts common/
-COPY features/inventory/build.gradle.kts features/inventory/
-COPY features/timetracking/build.gradle.kts features/timetracking/
-COPY features/auth/build.gradle.kts features/auth/
-COPY features/invoices/build.gradle.kts features/invoices/
-
-COPY app/src app/src
-COPY common/src common/src
-COPY features/inventory/src features/inventory/src
-COPY features/timetracking/src features/timetracking/src
-COPY features/auth/src features/auth/src
-COPY features/invoices/src features/invoices/src
+COPY common common
+COPY features features
+COPY app app
 
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew :app:bootJar -x test --no-daemon --quiet \
