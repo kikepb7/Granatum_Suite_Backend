@@ -249,8 +249,9 @@ Reglas que este primer caso dejó claras:
   **detectan**: `GET /api/auth/cuentas/huerfanas` y un trabajo nocturno.
 
 El segundo, `FichasPersonal` (feature 005), es de **escritura**: `auth` busca la
-ficha de personal que tiene un documento y, si no la hay, la crea al aprobar un
-registro o al crear el primer `ADMIN`.
+ficha de personal que tiene un documento y, si no la hay, la crea al dar de
+alta a una persona (`POST /api/auth/altas`, feature 009) o al registrarse el
+propietario como primer `ADMIN`.
 
 ```kotlin
 interface FichasPersonal {
@@ -267,7 +268,7 @@ interface FichasPersonal {
   juntas o ninguna; la implementación de `timetracking` usa la propagación por
   defecto y el mismo `EmpleadoService.crear` que el alta manual.
 
-**Por qué el registro vive en `auth` y no en un módulo nuevo.** Lo que crea es
+**Por qué el registro y el alta viven en `auth` y no en un módulo nuevo.** Lo que crea es
 una credencial, y registrarse y entrar comparten la tabla de cuentas: separarlos
 obligaría a compartir esa tabla entre módulos, que es justo lo que el principio
 I prohíbe.
@@ -283,7 +284,7 @@ true)`. Tres reglas:
   algo que no ocurrió.
 - **El oyente no puede romper a quien publica**: escribe en un bean aparte con
   `REQUIRES_NEW` y captura cualquier fallo. Sin transacción en quien publica
-  (el registro de la 005 cifra fuera de transacción), el oyente corre dentro de
+  (hoy ninguno; el registro de la 005 lo era), el oyente corre dentro de
   `publishEvent`, y ese `catch` es lo único que lo separa de la petición.
 - **Solo identificadores**: el evento lleva tipo, referencia, titular y autor;
   nunca texto.
@@ -408,7 +409,8 @@ Flyway comparte un único histórico en `classpath:db/migration` para todos los
 módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
 `timetracking` `V6`–`V11`, `auth` `V12`–`V14`, la exportación de
 `timetracking` `V15`–`V16`, `invoices` `V17`–`V19` y el registro de `auth`
-`V20`–`V21`, `absences` `V22` y `notifications` `V23`. Es un acoplamiento real entre módulos — al añadir una
+`V20`–`V21`, `absences` `V22`, `notifications` `V23`, y la retirada del
+registro con solicitud (feature 009): `auth` `V24` y `notifications` `V25`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

@@ -8,6 +8,11 @@
 
 **Input**: User description: "Registro de personal con correo y contraseña para Granatum, empresa privada. Cada trabajador (incluido el jefe, que es ADMIN) se registra él mismo con su correo, una contraseña que elige, su nombre y su DNI/NIE. El registro no da acceso por sí solo: queda pendiente hasta que un ADMIN lo aprueba, eligiendo el rol (ADMIN, ENCARGADO, EMPLEADO, REPRESENTANTE) y vinculándolo con la ficha de personal existente que tenga ese DNI o creando la ficha (puesto, tipo de contrato, fecha de alta). Para que el ADMIN sepa que aprueba a quien dice ser, al registrarse la persona recibe un código de verificación corto que debe decirle al ADMIN en persona, y aprobar exige ese código. El primer ADMIN de una instalación nueva se registra con un código de arranque secreto configurado por variable de entorno, que solo sirve mientras no exista ningún ADMIN, y entra directamente. El registro no revela si un correo ya tiene cuenta o solicitud (misma respuesta y mismo tiempo). Las solicitudes pendientes caducan; las rechazadas, caducadas o aprobadas no conservan datos personales que ya no hacen falta. El ADMIN puede listar las pendientes y rechazarlas. Sigue existiendo el alta por un ADMIN con contraseña temporal. Fuera de alcance: verificación por correo electrónico, recuperación por correo, doble factor, registro con proveedores externos. Revierte la decisión de la feature 002 de no tener registro, a petición del responsable del producto."
 
+> **Sustituida en parte por la feature 009** ([`specs/009-owner-onboarding/`](../009-owner-onboarding/spec.md)):
+> solo el propietario se registra (US1 sigue vigente); el registro de cada
+> persona con aprobación (US2 a US5) se retiró, y el personal lo da de alta un
+> `ADMIN` con credenciales provisionales.
+
 ## Contexto
 
 La feature 002 decidió que nadie se diera de alta por su cuenta: un `ADMIN`

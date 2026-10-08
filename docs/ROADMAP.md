@@ -42,7 +42,7 @@ Al pasar a la GA aparecieron dos cosas que la snapshot tapaba, ya corregidas:
 | R5 | Recalibrar Argon2 en la máquina de destino (`specs/002-auth/research.md`) y ajustar `AUTH_ARGON2_*` y `DB_POOL_MAX_SIZE`. | operación | sí |
 | R6 | Variables de producción: `JWT_SECRET_BASE64`, `DB_*`, `AUTH_CODIGO_ARRANQUE` (y retirarlo tras crear el primer `ADMIN`), `SERVER_FORWARD_HEADERS_STRATEGY=native` si hay proxy, `CORS_ALLOWED_ORIGINS`. | operación | sí |
 | R7 | Copias de seguridad de la base de datos y prueba de restauración (procedimiento en `docs/DESPLIEGUE.md`, apartado 6). El registro de jornada tiene valor legal: perderlo es un incumplimiento. | operación | sí |
-| R8 | Crear el primer `ADMIN` con el código de arranque y aprobar enseguida un segundo `ADMIN`. | operación | — |
+| R8 | El propietario se registra con el código de arranque y da de alta enseguida un segundo `ADMIN` (`POST /api/auth/altas`). | operación | — |
 
 **Antes de usar facturación con facturas reales** (no bloquea el despliegue;
 sin clave la facturación funciona en modo manual):
@@ -56,7 +56,7 @@ sin clave la facturación funciona en modo manual):
 **Decisiones del responsable del producto** (hay valores por defecto; confirmarlos):
 
 - Activar o no la depuración a los 4 años (`timetracking.retencion.habilitada`).
-- Límites de peticiones (10 inicios de sesión/min, 5 registros/h), 30 días
+- Límites de peticiones (10 inicios de sesión/min, 5 intentos de registro/h), 30 días
   naturales de vacaciones, 2 años de eventos de seguridad, 90/180 días de avisos.
 
 ## 1.1.0 — mantenimiento (`develop`)

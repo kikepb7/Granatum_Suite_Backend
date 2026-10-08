@@ -22,5 +22,5 @@
 ## Phase 4: Pulido
 
 - [X] T009 [P] `PasswordEncoderTest`: un hash en el formato de la herramienta `argon2` (vector de referencia) se verifica; procedimiento de recuperación en README y `docs/DESPLIEGUE.md`
-- [ ] T010 [P] README (estado, rutas, primer administrador, alta del personal), `docs/DESPLIEGUE.md`, `CHANGELOG.md` (sin publicar), nota en la spec 005, `.env.example`
+- [X] T010 [P] README (estado, rutas, primer administrador, alta del personal), `docs/DESPLIEGUE.md`, `CHANGELOG.md` (sin publicar), nota en la spec 005, `.env.example`
 - [ ] T011 Regenerar `docs/openapi.json` y build completo en verde con el perfil `prod`

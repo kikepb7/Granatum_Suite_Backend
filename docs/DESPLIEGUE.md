@@ -69,7 +69,9 @@ valores por defecto razonables; la lista completa está en `.env.example`.
    curl -s -o /dev/null -w "%{http_code}\n" -X POST "https://<host>/api/dev/token?role=ADMIN"   # 404
    ```
 
-## 4. El primer `ADMIN`
+## 4. El primer `ADMIN` (el propietario)
+
+Es la única persona que se registra; al resto se la da de alta (apartado 4 bis).
 
 ```bash
 curl -s -X POST https://<host>/api/auth/registro -H 'Content-Type: application/json' \
@@ -81,11 +83,17 @@ Responde `201` y ya se puede iniciar sesión como `ADMIN`. Después:
 1. **Quita `AUTH_CODIGO_ARRANQUE`** del entorno y reinicia. Ya no sirve (deja de
    funcionar en cuanto hay un `ADMIN`), pero un secreto sin uso es un riesgo sin
    beneficio.
-2. **Aprueba un segundo `ADMIN`** cuanto antes: no hay recuperación de
-   contraseña por correo. El procedimiento de emergencia, en
-   `specs/005-staff-registration/research.md` (D-010).
+2. **Da de alta un segundo `ADMIN`** cuanto antes (`POST /api/auth/altas` con
+   `"rol": "ADMIN"`): no hay recuperación de contraseña por correo. El
+   procedimiento de emergencia, en el README (*El primer administrador*).
 3. Corrige la ficha del primer `ADMIN` (puesto, contrato, fecha de alta) con
    `PUT /api/empleados/{id}`.
+
+## 4 bis. Dar de alta al personal
+
+Cada persona la da de alta un `ADMIN` con `POST /api/auth/altas` (ficha y
+acceso en un paso). La respuesta trae la contraseña provisional una sola vez;
+entrégasela en persona. Al entrar, la aplicación le obliga a cambiarla.
 
 ## 5. Ajustar Argon2 a la máquina
 
@@ -144,6 +152,6 @@ no es opcional.
 - [ ] `SERVER_FORWARD_HEADERS_STRATEGY=native` si hay proxy.
 - [ ] `CORS_ALLOWED_ORIGINS` con el dominio de la app web.
 - [ ] Argon2 medido en la máquina de destino.
-- [ ] Primer `ADMIN` creado, `AUTH_CODIGO_ARRANQUE` retirado, segundo `ADMIN` aprobado.
+- [ ] Propietario registrado como primer `ADMIN`, `AUTH_CODIGO_ARRANQUE` retirado, segundo `ADMIN` dado de alta.
 - [ ] Copias diarias activas y una restauración probada.
 - [ ] Decidido si se activa la depuración a los 4 años (`TIMETRACKING_RETENCION_HABILITADA`; ver README).

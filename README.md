@@ -35,7 +35,7 @@ en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway.
 - ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
 - ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
-- ✅ Registro del personal — implementado. Cada persona se registra con su correo, la contraseña que elige, su nombre y su DNI/NIE; un `ADMIN` aprueba la solicitud con el código de verificación que la persona le dice en persona, elige el rol y la vincula a su ficha (o la crea). El primer `ADMIN` entra con un código de arranque fijado al desplegar. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (ver [El primer administrador](#el-primer-administrador) y [Registro](#registro-del-personal)).
+- ✅ Alta del personal — implementado. Solo el propietario se registra, una vez, con un código de arranque fijado al desplegar, y entra como `ADMIN`. A cualquier otra persona la da de alta un `ADMIN` en un solo paso (ficha y acceso) y le entrega una contraseña provisional, que tiene que cambiar al entrar por primera vez. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (US1) y [`specs/009-owner-onboarding/`](specs/009-owner-onboarding/) (ver [El primer administrador](#el-primer-administrador) y [Alta del personal](#alta-del-personal)).
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
 - ✅ Endurecimiento y despliegue — implementado. Límite de peticiones por dirección de origen en inicio de sesión, renovación, cierre de sesión, registro y en toda la API; perfil `prod` por defecto; errores sin trazas; cabeceras de seguridad; CORS explícito; imagen de contenedor sin privilegios y CI en todas las ramas. Especificado en [`specs/006-hardening-deploy/`](specs/006-hardening-deploy/) (ver [Despliegue](#despliegue)).
 - ✅ `absences` (Ausencia, DerechoVacaciones) — implementado. Vacaciones y permisos retribuidos que la persona pide y un `ENCARGADO` o `ADMIN` aprueba o rechaza; bajas médicas que registran ellos, sin ningún dato de salud; sin solapamientos por persona; saldo anual en días naturales (30 por defecto, ajustable por el `ADMIN`); nada se borra. Especificado en [`specs/007-absences/`](specs/007-absences/) (ver [Ausencias](#ausencias-y-vacaciones)).
@@ -123,10 +123,8 @@ En resumen:
 | `POST /api/auth/cuentas` | `ADMIN` | Da acceso a una persona ya registrada; devuelve la contraseña temporal **una sola vez** |
 | `POST /api/auth/cuentas/{empleadoId}/restablecer` | `ADMIN` | Nueva temporal, cierra todas las sesiones, levanta el bloqueo |
 | `GET /api/auth/cuentas/huerfanas` | `ADMIN` | Cuentas cuya persona ya no existe |
-| `POST /api/auth/registro` | pública | Registro con correo, contraseña, nombre y DNI/NIE → solicitud pendiente y código de verificación (feature 005) |
-| `GET /api/auth/registros` | `ADMIN` | Solicitudes pendientes, de la más antigua a la más reciente |
-| `POST /api/auth/registros/{id}/aprobar` | `ADMIN` | Aprueba con el código, el rol y, si no hay ficha con ese DNI, los datos para crearla |
-| `POST /api/auth/registros/{id}/rechazar` | `ADMIN` | Rechaza; la solicitud deja de guardar datos personales |
+| `POST /api/auth/registro` | pública | Solo el propietario: registro con el código de arranque mientras no haya ningún `ADMIN` |
+| `POST /api/auth/altas` | `ADMIN` | Da de alta a una persona (ficha y acceso) y devuelve su contraseña provisional **una sola vez** |
 
 Cinco fallos seguidos bloquean la cuenta 1, 5, 15 y 60 minutos de forma
 creciente. Mientras dura el bloqueo, la respuesta es **idéntica** a la de una
@@ -149,9 +147,7 @@ todas las demás tienen valor por defecto.
 | `AUTH_HASH_ESPERA_MS` | 1000 | Espera en cola antes de responder `503` |
 | `AUTH_PURGA_SESIONES_DIAS` | 30 | Antigüedad para purgar sesiones ya muertas |
 | `AUTH_EVENTOS_RETENCION_DIAS` | 730 | Días que se conservan los eventos de seguridad |
-| `AUTH_CODIGO_ARRANQUE` | *(vacío)* | **Secreto.** Código para crear el primer `ADMIN`; vacío lo desactiva |
-| `AUTH_REGISTRO_MAX_PENDIENTES` | 50 | Solicitudes de registro pendientes a la vez como máximo |
-| `AUTH_REGISTRO_CADUCIDAD_DIAS` | 7 | Días tras los que caduca una solicitud sin resolver |
+| `AUTH_CODIGO_ARRANQUE` | *(vacío)* | **Secreto.** Código con el que el propietario se registra como primer `ADMIN`; vacío desactiva el registro |
 
 > **Recalibra Argon2 en el hardware de destino antes de desplegar.** Los valores
 > por defecto cuestan ~110 ms en un Mac mini de 10 núcleos; en un contenedor
@@ -168,11 +164,12 @@ todas las demás tienen valor por defecto.
 
 ### El primer administrador
 
-Se crea con el **código de arranque** (feature 005, research.md D-002):
+Es el **propietario del negocio**, la única persona que se registra (features
+005 y 009). Lo hace con el **código de arranque**:
 
 1. Al desplegar, fija `AUTH_CODIGO_ARRANQUE` con un valor largo y aleatorio
-   (`openssl rand -base64 24`) y dáselo solo a quien va a ser el primer `ADMIN`.
-2. Esa persona se registra con su correo, su contraseña, su nombre, su DNI y el
+   (`openssl rand -base64 24`) y dáselo solo al propietario.
+2. El propietario se registra con su correo, su contraseña, su nombre, su DNI y el
    código:
 
    ```bash
@@ -191,43 +188,53 @@ Un código incorrecto, uno que no está configurado o uno que llega cuando ya ha
 `ADMIN` responden igual, `403 CODIGO_ARRANQUE_INVALIDO`: nadie puede averiguar
 así si una instalación ya tiene administrador.
 
-**Aprueba pronto un segundo `ADMIN`.** No hay recuperación por correo, así que si
-el único `ADMIN` olvida su contraseña, la única salida pasa por la base de datos
-(research.md D-010): registrarse con un correo cualquiera y la contraseña nueva,
-copiar el `password_hash` de esa solicitud pendiente a la cuenta del `ADMIN` en
-`cuentas_acceso` (con `requiere_cambio_password = false`), y dejar caducar la
-solicitud. Así la aplicación genera el hash y nunca viaja una contraseña en claro.
+Sin código de arranque, el registro responde `400 VALIDACION`: nadie más puede
+registrarse.
 
-### Registro del personal
+**Da de alta pronto un segundo `ADMIN`** (`POST /api/auth/altas` con `"rol":
+"ADMIN"`). No hay recuperación por correo: si el único `ADMIN` olvida su
+contraseña, la salida pasa por la base de datos. Se genera el hash con la
+herramienta estándar `argon2` (su formato es el que lee la aplicación;
+`PasswordEncoderTest` lo comprueba) y se guarda como provisional:
 
-El contrato está en
-[`specs/005-staff-registration/contracts/README.md`](specs/005-staff-registration/contracts/README.md)
-y el recorrido completo en
-[`specs/005-staff-registration/quickstart.md`](specs/005-staff-registration/quickstart.md).
+```bash
+echo -n 'Provisional-2026!' | argon2 "$(openssl rand -base64 12)" -id -t 3 -m 16 -p 1 -l 32 -e
+```
 
-1. La persona se registra (`POST /api/auth/registro`) y recibe un **código de
-   verificación** de 8 caracteres. Todavía no puede entrar.
-2. Se lo dice al `ADMIN` **en persona**. Es lo que demuestra que quien tiene
-   delante hizo esa solicitud y no otra con su nombre: no hay correo saliente.
-3. El `ADMIN` la ve en `GET /api/auth/registros` y la aprueba con el código y el
-   rol. Si ya hay ficha de personal con ese DNI, la cuenta se vincula a ella; si
-   no, el `ADMIN` aporta puesto, tipo de contrato y fecha de alta y se crea.
-4. La persona entra con la contraseña que eligió, sin tener que cambiarla.
+```sql
+UPDATE cuentas_acceso
+   SET password_hash = '{argon2}' || '<salida de argon2>',
+       requiere_cambio_password = true,
+       intentos_fallidos = 0, nivel_bloqueo = 0, bloqueada_hasta = NULL
+ WHERE email = '<correo del ADMIN>';
+```
 
-Garantías:
+Al entrar con la provisional, la aplicación obliga a cambiarla.
 
-- **No delata correos.** Registrarse con un correo que ya tiene cuenta da la
-  misma respuesta, con un código de la misma forma, y en el mismo tiempo (se
-  mide en `IndistinguibilidadRegistroIT`). No se guarda nada aprobable.
-- **Cinco códigos incorrectos anulan la solicitud.**
-- **Nada personal se queda sin motivo.** Al aprobar, rechazar, caducar (7 días)
-  o anular, la solicitud pierde correo, nombre, DNI y huellas; la base de datos
-  rechaza lo contrario.
-- **Volumen acotado.** Como máximo 50 pendientes a la vez; el ritmo por origen
-  lo limita la feature de endurecimiento.
+### Alta del personal
 
-El alta por un `ADMIN` con contraseña temporal (`POST /api/auth/cuentas`) sigue
-existiendo y funciona igual.
+Nadie se registra por su cuenta salvo el propietario: a cada persona la da de
+alta un `ADMIN`, en un solo paso, y le entrega las credenciales (feature 009,
+contrato en [`specs/009-owner-onboarding/contracts/README.md`](specs/009-owner-onboarding/contracts/README.md)).
+
+```bash
+curl -s -X POST https://<host>/api/auth/altas -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"nombre":"Ana Martín","documentoIdentidad":"12345678Z","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01","email":"ana@granatum.es","rol":"EMPLEADO"}'
+```
+
+1. Se crean la ficha de personal y la cuenta en una sola operación. Si ya había
+   una ficha con ese DNI (sin cuenta), la cuenta se vincula a ella.
+2. La respuesta trae `passwordTemporal` **una sola vez**: el `ADMIN` se la
+   entrega a la persona junto con su correo.
+3. La persona entra con ella y la aplicación solo le deja cambiarla; a partir
+   de ahí, usa la suya.
+4. Si la provisional se pierde antes de entregarla, `POST
+   /api/auth/cuentas/{empleadoId}/restablecer` genera otra.
+
+Un correo ya usado, un DNI con la letra mal o una ficha que ya tiene cuenta
+rechazan el alta sin crear nada. El alta por partes —crear la ficha con
+`POST /api/empleados` y darle acceso con `POST /api/auth/cuentas`— sigue
+existiendo.
 
 ### Deuda declarada de esta feature
 

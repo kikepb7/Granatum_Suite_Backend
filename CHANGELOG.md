@@ -4,6 +4,24 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/);
 versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 [docs/RAMAS.md](docs/RAMAS.md).
 
+## [Sin publicar] — `develop`
+
+### Cambiado
+
+- **Solo el propietario se registra** (spec 009). `POST /api/auth/registro`
+  exige el código de arranque; sin él responde `400`.
+- **Alta del personal en un paso** por un `ADMIN`: `POST /api/auth/altas` crea la
+  ficha y la cuenta y devuelve una contraseña provisional, que la persona cambia
+  al entrar por primera vez.
+
+### Eliminado
+
+- El registro con solicitud de la 1.0.0 (spec 005, US2 a US5): solicitudes,
+  códigos de verificación, aprobación y rechazo (`/api/auth/registros`),
+  caducidad y el aviso `REGISTRO_PENDIENTE`. Las migraciones V24 y V25 borran
+  sus datos. Variables retiradas: `AUTH_REGISTRO_MAX_PENDIENTES`,
+  `AUTH_REGISTRO_CADUCIDAD_DIAS`.
+
 ## [1.0.0] — en preparación (`release/1.0.0`)
 
 Primera versión para producción. Pendiente antes de fusionar en `main`: elegir
