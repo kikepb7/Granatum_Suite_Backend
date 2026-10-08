@@ -89,8 +89,8 @@
 
 **Independent Test**: dejar caducar una solicitud.
 
-- [ ] T027 [US5] Test `auth/test/kotlin/com/granatum/core/CaducidadSolicitudesIT.kt`: con un reloj fijo, una pendiente de más de 7 días pasa a `CADUCADA` sin datos personales y una de 6 sigue; evento `REGISTRO_CADUCADO`; y la base rechaza una fila resuelta con datos personales (los `CHECK` de V20)
-- [ ] T028 [US5] Implementar `CaducidadSolicitudesJob` en `auth/main/kotlin/com/granatum/core/scheduling/CaducidadSolicitudesJob.kt` con `@Scheduled(cron = "${auth.registro.caducidad-cron}", zone = "Europe/Madrid")`
+- [X] T027 [US5] Test `auth/test/kotlin/com/granatum/core/CaducidadSolicitudesIT.kt`: con un reloj fijo, una pendiente de más de 7 días pasa a `CADUCADA` sin datos personales y una de 6 sigue; evento `REGISTRO_CADUCADO`; y la base rechaza una fila resuelta con datos personales (los `CHECK` de V20)
+- [X] T028 [US5] Implementar `CaducidadSolicitudesJob` en `auth/main/kotlin/com/granatum/core/scheduling/CaducidadSolicitudesJob.kt` con `@Scheduled(cron = "${auth.registro.caducidad-cron}", zone = "Europe/Madrid")`
 
 ---
 
