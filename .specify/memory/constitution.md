@@ -345,8 +345,19 @@ infraestructura quedan fuera del ciclo y van por PR directo.
 - Sin secretos ni datos personales añadidos al repositorio o a los logs.
 - `README.md` y, si procede, `docs/ARCHITECTURE.md` actualizados.
 
-**Trabajo en ramas.** Una rama por feature, con el nombre que genere
-`/speckit-specify`. No se commitea directamente en `main`.
+**Trabajo en ramas.** Git Flow, descrito en `docs/RAMAS.md`:
+
+- `main` **ES** producción: solo recibe merges de `release/X.Y.Z` y
+  `hotfix/X.Y.Z`, y cada uno se etiqueta `vX.Y.Z`. **NO DEBE** recibir commits
+  directos ni merges de ninguna otra rama; la CI (`politica-ramas`) rechaza el
+  PR que lo intente.
+- `develop` es la integración: cada feature sale de ella en
+  `feature/<nnn-nombre>` y vuelve a ella por PR con la CI en verde.
+- Una `release/*` solo estabiliza (versión, correcciones, despliegue): **NO
+  DEBE** traer features nuevas. Tras fusionarse en `main`, vuelve a `develop`.
+- Una versión que llega a `main` **NO DEBE** depender de artefactos
+  `-SNAPSHOT` ni de repositorios de snapshots: el mismo commit tiene que
+  compilar igual mañana.
 
 ## Governance
 
@@ -401,7 +412,9 @@ Deuda cerrada, conservada aquí como historial:
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.3.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 2.4.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+
+*v2.4.0 (MINOR): el flujo de desarrollo adopta Git Flow (`main` = producción, `develop`, `release/*`, `hotfix/*`, `feature/*`) y prohíbe dependencias `-SNAPSHOT` en lo que llega a `main`. Plan de migración: el proyecto depende hoy de Spring Boot `4.0.0-SNAPSHOT`; pasar a una GA es la primera tarea de `release/1.0.0` (`docs/ROADMAP.md`, R1), y ninguna versión se etiqueta antes.*
 
 *v2.3.0 (MINOR): el principio VII deja de tener excepciones: `flyway_schema_history` activa RLS al arrancar (`RlsHistorialFlyway`) en vez de con un paso manual por entorno. La deuda declarada nº 1 pasa a cerrada.*
 

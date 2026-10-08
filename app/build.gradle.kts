@@ -3,7 +3,9 @@ plugins {
 }
 
 group = "com.granatum"
-version = "0.0.1-SNAPSHOT"
+// SemVer (docs/RAMAS.md): the next version with -SNAPSHOT on develop, the exact
+// one on release/* and hotfix/* branches, and on main.
+version = "1.0.0-SNAPSHOT"
 description = "Granatum Suite backend"
 
 dependencies {

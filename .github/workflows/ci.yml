@@ -98,3 +98,23 @@ jobs:
           echo "uid=$uid"
           test "$uid" != "0"
           docker run --rm --entrypoint sh granatum-suite-backend:ci -c 'test ! -e /app/.env && test ! -d /app/src'
+
+  # Branch model (docs/RAMAS.md): main is production and only takes release/*
+  # and hotfix/* branches. A pull request from anything else into main fails
+  # here, so a feature cannot skip develop and a release.
+  politica-ramas:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only release/* and hotfix/* merge into main
+        # Through env, not interpolated into the script: a branch name is
+        # chosen by whoever opens the PR.
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          if [ "$BASE" = "main" ] && ! [[ "$HEAD" =~ ^(release|hotfix)/ ]]; then
+            echo "::error::Into main only from release/* or hotfix/* (got '$HEAD'). See docs/RAMAS.md."
+            exit 1
+          fi
+          echo "OK: $HEAD -> $BASE"

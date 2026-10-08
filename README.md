@@ -22,6 +22,14 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - SDK de Anthropic para Java (lectura de facturas) y PDFBox (PDF)
 - JUnit 5 + MockK; Testcontainers para tests de integración con Postgres real
 
+## Ramas y versiones
+
+Git Flow: `main` es producción (cada versión etiquetada `vX.Y.Z`), `develop` es
+la integración, y las versiones salen por `release/X.Y.Z`; los arreglos urgentes,
+por `hotfix/X.Y.Z`. Las features, en `feature/<nnn-nombre>` desde `develop`.
+Detalle y comandos en [`docs/RAMAS.md`](docs/RAMAS.md); lo que queda por hacer,
+en [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
 ## Estado del proyecto
 
 - ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway.
