@@ -95,8 +95,8 @@ class RowLevelSecurityIT : BaseAuthIT() {
                        -- inside a migration: Flyway holds a lock on it for the
                        -- whole run, so the ALTER would wait on a lock only
                        -- released when the run ends, and the migration
-                       -- deadlocks against itself. Handled as a per-environment
-                       -- ops step instead; see README.md.
+                       -- deadlocks against itself. app's RlsHistorialFlyway
+                       -- enables it at startup, after Flyway has finished.
                        AND c.relname <> 'flyway_schema_history'
                      ORDER BY c.relname
                     """.trimIndent()

@@ -230,10 +230,12 @@ la protección tenga que ser un test y no una convención.
   propietario y dejaría a la aplicación sin acceso a sus propios datos. El
   bypass del propietario es justo el mecanismo que permite que la API siga
   autorizando en `SecurityConfig` mientras PostgREST queda ciego.
-- Excepción conocida: `flyway_schema_history` no puede activar RLS desde una
-  migración, porque Flyway mantiene un lock sobre esa tabla durante toda su
-  ejecución y el `ALTER TABLE` se bloquearía contra sí mismo. Se activa como
-  paso de operaciones por entorno, documentado en `README.md`.
+- `flyway_schema_history` no puede activar RLS desde una migración, porque
+  Flyway mantiene un lock sobre esa tabla durante toda su ejecución y el
+  `ALTER TABLE` se bloquearía contra sí mismo. **DEBE** activarse al arrancar,
+  cuando Flyway ya ha terminado (`RlsHistorialFlyway`, verificado por
+  `RlsHistorialFlywayIT`), y no como un paso manual que alguien tenga que
+  recordar.
 
 Razón: Supabase publica automáticamente una API REST sobre el esquema
 `public`. Una tabla sin RLS ahí queda legible desde Internet con la clave
@@ -376,10 +378,7 @@ Postgres— se cerraron antes de la ratificación.
 
 Excepciones y deuda vivas, todas acotadas y con su motivo:
 
-1. **`flyway_schema_history` sin RLS** (principio VII), por la limitación
-   técnica descrita allí. Se mitiga con un paso manual por entorno recogido en
-   `README.md`.
-2. **La depuración a los 4 años existe y está desbloqueada, pero desactivada.**
+1. **La depuración a los 4 años existe y está desbloqueada, pero desactivada.**
    El principio III la exige desde v2.0.0; la feature 001 la construyó, y la
    feature 003 cumplió la condición que la bloqueaba (la descarga mensual). Sigue
    apagada por defecto (`timetracking.retencion.habilitada`) porque activarla es
@@ -390,6 +389,9 @@ Excepciones y deuda vivas, todas acotadas y con su motivo:
 
 Deuda cerrada, conservada aquí como historial:
 
+- **`flyway_schema_history` sin RLS** (principio VII). Era un paso manual por
+  entorno; desde la v2.3.0 lo activa la aplicación al arrancar.
+
 - **`HistorialMaterialRepository` extendía `JpaRepository`** (principio III).
   Estrechado a `Repository<T, ID>` sin `delete` en la feature 001.
 - **`Role` no incluía `REPRESENTANTE`** (principio IV). Añadido en la feature
@@ -399,7 +401,9 @@ Deuda cerrada, conservada aquí como historial:
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.2.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 2.3.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+
+*v2.3.0 (MINOR): el principio VII deja de tener excepciones: `flyway_schema_history` activa RLS al arrancar (`RlsHistorialFlyway`) en vez de con un paso manual por entorno. La deuda declarada nº 1 pasa a cerrada.*
 
 *v2.2.0 (MINOR): el principio IV amplía el alcance de `ENCARGADO` y `EMPLEADO` a las ausencias (feature 007): la persona pide y ve las suyas; `ENCARGADO` y `ADMIN` resuelven las de otros, nunca las propias. `REPRESENTANTE` sigue sin acceso fuera del registro de jornada. Plan de migración: ninguno; la feature 007 añade las reglas en `SecurityConfig` y `AutorizacionAusenciasIT`.*
 

@@ -153,6 +153,13 @@ auth:
   purga-sesiones:
     dias: ${AUTH_PURGA_SESIONES_DIAS:30}
 
+  # Retention of eventos_seguridad (debt of feature 002, closed): two years by
+  # default, enough to investigate an incident after the fact. Not the
+  # working-time register, so principle III's four years do not apply - and
+  # keeping an audit log for ever breaches GDPR art. 5.1.e from the other side.
+  eventos:
+    retencion-dias: ${AUTH_EVENTOS_RETENCION_DIAS:730}
+
   # Sign-up (feature 005).
   registro:
     # The ONLY secret of this block, and with no value here, ever (principle

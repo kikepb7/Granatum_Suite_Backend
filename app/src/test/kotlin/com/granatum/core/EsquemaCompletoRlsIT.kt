@@ -85,8 +85,8 @@ class EsquemaCompletoRlsIT {
                        -- Flyway's own table cannot be altered from inside a
                        -- migration: it holds a lock on it for the whole run, so
                        -- the ALTER would wait on a lock only released when the
-                       -- run ends. Handled as a per-environment ops step; see
-                       -- README.md.
+                       -- run ends. RlsHistorialFlyway enables it at
+                       -- startup instead (RlsHistorialFlywayIT checks it).
                        AND c.relname <> 'flyway_schema_history'
                      ORDER BY c.relname
                     """.trimIndent()

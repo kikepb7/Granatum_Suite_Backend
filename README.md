@@ -139,6 +139,7 @@ todas las demás tienen valor por defecto.
 | `AUTH_HASH_CONCURRENCIA` | 4 | Verificaciones simultáneas como máximo |
 | `AUTH_HASH_ESPERA_MS` | 1000 | Espera en cola antes de responder `503` |
 | `AUTH_PURGA_SESIONES_DIAS` | 30 | Antigüedad para purgar sesiones ya muertas |
+| `AUTH_EVENTOS_RETENCION_DIAS` | 730 | Días que se conservan los eventos de seguridad |
 | `AUTH_CODIGO_ARRANQUE` | *(vacío)* | **Secreto.** Código para crear el primer `ADMIN`; vacío lo desactiva |
 | `AUTH_REGISTRO_MAX_PENDIENTES` | 50 | Solicitudes de registro pendientes a la vez como máximo |
 | `AUTH_REGISTRO_CADUCIDAD_DIAS` | 7 | Días tras los que caduca una solicitud sin resolver |
@@ -221,10 +222,12 @@ existiendo y funciona igual.
 
 ### Deuda declarada de esta feature
 
-- **`eventos_seguridad` no tiene plazo de conservación.** No es el registro de
-  jornada, así que el principio III no le aplica, pero el art. 5.1.e del RGPD sí:
-  una tabla de auditoría que crece para siempre es el mismo incumplimiento por el
-  otro lado. Fijar el plazo es decisión del responsable del producto.
+- ~~**`eventos_seguridad` no tiene plazo de conservación.**~~ Cerrada: un
+  trabajo diario borra los eventos de más de dos años
+  (`AUTH_EVENTOS_RETENCION_DIAS`, 730). No es el registro de jornada, así que el
+  principio III no le aplica, pero el art. 5.1.e del RGPD sí. Dos años es el
+  valor por defecto documentado; cambiarlo es decisión del responsable del
+  producto.
 - **Desviación declarada del principio VIII.** El error `PASSWORD_DEBIL` lleva un
   tercer campo, `requisitos`, además de `code` y `message`. Lo exige FR-023 —hay
   que decir qué requisito falla, y un cliente que marque campos necesita
@@ -624,13 +627,14 @@ una migración futura que cree una tabla y lo olvide no llega a `main`.
 Donde más importa es en `cuentas_acceso`, que guarda correos y hashes de
 contraseña: sin RLS, PostgREST la serviría a cualquiera con la clave anónima.
 
-**Un paso manual pendiente por entorno.** La tabla de control de Flyway,
-`flyway_schema_history`, también vive en `public` y PostgREST la serviría
-(versiones y descripciones de las migraciones; no hay datos personales ni
-credenciales, pero sí información de reconocimiento). No se puede arreglar
-desde una migración, porque Flyway mantiene un lock sobre esa tabla durante
-toda su ejecución y el `ALTER TABLE` se bloquearía contra sí mismo
-indefinidamente. Ejecútalo una vez, a mano, en cada entorno con Supabase:
+**`flyway_schema_history` también, al arrancar.** La tabla de control de Flyway
+vive en `public` y PostgREST la serviría (versiones y descripciones de las
+migraciones). No se puede proteger desde una migración —Flyway mantiene un lock
+sobre ella durante toda su ejecución y el `ALTER TABLE` se bloquearía contra sí
+mismo—, así que lo hace `RlsHistorialFlyway` al terminar el arranque, cuando
+Flyway ya ha soltado el lock. Ya no hay paso manual. Solo si la aplicación
+conecta con un rol que no es el propietario de esa tabla (`FLYWAY_DB_USERNAME`
+distinto), el arranque avisa en el log y hay que ejecutarlo a mano:
 
 ```sql
 ALTER TABLE flyway_schema_history ENABLE ROW LEVEL SECURITY;

@@ -69,8 +69,8 @@ class RowLevelSecurityIT {
                        -- cannot be altered from inside a migration: Flyway
                        -- locks it for the whole run, so the ALTER would wait
                        -- on a lock Flyway only releases when the run ends.
-                       -- Handled as a per-environment ops step instead;
-                       -- see V5__enable_row_level_security.sql.
+                       -- app's RlsHistorialFlyway enables it at startup,
+                       -- after Flyway has finished.
                        AND c.relname <> 'flyway_schema_history'
                      ORDER BY c.relname
                     """.trimIndent()
