@@ -43,7 +43,9 @@ ya están integradas en `main` y se pueden borrar.
 - **PATCH** (`1.0.1`): solo correcciones. Sale de un hotfix (o de una release que solo corrige).
 - **MAJOR** (`2.0.0`): un cambio incompatible en la API (`docs/openapi.json`) que obligue a las apps a cambiar.
 
-La versión vive en `app/build.gradle.kts`:
+La versión vive en un solo sitio, el `build.gradle.kts` de la raíz (todos los
+módulos la heredan, `/actuator/info` la muestra y la publicación de la imagen
+comprueba que la etiqueta coincide):
 
 - en `develop`: la siguiente con `-SNAPSHOT` (`1.1.0-SNAPSHOT`);
 - en `release/X.Y.Z` y `hotfix/X.Y.Z`: `X.Y.Z`, sin `-SNAPSHOT`.
@@ -64,11 +66,12 @@ git push -u origin feature/009-cuadrantes     # y PR contra develop
 ```bash
 git checkout develop && git pull
 git checkout -b release/1.1.0
-# versión 1.1.0 en app/build.gradle.kts, CHANGELOG.md, solo correcciones
+# versión 1.1.0 en build.gradle.kts, CHANGELOG.md, solo correcciones
 git push -u origin release/1.1.0              # PR contra main
 # tras el merge en main:
 git checkout main && git pull
 git tag -a v1.1.0 -m "Granatum Suite 1.1.0" && git push origin v1.1.0
+# la etiqueta publica la imagen ghcr.io/<owner>/<repo>:1.1.0 (publicar-imagen.yml)
 git checkout develop && git merge --no-ff main # trae las correcciones de la release
 # y en develop la versión pasa a 1.2.0-SNAPSHOT
 ```

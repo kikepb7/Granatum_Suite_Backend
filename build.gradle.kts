@@ -7,7 +7,11 @@ plugins {
 }
 
 group = "com.granatum"
-version = "0.0.1-SNAPSHOT"
+// The one place the version lives (docs/RAMAS.md): every module inherits it,
+// the image publishing workflow checks the tag against it, and /actuator/info
+// reports it. SemVer: X.Y.Z on main, release/* and hotfix/*; the next one with
+// -SNAPSHOT on develop.
+version = "1.0.0"
 
 subprojects {
     group = rootProject.group
