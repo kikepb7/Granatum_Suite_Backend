@@ -34,12 +34,12 @@
 
 ## Phase 5: US4 - Bandeja (P2)
 
-- [ ] T013 [US4] Test `BandejaNotificacionesIT`: orden, solo no leídas, máximo 100, total no leídos, marcar una y todas, ajena `404`, el JSON con mensaje fijo y sin texto libre
-- [ ] T014 [US4] `NotificacionService` y `NotificacionController`
+- [X] T013 [US4] Test `BandejaNotificacionesIT`: orden, solo no leídas, máximo 100, total no leídos, marcar una y todas, ajena `404`, el JSON con mensaje fijo y sin texto libre
+- [X] T014 [US4] `NotificacionService` y `NotificacionController`
 
 ## Phase 6: US5 - Limpieza (P3)
 
-- [ ] T015 [US5] Test y `LimpiezaNotificacionesJob` (leídas > 90 días, todas > 180, configurable)
+- [X] T015 [US5] Test y `LimpiezaNotificacionesJob` (leídas > 90 días, todas > 180, configurable)
 
 ## Phase 7: Pulido
 
