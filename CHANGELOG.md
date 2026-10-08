@@ -6,9 +6,9 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 
 ## [1.0.0] — en preparación (`release/1.0.0`)
 
-Primera versión para producción. Pendiente de cerrar en esta rama: Spring Boot
-GA en lugar de la snapshot, despliegue y publicación de la imagen
-([docs/ROADMAP.md](docs/ROADMAP.md), apartado 1.0.0).
+Primera versión para producción. Pendiente antes de fusionar en `main`: elegir
+plataforma y las tareas de operación de [docs/ROADMAP.md](docs/ROADMAP.md)
+(apartado 1.0.0); el despliegue se describe en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
 ### Añadido
 
@@ -36,10 +36,22 @@ GA en lugar de la snapshot, despliegue y publicación de la imagen
 - **Despliegue** (spec 006): imagen de contenedor sin privilegios con
   comprobación de salud; CI en todas las ramas.
 
+### Plataforma
+
+- Spring Boot **4.0.8** (GA) en lugar de `4.0.0-SNAPSHOT`, sin repositorios de
+  snapshots. Hibernate 7.2, Jackson 2.21, Testcontainers 1.21.4.
+- La versión vive en un solo sitio (`build.gradle.kts`) y `/actuator/info` la
+  muestra.
+- Imagen publicada en GitHub Container Registry al etiquetar `vX.Y.Z`
+  (`.github/workflows/publicar-imagen.yml`), tras comprobar que la etiqueta
+  coincide con la versión.
+- Modelo de ramas Git Flow ([docs/RAMAS.md](docs/RAMAS.md)); la CI rechaza PR
+  contra `main` que no vengan de `release/*` o `hotfix/*`.
+
 ### Seguridad
 
 - Límites de peticiones por dirección de origen, cabeceras de seguridad, CORS
   explícito, errores sin trazas, perfil `prod` por defecto (spec 006).
 - Row Level Security en todas las tablas, incluida la de Flyway.
 - Sin datos personales en los logs, comprobado en cada módulo con el log en
-  `DEBUG`.
+  `DEBUG`; con Hibernate 7.2 se fija también `org.hibernate.orm.core`.
