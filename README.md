@@ -13,6 +13,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 ## Stack
 
 - Kotlin 2.2 / JVM 21
+- springdoc-openapi 3 (documento OpenAPI y Swagger UI)
 - Spring Boot 4 (Web, Security, Data JPA, Validation, Actuator)
 - Gradle multi-módulo con convention plugins propios (`build-logic/`)
 - PostgreSQL + Flyway
@@ -436,6 +437,31 @@ Son opcionales — el flujo SDD funciona sin ellas. Las útiles aquí son
 fetch plans) y `supabase-postgres-best-practices` (esquema, migraciones, RLS,
 índices), relevante porque el `datasource` ya admite Supabase y hoy la
 autorización vive solo en `SecurityConfig`, sin nada a nivel de base de datos.
+
+## Contrato de la API (OpenAPI)
+
+El documento OpenAPI 3.1 de toda la API se genera desde los controladores con
+springdoc, y hay una copia versionada en [`docs/openapi.json`](docs/openapi.json):
+es la que deben usar las apps móvil y web para generar su cliente, sin necesidad
+de arrancar el servidor.
+
+- **En marcha**: `GET /v3/api-docs` (JSON) y la interfaz en `/swagger-ui.html`.
+  Activos con el perfil `dev` (`./gradlew :app:bootRun`); en `prod` están
+  apagados salvo con `OPENAPI_ENABLED=true`.
+- **Autenticación**: `bearerAuth` (JWT de `POST /api/auth/login`) en todas las
+  operaciones salvo las públicas: inicio de sesión, renovación, cierre de sesión y
+  registro. En Swagger UI, botón *Authorize* con el `accessToken`.
+- **Errores**: el esquema `Error` (`{code, message}`), con los `400`, `401`,
+  `403` y `429` comunes a cada operación. Los códigos propios de cada ruta están
+  en `specs/<feature>/contracts/README.md`.
+- **Fuera del contrato**: `POST /api/dev/token`, que solo existe en `dev`.
+
+`ContratoOpenApiIT` falla si un controlador cambia y `docs/openapi.json` no. Tras
+un cambio intencionado de la API, regenera la copia y súbela con ese cambio:
+
+```bash
+OPENAPI_ACTUALIZAR=true ./gradlew :app:test --tests '*ContratoOpenApiIT'
+```
 
 ## Ausencias y vacaciones
 

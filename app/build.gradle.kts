@@ -21,6 +21,10 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.jackson.datatype)
+    // The OpenAPI document of the whole API, generated from the controllers. In
+    // app only: it is where every feature's controllers meet, and the feature
+    // modules stay free of documentation annotations.
+    implementation(libs.springdoc.openapi.webmvc.ui)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
     implementation(libs.spring.boot.flyway)

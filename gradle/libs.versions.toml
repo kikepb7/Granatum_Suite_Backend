@@ -18,6 +18,9 @@ pdfbox = "3.0.8"
 # Must match the OkHttp the Anthropic SDK brings (4.x), or the mock server and
 # the client disagree on the wire classes.
 okhttp = "4.12.0"
+# The 3.0.x line is built against Spring Boot 4.0 (parent 4.0.5); 3.1.x moved to
+# Boot 4.1, which this project is not on.
+springdoc = "3.0.3"
 
 [libraries]
 # Spring Boot Starters
@@ -80,6 +83,7 @@ testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
 # Invoicing (feature 004)
 anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
 pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 
 [plugins]

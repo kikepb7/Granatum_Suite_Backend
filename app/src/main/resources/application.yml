@@ -250,6 +250,26 @@ seguridad:
     # not need one.
     origenes: ${CORS_ALLOWED_ORIGINS:}
 
+# OpenAPI document (springdoc): /v3/api-docs and the Swagger UI at
+# /swagger-ui.html. Off unless OPENAPI_ENABLED=true - on in the dev profile.
+# The contract the apps generate code from is also committed, in
+# docs/openapi.json, kept in step by ContratoOpenApiIT.
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:false}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:false}
+  paths-to-match: /api/**
+  # The development token emitter only exists under the dev profile: leaving it
+  # in would make the document depend on the profile it was generated with.
+  paths-to-exclude: /api/dev/**
+  # Deterministic output, so the committed copy only changes when the API does.
+  writer-with-order-by-keys: true
+  # Without this, every exception handler's status is listed on every
+  # operation of every module; ConfiguracionOpenApi documents the common ones.
+  override-with-generic-response: false
+  default-produces-media-type: application/json
+
 # Absences (feature 007). Not a secret.
 absences:
   vacaciones:

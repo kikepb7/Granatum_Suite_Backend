@@ -195,6 +195,23 @@ necesitaría la extensión `btree_gist`, que una migración no puede dar por
 hecha en Supabase; y el saldo necesitaba el mismo bloqueo de todas formas: dos
 peticiones de vacaciones a la vez leerían el mismo saldo.
 
+## Contrato OpenAPI
+
+springdoc genera el documento desde los controladores; vive en `app`, donde se
+juntan los de todas las features, y ninguna feature lleva anotaciones de
+documentación. Lo que no se deduce del código —el JWT y qué rutas son públicas,
+el formato de error común, un servidor relativo para que el documento no dependa
+de la máquina— se añade en un solo sitio, `ConfiguracionOpenApi`. La lista de
+rutas públicas de ese fichero tiene que seguir a `SecurityConfig`.
+
+La copia versionada (`docs/openapi.json`) es el contrato para las apps, y
+`ContratoOpenApiIT` la compara con el documento vivo: un controlador que cambia
+sin regenerarla rompe el build. La salida es determinista (claves ordenadas,
+sin el emisor de desarrollo) para que solo cambie cuando cambia la API.
+
+Swagger UI va en una cadena de seguridad propia: es una página web, y la CSP de
+la API (`default-src 'none'`) le impediría cargar sus propios scripts.
+
 ## Colaboración entre features: contratos en `common`
 
 **Patrón nuevo, introducido por `auth`.** Cuando una feature necesita un dato que

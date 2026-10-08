@@ -4,6 +4,7 @@ import com.granatum.core.api.config.JwtAuthFilter
 import jakarta.servlet.DispatcherType
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -25,6 +26,33 @@ import org.springframework.web.cors.CorsConfigurationSource
 @Configuration
 @EnableMethodSecurity
 class SecurityConfig {
+
+    /**
+     * The OpenAPI document and Swagger UI, in a chain of their own. They only
+     * exist when `springdoc` is enabled (OPENAPI_ENABLED, on in dev), and
+     * describe the API rather than expose data, so they are public. Their own
+     * chain because Swagger UI is a web page: the API's CSP (`default-src
+     * 'none'`) would stop it loading its own scripts and styles. Still no
+     * framing, no inline scripts and nothing from other origins.
+     */
+    @Bean
+    @Order(1)
+    fun documentacionChain(httpSecurity: HttpSecurity): SecurityFilterChain =
+        httpSecurity
+            .securityMatcher("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**")
+            .csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests { it.anyRequest().permitAll() }
+            .headers { h ->
+                h.contentSecurityPolicy {
+                    it.policyDirectives(
+                        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
+                            "script-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+                    )
+                }
+                h.referrerPolicy { it.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER) }
+            }
+            .build()
 
     @Bean
     fun filterChain(

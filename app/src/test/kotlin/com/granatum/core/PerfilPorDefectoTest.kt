@@ -22,13 +22,23 @@ import kotlin.test.assertEquals
  */
 class PerfilPorDefectoTest {
 
-    private fun perfilSinConfigurar(): String {
+    private fun entornoSinConfigurar(): StandardEnvironment {
         val entorno = StandardEnvironment()
         entorno.propertySources.remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME)
         entorno.propertySources.remove(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME)
         YamlPropertySourceLoader().load("application", ClassPathResource("application.yml"))
             .forEach { entorno.propertySources.addLast(it) }
-        return entorno.getRequiredProperty("spring.profiles.active")
+        return entorno
+    }
+
+    private fun perfilSinConfigurar(): String = entornoSinConfigurar().getRequiredProperty("spring.profiles.active")
+
+    /** The OpenAPI document and Swagger UI are off unless OPENAPI_ENABLED says otherwise. */
+    @Test
+    fun `with nothing configured the OpenAPI document and its UI are off`() {
+        val entorno = entornoSinConfigurar()
+        assertEquals("false", entorno.getRequiredProperty("springdoc.api-docs.enabled"))
+        assertEquals("false", entorno.getRequiredProperty("springdoc.swagger-ui.enabled"))
     }
 
     @Test
