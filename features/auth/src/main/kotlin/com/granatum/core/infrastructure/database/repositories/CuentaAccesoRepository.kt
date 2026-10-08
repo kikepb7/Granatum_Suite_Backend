@@ -39,6 +39,12 @@ interface CuentaAccesoRepository : Repository<CuentaAccesoEntity, UUID> {
     fun findAll(): List<CuentaAccesoEntity>
 
     /**
+     * Whether any account holds this role. Feature 005 asks it of `ADMIN`: the
+     * bootstrap code only works while the answer is no (FR-012).
+     */
+    fun existsByRol(rol: com.granatum.core.domain.type.Role): Boolean
+
+    /**
      * The orphan sweep, a page at a time.
      *
      * A `Slice` rather than a `Page`: the sweep only needs to know whether there

@@ -46,7 +46,9 @@ class RowLevelSecurityIT : BaseAuthIT() {
     private val tablasEsperadas = setOf(
         "cuentas_acceso",
         "sesiones_renovacion",
-        "eventos_seguridad"
+        "eventos_seguridad",
+        // Feature 005: names, DNIs, emails and password hashes of pending sign-ups.
+        "solicitudes_registro"
     )
 
     @Test

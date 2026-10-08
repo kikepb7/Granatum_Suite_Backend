@@ -40,6 +40,16 @@ auth:
   purga-sesiones:
     dias: 30
 
+  # Feature 005. No bootstrap code by default: tests that need one set it with
+  # @DynamicPropertySource or @TestPropertySource, so a test that forgets it
+  # sees the production behaviour (bootstrap disabled).
+  registro:
+    codigo-arranque: ""
+    max-pendientes: 50
+    caducidad-dias: 7
+    # Never fires during a test run; CaducidadSolicitudesIT calls the job.
+    caducidad-cron: "0 0 4 1 1 *"
+
 spring:
   datasource:
     hikari:

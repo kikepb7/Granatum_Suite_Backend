@@ -16,7 +16,7 @@ de `eventos_seguridad`.
 | `nombre` | `VARCHAR(150)` | sí | Solo mientras `PENDIENTE`. Mismo tamaño que `empleados.nombre`. |
 | `documento_identidad` | `VARCHAR(20)` | sí | Normalizado y válido (DNI o NIE). Solo mientras `PENDIENTE`. |
 | `password_hash` | `VARCHAR(255)` | sí | Salida del `PasswordEncoder` de la 002. Solo mientras `PENDIENTE`. |
-| `codigo_hash` | `CHAR(64)` | sí | `SHA-256(id ‖ código)` en hexadecimal (D-001). Solo mientras `PENDIENTE`. |
+| `codigo_hash` | `VARCHAR(64)` | sí | `SHA-256(id ‖ código)` en hexadecimal (D-001). Solo mientras `PENDIENTE`. |
 | `intentos_codigo` | `SMALLINT` | no | `DEFAULT 0`, `CHECK (intentos_codigo BETWEEN 0 AND 5)`. |
 | `creada_en` | `TIMESTAMPTZ` | no | |
 | `resuelta_en` | `TIMESTAMPTZ` | sí | Obligatoria fuera de `PENDIENTE`. |

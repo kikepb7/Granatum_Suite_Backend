@@ -35,5 +35,16 @@ enum class TipoEventoSeguridad {
     CIERRE_SESION,
     PASSWORD_CAMBIADA,
     PASSWORD_RESTABLECIDA,
-    CUENTA_CREADA
+    CUENTA_CREADA,
+
+    // Feature 005 (V21). The duplicate sign-up has its own type so the event
+    // log can tell what the HTTP response deliberately hides (D-003).
+    REGISTRO_SOLICITADO,
+    REGISTRO_DUPLICADO,
+    ADMIN_INICIAL_CREADO,
+    ARRANQUE_RECHAZADO,
+    REGISTRO_APROBADO,
+    REGISTRO_RECHAZADO,
+    REGISTRO_ANULADO,
+    REGISTRO_CADUCADO
 }

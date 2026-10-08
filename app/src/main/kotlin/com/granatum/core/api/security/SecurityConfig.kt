@@ -66,6 +66,19 @@ class SecurityConfig {
                         "ROLE_EMPLEADO",
                         "ROLE_REPRESENTANTE"
                     )
+                    // Sign-up (feature 005): public, like login - there is
+                    // nobody to authenticate yet. It grants nothing by itself:
+                    // the request waits for an ADMIN's approval, and the only
+                    // path that creates an account straight away needs the
+                    // deploy-time bootstrap code. Rate per origin is the
+                    // hardening feature's; the volume is bounded by
+                    // auth.registro.max-pendientes.
+                    .requestMatchers(HttpMethod.POST, "/api/auth/registro")
+                    .permitAll()
+                    // Listing, approving and rejecting sign-ups: ADMIN only,
+                    // like every other way of handing out access.
+                    .requestMatchers("/api/auth/registros", "/api/auth/registros/**")
+                    .hasRole("ADMIN")
                     // FR-018 and FR-024: only ADMIN creates or resets
                     // credentials. ENCARGADO runs inventory and approves
                     // corrections, but does not hand out access.

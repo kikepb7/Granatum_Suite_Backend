@@ -9,6 +9,13 @@ import com.granatum.core.domain.exception.EmpleadoNoEncontradoEnDirectorioExcept
 import com.granatum.core.domain.exception.PasswordDebilException
 import com.granatum.core.domain.exception.TokenRenovacionInvalidoException
 import com.granatum.core.domain.exception.VerificacionSaturadaException
+import com.granatum.core.domain.exception.CodigoArranqueInvalidoException
+import com.granatum.core.domain.exception.CodigoIncorrectoException
+import com.granatum.core.domain.exception.DatosFichaRequeridosException
+import com.granatum.core.domain.exception.DocumentoInvalidoException
+import com.granatum.core.domain.exception.RegistroNoDisponibleException
+import com.granatum.core.domain.exception.SolicitudNoEncontradaException
+import com.granatum.core.domain.exception.SolicitudNoPendienteException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
@@ -136,6 +143,50 @@ class AuthExceptionHandler {
             .status(HttpStatus.SERVICE_UNAVAILABLE)
             .header(HttpHeaders.RETRY_AFTER, "1")
             .body(error("SERVICIO_SATURADO", e.message))
+
+    // --- Sign-up (feature 005), specs/005-staff-registration/contracts ---
+
+    @ExceptionHandler(CodigoArranqueInvalidoException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun onCodigoArranqueInvalido(e: CodigoArranqueInvalidoException) =
+        error("CODIGO_ARRANQUE_INVALIDO", e.message)
+
+    /**
+     * 503 and not 429: the limit is on pending requests in total, not on this
+     * caller's rate, and it lifts as the ADMIN resolves them. An hour is a
+     * reasonable "try later" for something a person, not a script, retries.
+     */
+    @ExceptionHandler(RegistroNoDisponibleException::class)
+    fun onRegistroNoDisponible(e: RegistroNoDisponibleException): ResponseEntity<Map<String, String?>> =
+        ResponseEntity
+            .status(HttpStatus.SERVICE_UNAVAILABLE)
+            .header(HttpHeaders.RETRY_AFTER, "3600")
+            .body(error("REGISTRO_NO_DISPONIBLE", e.message))
+
+    @ExceptionHandler(DocumentoInvalidoException::class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    fun onDocumentoInvalido(e: DocumentoInvalidoException) =
+        error("DOCUMENTO_INVALIDO", e.message)
+
+    @ExceptionHandler(SolicitudNoEncontradaException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun onSolicitudNoEncontrada(e: SolicitudNoEncontradaException) =
+        error("SOLICITUD_NO_ENCONTRADA", e.message)
+
+    @ExceptionHandler(SolicitudNoPendienteException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    fun onSolicitudNoPendiente(e: SolicitudNoPendienteException) =
+        error("SOLICITUD_NO_PENDIENTE", e.message)
+
+    @ExceptionHandler(CodigoIncorrectoException::class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    fun onCodigoIncorrecto(e: CodigoIncorrectoException) =
+        error("CODIGO_INCORRECTO", e.message)
+
+    @ExceptionHandler(DatosFichaRequeridosException::class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    fun onDatosFichaRequeridos(e: DatosFichaRequeridosException) =
+        error("DATOS_FICHA_REQUERIDOS", e.message)
 
     private fun error(code: String, message: String?): Map<String, String?> =
         mapOf("code" to code, "message" to message)

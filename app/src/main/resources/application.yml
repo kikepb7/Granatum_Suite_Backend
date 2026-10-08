@@ -148,6 +148,21 @@ auth:
   purga-sesiones:
     dias: ${AUTH_PURGA_SESIONES_DIAS:30}
 
+  # Sign-up (feature 005).
+  registro:
+    # The ONLY secret of this block, and with no value here, ever (principle
+    # VI). It lets the first ADMIN of a fresh installation sign up and get in
+    # straight away, and stops working the moment any ADMIN exists. Empty means
+    # bootstrap disabled. Remove it from the deployment once the first ADMIN
+    # exists. See specs/005-staff-registration research.md D-002.
+    codigo-arranque: ${AUTH_CODIGO_ARRANQUE:}
+    # Pending requests allowed at once: sign-up is public and writes to the
+    # database, so this bounds the volume however many origins it comes from.
+    # The rate per origin is feature 006's (D-004).
+    max-pendientes: ${AUTH_REGISTRO_MAX_PENDIENTES:50}
+    caducidad-dias: ${AUTH_REGISTRO_CADUCIDAD_DIAS:7}
+    caducidad-cron: ${AUTH_REGISTRO_CADUCIDAD_CRON:0 50 4 * * *}
+
 timetracking:
   exportacion:
     # How many exports may run at once. Each holds ONE database connection for
