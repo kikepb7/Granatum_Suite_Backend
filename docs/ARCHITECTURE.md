@@ -255,6 +255,25 @@ una credencial, y registrarse y entrar comparten la tabla de cuentas: separarlos
 obligaría a compartir esa tabla entre módulos, que es justo lo que el principio
 I prohíbe.
 
+**Eventos de dominio: el otro contrato (feature 008).** Cuando una feature
+necesita **contar** algo y no **preguntar**, el contrato es un evento en
+`common/domain/event` (`AvisoDominio`). Quien publica usa el
+`ApplicationEventPublisher` de Spring y no sabe quién escucha; `notifications`
+escucha con `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution =
+true)`. Tres reglas:
+
+- **Solo después de confirmar**: una operación que se deshace no deja aviso de
+  algo que no ocurrió.
+- **El oyente no puede romper a quien publica**: escribe en un bean aparte con
+  `REQUIRES_NEW` y captura cualquier fallo. Sin transacción en quien publica
+  (el registro de la 005 cifra fuera de transacción), el oyente corre dentro de
+  `publishEvent`, y ese `catch` es lo único que lo separa de la petición.
+- **Solo identificadores**: el evento lleva tipo, referencia, titular y autor;
+  nunca texto.
+
+Para decidir destinatarios por rol hay un segundo contrato de consulta,
+`DirectorioRoles`, que implementa `auth`.
+
 **Nombres de clase únicos en todo el producto.** Todos los módulos comparten el
 namespace `com.granatum.core` y cada uno va en su propio jar, así que dos clases
 con el mismo nombre cualificado significan que en ejecución solo se carga una:
@@ -372,7 +391,7 @@ Flyway comparte un único histórico en `classpath:db/migration` para todos los
 módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
 `timetracking` `V6`–`V11`, `auth` `V12`–`V14`, la exportación de
 `timetracking` `V15`–`V16`, `invoices` `V17`–`V19` y el registro de `auth`
-`V20`–`V21`, y `absences` `V22`. Es un acoplamiento real entre módulos — al añadir una
+`V20`–`V21`, `absences` `V22` y `notifications` `V23`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

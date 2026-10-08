@@ -30,6 +30,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
 - ✅ Endurecimiento y despliegue — implementado. Límite de peticiones por dirección de origen en inicio de sesión, renovación, cierre de sesión, registro y en toda la API; perfil `prod` por defecto; errores sin trazas; cabeceras de seguridad; CORS explícito; imagen de contenedor sin privilegios y CI en todas las ramas. Especificado en [`specs/006-hardening-deploy/`](specs/006-hardening-deploy/) (ver [Despliegue](#despliegue)).
 - ✅ `absences` (Ausencia, DerechoVacaciones) — implementado. Vacaciones y permisos retribuidos que la persona pide y un `ENCARGADO` o `ADMIN` aprueba o rechaza; bajas médicas que registran ellos, sin ningún dato de salud; sin solapamientos por persona; saldo anual en días naturales (30 por defecto, ajustable por el `ADMIN`); nada se borra. Especificado en [`specs/007-absences/`](specs/007-absences/) (ver [Ausencias](#ausencias-y-vacaciones)).
+- ✅ `notifications` (Notificacion) — implementado. Avisos dentro de la aplicación: salida de fichaje olvidada, fichaje incompleto, correcciones y ausencias pendientes (a quien las resuelve), sus resoluciones (a quien las pidió) y registros pendientes (a los `ADMIN`). Cada persona ve solo los suyos; sin datos personales; los antiguos se borran solos. Especificado en [`specs/008-notifications/`](specs/008-notifications/) (ver [Notificaciones](#notificaciones)).
 - ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
 
 ## Arranque rápido
@@ -457,6 +458,31 @@ El contrato está en [`specs/007-absences/contracts/README.md`](specs/007-absenc
   de datos lo impide.
 - `REPRESENTANTE` no accede: el art. 34.9 le da el registro de jornada, no las
   ausencias.
+
+## Notificaciones
+
+Sin correo ni push: la aplicación consulta la bandeja de cada persona. El
+contrato está en [`specs/008-notifications/contracts/README.md`](specs/008-notifications/contracts/README.md).
+
+| Ruta | Qué hace |
+|------|----------|
+| `GET /api/notificaciones?soloNoLeidas=false` | Las propias, de la más reciente, hasta 100 |
+| `GET /api/notificaciones/no-leidas` | `{"total": n}` |
+| `POST /api/notificaciones/{id}/leida` | Marca una; ajena → `404` |
+| `POST /api/notificaciones/leidas` | Marca todas |
+
+| Aviso | A quién |
+|-------|---------|
+| `FICHAJE_SIN_SALIDA` | Titular de un fichaje abierto más de 10 h (`TIMETRACKING_AVISO_SIN_SALIDA_HORAS`) |
+| `FICHAJE_INCOMPLETO` | Titular del fichaje que se marca incompleto |
+| `CORRECCION_PENDIENTE`, `AUSENCIA_PENDIENTE` | `ENCARGADO` y `ADMIN`, menos quien la pidió |
+| `CORRECCION_APROBADA/RECHAZADA`, `AUSENCIA_APROBADA/RECHAZADA` | Titular |
+| `REGISTRO_PENDIENTE` | `ADMIN` |
+
+Un aviso es un tipo y un identificador; el texto es fijo por tipo, así que
+nunca lleva nombres, motivos ni comentarios. Se crea solo si la operación que lo
+origina se confirma, y si falla no la deshace. Los leídos se borran a los 90
+días y todos a los 180 (`NOTIFICATIONS_DIAS_LEIDAS`, `NOTIFICATIONS_DIAS_TODAS`).
 
 ## Despliegue
 
