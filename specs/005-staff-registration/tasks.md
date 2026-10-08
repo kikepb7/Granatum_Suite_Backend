@@ -67,8 +67,8 @@
 
 **Independent Test**: comparar respuestas y tiempos con correos nuevos y existentes.
 
-- [ ] T023 [US3] Test `auth/test/kotlin/com/granatum/core/IndistinguibilidadRegistroIT.kt`: correo con cuenta → misma forma de respuesta, sin solicitud aprobable, evento `REGISTRO_DUPLICADO`; correo con pendiente → otra solicitud independiente; 50+50 registros con diferencia de medias < 10% (SC-004), con calentamiento previo
-- [ ] T024 [US3] Ajustar `RegistroService` para que el camino del duplicado haga el mismo trabajo caro (validación, código, hash) y devuelva la misma respuesta
+- [X] T023 [US3] Test `auth/test/kotlin/com/granatum/core/IndistinguibilidadRegistroIT.kt`: correo con cuenta → misma forma de respuesta, sin solicitud aprobable, evento `REGISTRO_DUPLICADO`; correo con pendiente → otra solicitud independiente; 50+50 registros con diferencia de medias < 10% (SC-004), con calentamiento previo
+- [X] T024 [US3] Ajustar `RegistroService` para que el camino del duplicado haga el mismo trabajo caro (validación, código, hash) y devuelva la misma respuesta
 
 ---
 
