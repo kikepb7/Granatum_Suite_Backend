@@ -37,18 +37,18 @@
 
 ## Phase 5: US3 - Bajas y permisos (P2)
 
-- [ ] T016 [US3] Test `BajasYPermisosIT`: registro de baja por `ENCARGADO` → `APROBADA` sin fin, no consume vacaciones; con comentario → `422`; para sí mismo → `403`; alta fija `hasta` una vez; permiso con causa `PENDIENTE` sin consumir; permiso sin causa y vacaciones con causa → `422`; la base de datos rechaza una baja con comentario
-- [ ] T017 [US3] `registrar` y `darAlta` en `AusenciaService`; rutas `POST /registro` y `POST /{id}/alta`
+- [X] T016 [US3] Test `BajasYPermisosIT`: registro de baja por `ENCARGADO` → `APROBADA` sin fin, no consume vacaciones; con comentario → `422`; para sí mismo → `403`; alta fija `hasta` una vez; permiso con causa `PENDIENTE` sin consumir; permiso sin causa y vacaciones con causa → `422`; la base de datos rechaza una baja con comentario
+- [X] T017 [US3] `registrar` y `darAlta` en `AusenciaService`; rutas `POST /registro` y `POST /{id}/alta`
 
 ## Phase 6: US4 - Cancelar (P2)
 
-- [ ] T018 [US4] Test `CancelacionAusenciasIT`: pendiente propia, aprobada futura → `CANCELADA`; empezada → `409`; ajena → `404`
-- [ ] T019 [US4] `cancelar` en el servicio y la ruta
+- [X] T018 [US4] Test `CancelacionAusenciasIT`: pendiente propia, aprobada futura → `CANCELADA`; empezada → `409`; ajena → `404`
+- [X] T019 [US4] `cancelar` en el servicio y la ruta
 
 ## Phase 7: US5 - Calendario y saldo (P2)
 
-- [ ] T020 [US5] Test `ConsultaAusenciasIT`: rango de toda la plantilla para `ENCARGADO`; `EMPLEADO` solo las suyas aunque pida otra; detalle ajeno `404`; derecho ajustado por `ADMIN` cambia el saldo; saldo de otra persona solo para `ENCARGADO`/`ADMIN`
-- [ ] T021 [US5] Consultas, saldo y `PUT /derechos/{empleadoId}/{anio}`
+- [X] T020 [US5] Test `ConsultaAusenciasIT`: rango de toda la plantilla para `ENCARGADO`; `EMPLEADO` solo las suyas aunque pida otra; detalle ajeno `404`; derecho ajustado por `ADMIN` cambia el saldo; saldo de otra persona solo para `ENCARGADO`/`ADMIN`
+- [X] T021 [US5] Consultas, saldo y `PUT /derechos/{empleadoId}/{anio}`
 
 ## Phase 8: Pulido
 
