@@ -56,4 +56,4 @@
 - [X] T023 [P] `EsquemaCompletoRlsIT`: `ausencias`, `derechos_vacaciones` (veintidós migraciones)
 - [X] T024 [P] Logs en `DEBUG` sin comentario ni motivo (`SinDatosPersonalesEnAusenciasIT`)
 - [X] T025 [P] README (estado, rutas, variable), ARCHITECTURE (módulo, bloqueo por persona, numeración V22) y constitución (principio IV, MINOR)
-- [ ] T026 `./gradlew build --rerun-tasks` en verde
+- [X] T026 `./gradlew build --rerun-tasks` en verde *(690 tests, 0 fallos, con el perfil `prod` como en la CI)*
