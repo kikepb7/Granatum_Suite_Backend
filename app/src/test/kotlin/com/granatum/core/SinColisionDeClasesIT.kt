@@ -1,5 +1,6 @@
 package com.granatum.core
 
+import com.granatum.core.service.AusenciaService
 import com.granatum.core.service.AutenticacionService
 import com.granatum.core.service.FichajeService
 import com.granatum.core.service.MaterialService
@@ -49,7 +50,8 @@ class SinColisionDeClasesIT {
         "inventory" to MaterialService::class.java,
         "timetracking" to FichajeService::class.java,
         "auth" to AutenticacionService::class.java,
-        "invoices" to SubidaFacturas::class.java
+        "invoices" to SubidaFacturas::class.java,
+        "absences" to AusenciaService::class.java
     )
 
     /** Every `.class` resource a module ships, as classpath paths. */

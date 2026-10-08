@@ -52,8 +52,8 @@
 
 ## Phase 8: Pulido
 
-- [ ] T022 [P] `app`: `AutorizacionAusenciasIT` (`REPRESENTANTE` 403 en todo; `EMPLEADO` 403 en aprobar/registrar/derechos; sin token 401) y `SinColisionDeClasesIT` con el módulo nuevo
-- [ ] T023 [P] `EsquemaCompletoRlsIT`: `ausencias`, `derechos_vacaciones` (veintidós migraciones)
-- [ ] T024 [P] Logs en `DEBUG` sin comentario ni motivo (`SinDatosPersonalesEnAusenciasIT`)
-- [ ] T025 [P] README (estado, rutas, variable), ARCHITECTURE (módulo, bloqueo por persona, numeración V22) y constitución (principio IV, MINOR)
+- [X] T022 [P] `app`: `AutorizacionAusenciasIT` (`REPRESENTANTE` 403 en todo; `EMPLEADO` 403 en aprobar/registrar/derechos; sin token 401) y `SinColisionDeClasesIT` con el módulo nuevo
+- [X] T023 [P] `EsquemaCompletoRlsIT`: `ausencias`, `derechos_vacaciones` (veintidós migraciones)
+- [X] T024 [P] Logs en `DEBUG` sin comentario ni motivo (`SinDatosPersonalesEnAusenciasIT`)
+- [X] T025 [P] README (estado, rutas, variable), ARCHITECTURE (módulo, bloqueo por persona, numeración V22) y constitución (principio IV, MINOR)
 - [ ] T026 `./gradlew build --rerun-tasks` en verde

@@ -182,6 +182,19 @@ mensajes de excepción. No es un `@ExceptionHandler(Exception::class)` porque es
 se adelantaría a los resolutores de Spring y convertiría en `500` los `404`,
 `405` y `415`.
 
+## Ausencias (feature 007)
+
+Módulo propio, `features/absences`, que solo depende de `common` y comprueba
+que la persona existe y está activa con `DirectorioEmpleados`. Una ausencia no
+crea ni toca fichajes: el registro de jornada (principio III) queda igual.
+
+**Solapamiento y saldo bajo un bloqueo por persona.** Crear una ausencia toma
+`pg_advisory_xact_lock(7007, hashtext(empleado_id))` antes de comprobar
+solapamientos y saldo. Una restricción de exclusión (`EXCLUDE USING gist`)
+necesitaría la extensión `btree_gist`, que una migración no puede dar por
+hecha en Supabase; y el saldo necesitaba el mismo bloqueo de todas formas: dos
+peticiones de vacaciones a la vez leerían el mismo saldo.
+
 ## Colaboración entre features: contratos en `common`
 
 **Patrón nuevo, introducido por `auth`.** Cuando una feature necesita un dato que
@@ -359,7 +372,7 @@ Flyway comparte un único histórico en `classpath:db/migration` para todos los
 módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
 `timetracking` `V6`–`V11`, `auth` `V12`–`V14`, la exportación de
 `timetracking` `V15`–`V16`, `invoices` `V17`–`V19` y el registro de `auth`
-`V20`–`V21`. Es un acoplamiento real entre módulos — al añadir una
+`V20`–`V21`, y `absences` `V22`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

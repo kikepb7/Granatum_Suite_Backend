@@ -29,6 +29,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - ✅ Registro del personal — implementado. Cada persona se registra con su correo, la contraseña que elige, su nombre y su DNI/NIE; un `ADMIN` aprueba la solicitud con el código de verificación que la persona le dice en persona, elige el rol y la vincula a su ficha (o la crea). El primer `ADMIN` entra con un código de arranque fijado al desplegar. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (ver [El primer administrador](#el-primer-administrador) y [Registro](#registro-del-personal)).
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
 - ✅ Endurecimiento y despliegue — implementado. Límite de peticiones por dirección de origen en inicio de sesión, renovación, cierre de sesión, registro y en toda la API; perfil `prod` por defecto; errores sin trazas; cabeceras de seguridad; CORS explícito; imagen de contenedor sin privilegios y CI en todas las ramas. Especificado en [`specs/006-hardening-deploy/`](specs/006-hardening-deploy/) (ver [Despliegue](#despliegue)).
+- ✅ `absences` (Ausencia, DerechoVacaciones) — implementado. Vacaciones y permisos retribuidos que la persona pide y un `ENCARGADO` o `ADMIN` aprueba o rechaza; bajas médicas que registran ellos, sin ningún dato de salud; sin solapamientos por persona; saldo anual en días naturales (30 por defecto, ajustable por el `ADMIN`); nada se borra. Especificado en [`specs/007-absences/`](specs/007-absences/) (ver [Ausencias](#ausencias-y-vacaciones)).
 - ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
 
 ## Arranque rápido
@@ -431,6 +432,31 @@ Son opcionales — el flujo SDD funciona sin ellas. Las útiles aquí son
 fetch plans) y `supabase-postgres-best-practices` (esquema, migraciones, RLS,
 índices), relevante porque el `datasource` ya admite Supabase y hoy la
 autorización vive solo en `SecurityConfig`, sin nada a nivel de base de datos.
+
+## Ausencias y vacaciones
+
+El contrato está en [`specs/007-absences/contracts/README.md`](specs/007-absences/contracts/README.md).
+
+| Ruta | Quién | Qué hace |
+|------|-------|----------|
+| `POST /api/ausencias` | `EMPLEADO`, `ENCARGADO`, `ADMIN` | Pedir vacaciones o un permiso para uno mismo → `PENDIENTE` |
+| `POST /api/ausencias/registro` | `ENCARGADO`, `ADMIN` | Registrar en nombre de otra persona, aprobada (bajas médicas, regularizaciones) |
+| `GET /api/ausencias?empleadoId&desde&hasta&estado` | `EMPLEADO`, `ENCARGADO`, `ADMIN` | Calendario; un `EMPLEADO` solo recibe las suyas |
+| `POST /api/ausencias/{id}/aprobar` · `/rechazar` | `ENCARGADO`, `ADMIN` | Nunca las propias; rechazar exige motivo |
+| `POST /api/ausencias/{id}/cancelar` | la persona | Pendiente, o aprobada que aún no ha empezado |
+| `POST /api/ausencias/{id}/alta` | `ENCARGADO`, `ADMIN` | Cierra una baja abierta |
+| `GET /api/ausencias/saldo?anio` | `EMPLEADO`, `ENCARGADO`, `ADMIN` | Derecho, aprobados, pendientes y disponibles |
+| `PUT /api/ausencias/derechos/{empleadoId}/{anio}` | `ADMIN` | Derecho anual de una persona |
+
+- **Sin solapamientos**: dos ausencias vigentes de una persona no se pisan, ni
+  con peticiones simultáneas (un bloqueo por persona en la base de datos).
+- **Días naturales**: 30 por año por defecto (`ABSENCES_DIAS_VACACIONES`), el
+  mínimo del art. 38 del Estatuto. Sin festivos ni prorrateo: el `ADMIN` ajusta
+  el derecho de quien entra a mitad de año.
+- **Bajas sin datos de salud**: solo el tipo; ni comentario ni causa, y la base
+  de datos lo impide.
+- `REPRESENTANTE` no accede: el art. 34.9 le da el registro de jornada, no las
+  ausencias.
 
 ## Despliegue
 

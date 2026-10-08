@@ -135,9 +135,9 @@ Cuatro roles, con fronteras cerradas:
 | Rol | Alcance |
 |-----|---------|
 | `ADMIN` | Todo. |
-| `ENCARGADO` | Inventario completo y aprobación de correcciones de fichaje. |
-| `EMPLEADO` | Únicamente sus propios fichajes: fichar y consultar su historial. |
-| `REPRESENTANTE` | **Solo lectura** del registro de jornada de toda la plantilla. Nada más. |
+| `ENCARGADO` | Inventario completo, aprobación de correcciones de fichaje y resolución de ausencias de otras personas (incluido registrar bajas). |
+| `EMPLEADO` | Únicamente lo suyo: sus fichajes (fichar y consultar su historial) y sus ausencias (pedirlas, cancelarlas y consultarlas con su saldo). |
+| `REPRESENTANTE` | **Solo lectura** del registro de jornada de toda la plantilla. Nada más: tampoco ausencias. |
 
 - Un `EMPLEADO` **NO DEBE** poder leer ni modificar los fichajes de otra
   persona, ni acceder a ninguna ruta de inventario.
@@ -399,7 +399,9 @@ Deuda cerrada, conservada aquí como historial:
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 2.2.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+
+*v2.2.0 (MINOR): el principio IV amplía el alcance de `ENCARGADO` y `EMPLEADO` a las ausencias (feature 007): la persona pide y ve las suyas; `ENCARGADO` y `ADMIN` resuelven las de otros, nunca las propias. `REPRESENTANTE` sigue sin acceso fuera del registro de jornada. Plan de migración: ninguno; la feature 007 añade las reglas en `SecurityConfig` y `AutorizacionAusenciasIT`.*
 
 *v2.1.0 (MINOR): el principio VI exige que, sin perfil explícito, la aplicación arranque como `prod` (feature 006). Hasta entonces el perfil por defecto era `dev`, y olvidar `SPRING_PROFILES_ACTIVE` en un despliegue dejaba viva `POST /api/dev/token`. Plan de migración: ninguno pendiente; la feature 006 cambió el defecto y añadió el test.*
 
