@@ -14,10 +14,18 @@ class DirectorioRolesDoble : DirectorioRoles {
 
     fun con(rol: Role, id: EntityId = UUID.randomUUID()): EntityId = id.also { roles[it] = rol }
 
-    fun olvidarTodos() = roles.clear()
+    /** Makes the next lookups fail, to prove a failing notice does not reach the caller. */
+    var fallar = false
 
-    override fun empleadosConRol(roles: Set<Role>): Set<EntityId> =
-        this.roles.filterValues { it in roles }.keys.toSet()
+    fun olvidarTodos() {
+        roles.clear()
+        fallar = false
+    }
+
+    override fun empleadosConRol(roles: Set<Role>): Set<EntityId> {
+        check(!fallar) { "fallo provocado por el test" }
+        return this.roles.filterValues { it in roles }.keys.toSet()
+    }
 }
 
 @TestConfiguration

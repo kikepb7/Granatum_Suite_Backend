@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.event.ApplicationEvents
+import org.springframework.test.context.event.RecordApplicationEvents
+import com.granatum.core.domain.event.AvisoDominio
+import com.granatum.core.domain.event.TipoAviso
 import org.testcontainers.junit.jupiter.Testcontainers
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -24,9 +28,22 @@ import kotlin.test.assertTrue
 @Testcontainers
 @SpringBootTest(classes = [AuthTestApplication::class])
 @TestPropertySource(properties = ["auth.registro.max-pendientes=5"])
+@RecordApplicationEvents
 class RegistroIT : BaseRegistroIT() {
 
     @Autowired lateinit var autenticacion: AutenticacionService
+    @Autowired lateinit var avisos: ApplicationEvents
+
+    /** Feature 008, FR-004: the ADMINs hear about a stored request - and only a stored one. */
+    @Test
+    fun `a stored request is announced, a duplicate address is not`() {
+        val (solicitud, _) = pendiente()
+        assertTrue(avisos.stream(AvisoDominio::class.java).anyMatch { it.tipo == TipoAviso.REGISTRO_PENDIENTE && it.referenciaId == solicitud.id })
+
+        val antes = avisos.stream(AvisoDominio::class.java).count()
+        registro.registrar(datos(cuentaActiva().email))
+        assertEquals(antes, avisos.stream(AvisoDominio::class.java).count(), "nothing approvable, nothing to announce")
+    }
 
     @Test
     fun `signing up leaves a pending request and hands back an 8-character code`() {

@@ -47,6 +47,7 @@ class CorreccionServiceTest {
         solicitudRepository,
         fichajeRepository,
         json,
+        mockk(relaxed = true),
         Clock.fixed(Instant.parse("2026-10-06T09:00:00Z"), ZoneOffset.UTC)
     )
 

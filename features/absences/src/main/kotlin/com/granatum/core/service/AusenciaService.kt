@@ -25,6 +25,9 @@ import com.granatum.core.infrastructure.database.repositories.AusenciaRepository
 import com.granatum.core.infrastructure.database.repositories.DerechoVacacionesRepository
 import jakarta.persistence.EntityManager
 import org.springframework.beans.factory.annotation.Value
+import com.granatum.core.domain.event.AvisoDominio
+import com.granatum.core.domain.event.TipoAviso
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -65,6 +68,8 @@ class AusenciaService(
     private val derechos: DerechoVacacionesRepository,
     private val directorio: DirectorioEmpleados,
     private val entityManager: EntityManager,
+    // Feature 008: requests and resolutions become notices, once committed.
+    private val avisos: ApplicationEventPublisher,
     @param:Value("\${absences.vacaciones.dias-anuales}") private val diasAnuales: Int,
     private val clock: Clock = Clock.systemUTC()
 ) {
@@ -87,7 +92,9 @@ class AusenciaService(
             throw RangoAusenciaInvalidoException("No se piden vacaciones que ya han empezado")
         }
         comprobarPersona(empleadoId)
-        return crear(empleadoId, nueva, hasta, EstadoAusencia.PENDIENTE, autor = empleadoId)
+        return crear(empleadoId, nueva, hasta, EstadoAusencia.PENDIENTE, autor = empleadoId).also {
+            avisos.publishEvent(AvisoDominio(TipoAviso.AUSENCIA_PENDIENTE, it.id, titularId = empleadoId, autorId = empleadoId))
+        }
     }
 
     /**
@@ -103,13 +110,17 @@ class AusenciaService(
             throw RangoAusenciaInvalidoException("Solo una baja médica puede quedar abierta")
         }
         comprobarPersona(empleadoId)
-        return crear(empleadoId, nueva, nueva.hasta, EstadoAusencia.APROBADA, autor = autorId)
+        // Approved from the start: the person hears about it as an approval.
+        return crear(empleadoId, nueva, nueva.hasta, EstadoAusencia.APROBADA, autor = autorId).also {
+            avisos.publishEvent(AvisoDominio(TipoAviso.AUSENCIA_APROBADA, it.id, titularId = empleadoId, autorId = autorId))
+        }
     }
 
     @Transactional
     fun aprobar(id: EntityId, autorId: EntityId): Ausencia {
         val ausencia = pendienteDeOtro(id, autorId)
         ausencia.aprobar(autorId, clock.instant())
+        avisos.publishEvent(AvisoDominio(TipoAviso.AUSENCIA_APROBADA, id, titularId = ausencia.empleadoId, autorId = autorId))
         return ausencias.save(ausencia).toModel()
     }
 
@@ -117,6 +128,7 @@ class AusenciaService(
     fun rechazar(id: EntityId, autorId: EntityId, motivo: String): Ausencia {
         val ausencia = pendienteDeOtro(id, autorId)
         ausencia.rechazar(autorId, motivo.trim(), clock.instant())
+        avisos.publishEvent(AvisoDominio(TipoAviso.AUSENCIA_RECHAZADA, id, titularId = ausencia.empleadoId, autorId = autorId))
         return ausencias.save(ausencia).toModel()
     }
 

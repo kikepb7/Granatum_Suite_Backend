@@ -22,6 +22,9 @@ import com.granatum.core.infrastructure.database.repositories.SolicitudRegistroR
 import com.granatum.core.validation.NifValidator
 import jakarta.persistence.EntityManager
 import org.springframework.beans.factory.annotation.Value
+import com.granatum.core.domain.event.AvisoDominio
+import com.granatum.core.domain.event.TipoAviso
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
 import java.security.MessageDigest
@@ -71,6 +74,10 @@ class RegistroService(
     private val eventos: RegistradorEventosSeguridad,
     private val transacciones: TransactionTemplate,
     private val entityManager: EntityManager,
+    // Feature 008: a stored request becomes a notice to the ADMINs. Published
+    // with no transaction (the hash runs outside one); the notices module
+    // handles that case.
+    private val avisos: ApplicationEventPublisher,
     @param:Value("\${auth.registro.codigo-arranque:}") private val codigoArranque: String,
     @param:Value("\${auth.registro.max-pendientes}") private val maxPendientes: Long,
     private val clock: Clock = Clock.systemUTC()
@@ -134,6 +141,7 @@ class RegistroService(
             )
         )
         eventos.registrar(TipoEventoSeguridad.REGISTRO_SOLICITADO)
+        avisos.publishEvent(AvisoDominio(TipoAviso.REGISTRO_PENDIENTE, id))
         return ResultadoRegistro.Pendiente(codigo)
     }
 

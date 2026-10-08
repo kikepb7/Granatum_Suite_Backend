@@ -19,6 +19,9 @@ import com.granatum.core.infrastructure.database.entities.SolicitudCorreccionFic
 import com.granatum.core.infrastructure.database.mappers.toModel
 import com.granatum.core.infrastructure.database.repositories.FichajeRepository
 import com.granatum.core.infrastructure.database.repositories.SolicitudCorreccionFichajeRepository
+import com.granatum.core.domain.event.AvisoDominio
+import com.granatum.core.domain.event.TipoAviso
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -34,6 +37,9 @@ class CorreccionService(
     private val solicitudRepository: SolicitudCorreccionFichajeRepository,
     private val fichajeRepository: FichajeRepository,
     private val json: ValoresFichajeJson,
+    // Feature 008: requests and resolutions become notices. Published inside
+    // the transaction; the notices module only acts once it commits.
+    private val avisos: ApplicationEventPublisher,
     private val clock: Clock = Clock.systemUTC()
 ) {
 
@@ -75,6 +81,9 @@ class CorreccionService(
             )
         )
 
+        avisos.publishEvent(
+            AvisoDominio(TipoAviso.CORRECCION_PENDIENTE, solicitud.id, titularId = fichaje.empleado.id, autorId = solicitanteId)
+        )
         return solicitud.toModel(json)
     }
 
@@ -113,6 +122,9 @@ class CorreccionService(
             resolutorId = resolutorId,
             motivoResolucion = null
         )
+        avisos.publishEvent(
+            AvisoDominio(TipoAviso.CORRECCION_APROBADA, solicitudId, titularId = fichaje.empleado.id, autorId = resolutorId)
+        )
 
         return solicitudRepository.findById(solicitudId).orElseThrow {
             SolicitudNotFoundException(solicitudId)
@@ -126,7 +138,9 @@ class CorreccionService(
         rol: Role,
         motivoResolucion: String
     ): SolicitudCorreccionModel {
-        cargarResoluble(solicitudId, resolutorId, rol)
+        // Read now: reclamar's conditional update clears the persistence
+        // context, and the lazy fichaje would no longer load afterwards.
+        val titularId = cargarResoluble(solicitudId, resolutorId, rol).fichaje.empleado.id
 
         // valoresOriginales stays null: nothing was ever applied, so there is no
         // "before" to record.
@@ -135,6 +149,9 @@ class CorreccionService(
             nuevoEstado = EstadoSolicitud.RECHAZADA,
             resolutorId = resolutorId,
             motivoResolucion = motivoResolucion
+        )
+        avisos.publishEvent(
+            AvisoDominio(TipoAviso.CORRECCION_RECHAZADA, solicitudId, titularId = titularId, autorId = resolutorId)
         )
 
         return solicitudRepository.findById(solicitudId).orElseThrow {

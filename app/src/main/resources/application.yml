@@ -169,6 +169,11 @@ auth:
     caducidad-cron: ${AUTH_REGISTRO_CADUCIDAD_CRON:0 50 4 * * *}
 
 timetracking:
+  # Feature 008: shifts open longer than this get a "forgotten clock-out?"
+  # notice to their owner. Checked every half hour.
+  aviso-sin-salida:
+    horas: ${TIMETRACKING_AVISO_SIN_SALIDA_HORAS:10}
+    cron: ${TIMETRACKING_AVISO_SIN_SALIDA_CRON:0 */30 * * * *}
   exportacion:
     # How many exports may run at once. Each holds ONE database connection for
     # as long as it streams (a single snapshot transaction, so the file is

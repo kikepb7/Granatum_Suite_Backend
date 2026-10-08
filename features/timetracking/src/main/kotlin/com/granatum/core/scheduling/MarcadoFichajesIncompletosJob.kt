@@ -3,7 +3,10 @@ package com.granatum.core.scheduling
 import com.granatum.core.api.util.RangoFechas
 import com.granatum.core.domain.type.EstadoFichaje
 import com.granatum.core.infrastructure.database.repositories.FichajeRepository
+import com.granatum.core.domain.event.AvisoDominio
+import com.granatum.core.domain.event.TipoAviso
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -29,6 +32,8 @@ import java.time.LocalDate
 @Component
 class MarcadoFichajesIncompletosJob(
     private val fichajeRepository: FichajeRepository,
+    // Feature 008: each shift marked incomplete becomes a notice to its owner.
+    private val avisos: ApplicationEventPublisher,
     private val clock: Clock = Clock.systemUTC()
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -59,6 +64,7 @@ class MarcadoFichajesIncompletosJob(
             fichaje.estado = EstadoFichaje.INCOMPLETO
             fichaje.fueIncompleto = true
             fichajeRepository.save(fichaje)
+            avisos.publishEvent(AvisoDominio(TipoAviso.FICHAJE_INCOMPLETO, fichaje.id, titularId = fichaje.empleado.id))
         }
 
         // Counts only: an identifier here would put a person's working pattern

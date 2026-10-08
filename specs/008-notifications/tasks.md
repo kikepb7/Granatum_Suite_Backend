@@ -18,19 +18,19 @@
 
 ## Phase 2: US2 - Lo pendiente llega a quien lo resuelve (P1) 🎯
 
-- [ ] T006 [US2] Test `DestinatariosIT`: `AUSENCIA_PENDIENTE` y `CORRECCION_PENDIENTE` a `ENCARGADO`+`ADMIN` menos el autor; `REGISTRO_PENDIENTE` solo a `ADMIN`; sin destinatarios no falla; publicado dentro de una transacción que se deshace → ningún aviso; un fallo al guardar no propaga
-- [ ] T007 [US2] `OyenteAvisos` (`@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)`, `REQUIRES_NEW`) y `Destinatarios` en `features/notifications`
-- [ ] T008 [US2] Publicar: `CorreccionService.solicitar` (`CORRECCION_PENDIENTE`, autor = solicitante), `AusenciaService.solicitar` (`AUSENCIA_PENDIENTE`), `RegistroService` (`REGISTRO_PENDIENTE` al guardar una solicitud), con tests `@RecordApplicationEvents` en cada módulo
+- [X] T006 [US2] Test `DestinatariosIT`: `AUSENCIA_PENDIENTE` y `CORRECCION_PENDIENTE` a `ENCARGADO`+`ADMIN` menos el autor; `REGISTRO_PENDIENTE` solo a `ADMIN`; sin destinatarios no falla; publicado dentro de una transacción que se deshace → ningún aviso; un fallo al guardar no propaga
+- [X] T007 [US2] `OyenteAvisos` (`@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)`, `REQUIRES_NEW`) y `Destinatarios` en `features/notifications`
+- [X] T008 [US2] Publicar: `CorreccionService.solicitar` (`CORRECCION_PENDIENTE`, autor = solicitante), `AusenciaService.solicitar` (`AUSENCIA_PENDIENTE`), `RegistroService` (`REGISTRO_PENDIENTE` al guardar una solicitud), con tests `@RecordApplicationEvents` en cada módulo
 
 ## Phase 3: US1 - Salida olvidada (P1)
 
-- [ ] T009 [US1] Test `AvisoSalidaOlvidadaJobIT` (timetracking): abierto > 10 h publica `FICHAJE_SIN_SALIDA` con titular; < 10 h no; `MarcadoFichajesIncompletosJob` publica `FICHAJE_INCOMPLETO` por fichaje
-- [ ] T010 [US1] `AvisoSalidaOlvidadaJob` (`timetracking.aviso-sin-salida.horas` 10, cron cada 30 min) y publicación en `MarcadoFichajesIncompletosJob`
-- [ ] T011 [US1] Test de deduplicación en `notifications`: el mismo `FICHAJE_SIN_SALIDA` dos veces → un aviso
+- [X] T009 [US1] Test `AvisoSalidaOlvidadaJobIT` (timetracking): abierto > 10 h publica `FICHAJE_SIN_SALIDA` con titular; < 10 h no; `MarcadoFichajesIncompletosJob` publica `FICHAJE_INCOMPLETO` por fichaje
+- [X] T010 [US1] `AvisoSalidaOlvidadaJob` (`timetracking.aviso-sin-salida.horas` 10, cron cada 30 min) y publicación en `MarcadoFichajesIncompletosJob`
+- [X] T011 [US1] Test de deduplicación en `notifications`: el mismo `FICHAJE_SIN_SALIDA` dos veces → un aviso
 
 ## Phase 4: US3 - Resoluciones (P2)
 
-- [ ] T012 [US3] Publicar `CORRECCION_APROBADA/RECHAZADA` (titular = dueño del fichaje) y `AUSENCIA_APROBADA/RECHAZADA` (titular = persona), con tests de publicación
+- [X] T012 [US3] Publicar `CORRECCION_APROBADA/RECHAZADA` (titular = dueño del fichaje) y `AUSENCIA_APROBADA/RECHAZADA` (titular = persona), con tests de publicación
 
 ## Phase 5: US4 - Bandeja (P2)
 
