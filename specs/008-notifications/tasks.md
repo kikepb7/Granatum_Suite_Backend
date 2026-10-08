@@ -10,11 +10,11 @@
 
 ## Phase 1: Setup y fundación
 
-- [ ] T001 `AvisoDominio(tipo: TipoAviso, referenciaId, titularId?, autorId?)` y `TipoAviso` (los nueve tipos) en `common/src/main/kotlin/com/granatum/core/domain/event/AvisoDominio.kt`; contrato `DirectorioRoles.empleadosConRol(roles): Set<EntityId>` en `common/src/main/kotlin/com/granatum/core/domain/contract/DirectorioRoles.kt`
-- [ ] T002 Test e implementación de `DirectorioRolesJpa` en `features/auth` (sobre `cuentas_acceso`, una consulta)
-- [ ] T003 Módulo `features/notifications` (solo `common`), en `settings.gradle.kts` y `app`; aplicación y `application.yml` de test; doble de `DirectorioRoles`
-- [ ] T004 Migración `V23__create_notificaciones_table.sql` como data-model.md (`tipo VARCHAR(24)` con `CHECK` de los nueve tipos, `UNIQUE (destinatario_id, tipo, referencia_id)`, índices, RLS); `RowLevelSecurityIT` del módulo
-- [ ] T005 Entidad, repositorio (insertar con `ON CONFLICT DO NOTHING`, bandeja, contar, marcar, limpiar) y regla `/api/notificaciones/**` para los cuatro roles en `SecurityConfig`
+- [X] T001 `AvisoDominio(tipo: TipoAviso, referenciaId, titularId?, autorId?)` y `TipoAviso` (los nueve tipos) en `common/src/main/kotlin/com/granatum/core/domain/event/AvisoDominio.kt`; contrato `DirectorioRoles.empleadosConRol(roles): Set<EntityId>` en `common/src/main/kotlin/com/granatum/core/domain/contract/DirectorioRoles.kt`
+- [X] T002 Test e implementación de `DirectorioRolesJpa` en `features/auth` (sobre `cuentas_acceso`, una consulta)
+- [X] T003 Módulo `features/notifications` (solo `common`), en `settings.gradle.kts` y `app`; aplicación y `application.yml` de test; doble de `DirectorioRoles`
+- [X] T004 Migración `V23__create_notificaciones_table.sql` como data-model.md (`tipo VARCHAR(24)` con `CHECK` de los nueve tipos, `UNIQUE (destinatario_id, tipo, referencia_id)`, índices, RLS); `RowLevelSecurityIT` del módulo
+- [X] T005 Entidad, repositorio (insertar con `ON CONFLICT DO NOTHING`, bandeja, contar, marcar, limpiar) y regla `/api/notificaciones/**` para los cuatro roles en `SecurityConfig`
 
 ## Phase 2: US2 - Lo pendiente llega a quien lo resuelve (P1) 🎯
 

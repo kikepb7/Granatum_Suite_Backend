@@ -246,6 +246,15 @@ absences:
     # Statute.
     dias-anuales: ${ABSENCES_DIAS_VACACIONES:30}
 
+# Notices (feature 008). None is a secret.
+notifications:
+  limpieza:
+    # Read notices older than this many days, and any older than the second,
+    # are deleted daily: a notice has no legal value (research D-005).
+    dias-leidas: ${NOTIFICATIONS_DIAS_LEIDAS:90}
+    dias-todas: ${NOTIFICATIONS_DIAS_TODAS:180}
+    cron: ${NOTIFICATIONS_LIMPIEZA_CRON:0 10 5 * * *}
+
 # Invoicing (feature 004). Only api-key is a secret, and it has no value here,
 # ever (principle VI): empty means manual mode - invoices are stored and filled
 # in by hand, nothing is sent to Claude (research.md D-006).

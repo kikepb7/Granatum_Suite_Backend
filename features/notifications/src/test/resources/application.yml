@@ -1,0 +1,18 @@
+# Test-only properties for this module's Spring contexts (feature 008). The
+# test application component-scans `common` (JwtService / JwtAuthFilter), which
+# need jwt.*; the Gradle test task generates the key per run.
+jwt:
+  secret: ${JWT_SECRET_BASE64}
+  expiration-minutes: 15
+
+logging:
+  level:
+    org.hibernate.internal.util.EntityPrinter: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+
+notifications:
+  limpieza:
+    dias-leidas: 90
+    dias-todas: 180
+    # Never fires during a test run; LimpiezaNotificacionesIT calls the job.
+    cron: "0 0 4 1 1 *"

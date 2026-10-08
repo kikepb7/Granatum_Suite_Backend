@@ -44,6 +44,14 @@ interface CuentaAccesoRepository : Repository<CuentaAccesoEntity, UUID> {
      */
     fun existsByRol(rol: com.granatum.core.domain.type.Role): Boolean
 
+    /** Feature 008: the staff ids holding any of these roles, for DirectorioRoles. */
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT c.empleadoId FROM CuentaAccesoEntity c WHERE c.rol IN :roles"
+    )
+    fun empleadosConRol(
+        @org.springframework.data.repository.query.Param("roles") roles: Collection<com.granatum.core.domain.type.Role>
+    ): List<UUID>
+
     /**
      * The orphan sweep, a page at a time.
      *

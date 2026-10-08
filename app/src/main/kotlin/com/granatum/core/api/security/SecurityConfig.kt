@@ -147,6 +147,12 @@ class SecurityConfig {
                     .hasAnyRole("ADMIN", "ENCARGADO")
                     .requestMatchers("/api/ausencias", "/api/ausencias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
+                    // Notices (feature 008): everyone's own inbox, checked
+                    // against the token subject in the service. REPRESENTANTE
+                    // included - it receives nothing, but an empty inbox is
+                    // not a secret.
+                    .requestMatchers("/api/notificaciones", "/api/notificaciones/**")
+                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
                     .requestMatchers("/api/materiales/**", "/api/categorias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO")
                     // Staff management is ADMIN only: ENCARGADO runs inventory
