@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.Repository
 import org.springframework.data.repository.query.Param
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
@@ -19,7 +20,9 @@ import java.util.UUID
  * reflection.
  *
  * The bulk updates empty the personal fields in the same statement that changes
- * the state - V20's CHECKs would refuse anything else.
+ * the state - V20's CHECKs would refuse anything else. They are `@Transactional`
+ * so they join the caller's transaction or open their own: an `UPDATE` with no
+ * transaction at all is refused by JPA.
  */
 interface SolicitudRegistroRepository : Repository<SolicitudRegistroEntity, UUID> {
 
@@ -40,6 +43,7 @@ interface SolicitudRegistroRepository : Repository<SolicitudRegistroEntity, UUID
      * Cancels the other pending requests of the same person - same address or
      * same document - except [excepto] (FR-014, FR-022).
      */
+    @Transactional
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(
         """
@@ -61,6 +65,7 @@ interface SolicitudRegistroRepository : Repository<SolicitudRegistroEntity, UUID
     ): Int
 
     /** Expires the pending requests created before [corte] (FR-025). */
+    @Transactional
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(
         """
