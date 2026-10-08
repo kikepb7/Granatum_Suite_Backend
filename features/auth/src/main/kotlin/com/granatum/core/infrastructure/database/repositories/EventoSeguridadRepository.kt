@@ -21,4 +21,7 @@ interface EventoSeguridadRepository : Repository<EventoSeguridadEntity, UUID> {
     fun findAllByCuentaIdOrderByOcurridoEnDesc(cuentaId: UUID): List<EventoSeguridadEntity>
 
     fun count(): Long
+
+    /** Events with no account to hang them on - feature 005's sign-up events. */
+    fun countByTipo(tipo: com.granatum.core.domain.type.TipoEventoSeguridad): Long
 }

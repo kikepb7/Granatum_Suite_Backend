@@ -37,11 +37,11 @@
 
 **Independent Test**: base vacía + código configurado → registro `201` → login con rol `ADMIN`.
 
-- [ ] T013 [P] [US1] Test unitario `auth/test/kotlin/com/granatum/core/CodigoVerificacionTest.kt`: 8 caracteres del alfabeto `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`; la huella depende del id; `coincide` en tiempo constante, insensible a minúsculas y espacios
-- [ ] T014 [P] [US1] Implementar `CodigoVerificacion` (puro) en `auth/main/kotlin/com/granatum/core/domain/service/CodigoVerificacion.kt` con `SecureRandom`, `SHA-256(id ‖ código)` y `MessageDigest.isEqual`
-- [ ] T015 [US1] Test `auth/test/kotlin/com/granatum/core/PrimerAdminIT.kt`: con código correcto y sin `ADMIN` → cuenta `ADMIN` sin cambio obligatorio y ficha nueva con `Dirección`/`JORNADA_COMPLETA`/hoy; con ficha existente por documento → se vincula; código incorrecto, no configurado o ya hay `ADMIN` → `403` y nada creado; correo con cuenta → `409`; pendientes con el mismo correo → `ANULADA`; dos arranques simultáneos con correos distintos → un solo `ADMIN`; eventos `ADMIN_INICIAL_CREADO`/`ARRANQUE_RECHAZADO`
-- [ ] T016 [US1] Implementar el camino de arranque de `RegistroService` en `auth/main/kotlin/com/granatum/core/service/RegistroService.kt`: validar, cifrar con `VerificadorAcotado` fuera de la transacción, y en una `TransactionTemplate` con `pg_advisory_xact_lock` comprobar código (tiempo constante) y ausencia de `ADMIN`, ficha por contrato, cuenta, anulación de pendientes
-- [ ] T017 [US1] `RegistroController` `POST /api/auth/registro` y `RegistroDtos` (`RegistroRequest` con `@Valid`, `toString` sin contraseña ni código; `RegistroResponse`) en `auth/main/kotlin/com/granatum/core/api/`; `201` en el arranque
+- [X] T013 [P] [US1] Test unitario `auth/test/kotlin/com/granatum/core/CodigoVerificacionTest.kt`: 8 caracteres del alfabeto `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`; la huella depende del id; `coincide` en tiempo constante, insensible a minúsculas y espacios
+- [X] T014 [P] [US1] Implementar `CodigoVerificacion` (puro) en `auth/main/kotlin/com/granatum/core/domain/service/CodigoVerificacion.kt` con `SecureRandom`, `SHA-256(id ‖ código)` y `MessageDigest.isEqual`
+- [X] T015 [US1] Test `auth/test/kotlin/com/granatum/core/PrimerAdminIT.kt`: con código correcto y sin `ADMIN` → cuenta `ADMIN` sin cambio obligatorio y ficha nueva con `Dirección`/`JORNADA_COMPLETA`/hoy; con ficha existente por documento → se vincula; código incorrecto, no configurado o ya hay `ADMIN` → `403` y nada creado; correo con cuenta → `409`; pendientes con el mismo correo → `ANULADA`; dos arranques simultáneos con correos distintos → un solo `ADMIN`; eventos `ADMIN_INICIAL_CREADO`/`ARRANQUE_RECHAZADO`
+- [X] T016 [US1] Implementar el camino de arranque de `RegistroService` en `auth/main/kotlin/com/granatum/core/service/RegistroService.kt`: validar, cifrar con `VerificadorAcotado` fuera de la transacción, y en una `TransactionTemplate` con `pg_advisory_xact_lock` comprobar código (tiempo constante) y ausencia de `ADMIN`, ficha por contrato, cuenta, anulación de pendientes
+- [X] T017 [US1] `RegistroController` `POST /api/auth/registro` y `RegistroDtos` (`RegistroRequest` con `@Valid`, `toString` sin contraseña ni código; `RegistroResponse`) en `auth/main/kotlin/com/granatum/core/api/`; `201` en el arranque
 
 **Checkpoint**: US1 se valida sola.
 
