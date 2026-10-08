@@ -16,5 +16,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # The application in its container (feature 006). Behind the "app" profile, so
+  # `docker compose up -d` still starts only Postgres for local development:
+  #   docker compose --profile app up -d --build
+  app:
+    profiles: ["app"]
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Secrets come from .env, never from this file (principle VI).
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
 volumes:
   postgres_data:

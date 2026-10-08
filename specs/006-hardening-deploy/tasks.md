@@ -58,17 +58,17 @@
 
 **Independent Test**: construir la imagen, arrancarla, comprobar usuario y salud.
 
-- [ ] T019 [P] [US4] `Dockerfile` multietapa (research.md D-009) y `.dockerignore`
-- [ ] T020 [P] [US4] Servicio `app` en `docker-compose.yml` con `profiles: ["app"]`, `env_file: .env`, `DB_HOST=postgres`, dependiente de la salud de `postgres` (que gana `healthcheck`)
-- [ ] T021 [US4] `.github/workflows/ci.yml`: `push` en todas las ramas y `pull_request`; trabajo `imagen` que construye la imagen y comprueba `id -u` ≠ 0 y que `/app/.env` no existe
-- [ ] T022 [US4] Construir la imagen localmente, arrancarla contra el Postgres temporal y comprobar salud, usuario y perfil
+- [X] T019 [P] [US4] `Dockerfile` multietapa (research.md D-009) y `.dockerignore`
+- [X] T020 [P] [US4] Servicio `app` en `docker-compose.yml` con `profiles: ["app"]`, `env_file: .env`, `DB_HOST=postgres`, dependiente de la salud de `postgres` (que gana `healthcheck`)
+- [X] T021 [US4] `.github/workflows/ci.yml`: `push` en todas las ramas y `pull_request`; trabajo `imagen` que construye la imagen y comprueba `id -u` ≠ 0 y que `/app/.env` no existe
+- [X] T022 [US4] Construir la imagen localmente, arrancarla contra el Postgres temporal y comprobar salud, usuario y perfil
 
 ---
 
 ## Phase 6: User Story 5 - Límite general (P3)
 
-- [ ] T023 [US5] Test `app/src/test/kotlin/com/granatum/core/LimiteGeneralIT.kt`: con cupo general 5, la sexta petición autenticada a cualquier ruta `/api` → `429`; `/actuator/health` nunca se limita
-- [ ] T024 [US5] Aplicar el cupo `general` a `/api/**` en `FiltroLimitePorOrigen` (si no quedó ya hecho en T008)
+- [X] T023 [US5] Test `app/src/test/kotlin/com/granatum/core/LimiteGeneralIT.kt`: con cupo general 5, la sexta petición autenticada a cualquier ruta `/api` → `429`; `/actuator/health` nunca se limita
+- [X] T024 [US5] Aplicar el cupo `general` a `/api/**` en `FiltroLimitePorOrigen` (si no quedó ya hecho en T008)
 
 ---
 

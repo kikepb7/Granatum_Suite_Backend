@@ -1,0 +1,20 @@
+# Feature 006, FR-015: the image gets source to build and nothing else - never
+# the local secrets file, the git history or previous build output.
+.env
+.env.*
+!.env.example
+.git
+.github
+**/build
+**/.gradle
+.gradle
+**/.kotlin
+.idea
+*.iml
+specs
+docs
+.claude
+.specify
+Dockerfile
+docker-compose.yml
+README.md
