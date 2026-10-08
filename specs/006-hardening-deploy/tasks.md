@@ -48,9 +48,9 @@
 
 **Independent Test**: inspeccionar cabeceras; comprobación previa con origen admitido y no admitido.
 
-- [ ] T016 [US3] Test `app/src/test/kotlin/com/granatum/core/CabecerasSeguridadIT.kt`: las cabeceras del contrato en una respuesta `200`, una `401` y una `404`
-- [ ] T017 [US3] Test `app/src/test/kotlin/com/granatum/core/CorsIT.kt` con `seguridad.cors.origenes=https://app.granatum.es`: comprobación previa admitida con métodos y cabeceras; origen ajeno `403`; respuesta real expone `Content-Disposition` y `Retry-After`; y `CorsSinOrigenesIT` con la lista vacía: todo origen `403`
-- [ ] T018 [US3] Cabeceras en `SecurityConfig` y `ConfiguracionCors` (`CORS_ALLOWED_ORIGINS`) en `app/src/main/kotlin/com/granatum/core/api/security/ConfiguracionCors.kt`
+- [X] T016 [US3] Test `app/src/test/kotlin/com/granatum/core/CabecerasSeguridadIT.kt`: las cabeceras del contrato en una respuesta `200`, una `401` y una `404`
+- [X] T017 [US3] Test `app/src/test/kotlin/com/granatum/core/CorsIT.kt` con `seguridad.cors.origenes=https://app.granatum.es`: comprobación previa admitida con métodos y cabeceras; origen ajeno `403`; respuesta real expone `Content-Disposition` y `Retry-After`; y `CorsSinOrigenesIT` con la lista vacía: todo origen `403`
+- [X] T018 [US3] Cabeceras en `SecurityConfig` y `ConfiguracionCors` (`CORS_ALLOWED_ORIGINS`) en `app/src/main/kotlin/com/granatum/core/api/security/ConfiguracionCors.kt`
 
 ---
 

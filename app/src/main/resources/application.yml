@@ -232,6 +232,11 @@ seguridad:
     # Addresses remembered per quota. When full, the least recently used is
     # forgotten: memory never grows without bound (FR-006).
     max-direcciones: ${SEGURIDAD_LIMITE_MAX_DIRECCIONES:10000}
+  cors:
+    # Browser origins admitted, comma-separated (https://app.granatum.es,...).
+    # Empty: no browser origin at all. The mobile app sends no Origin and does
+    # not need one.
+    origenes: ${CORS_ALLOWED_ORIGINS:}
 
 # Invoicing (feature 004). Only api-key is a secret, and it has no value here,
 # ever (principle VI): empty means manual mode - invoices are stored and filled

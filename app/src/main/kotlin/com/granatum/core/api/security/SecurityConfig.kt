@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
+import org.springframework.web.cors.CorsConfigurationSource
 
 /**
  * Stateless JWT-bearer security, and the single place where public and
@@ -29,10 +31,26 @@ class SecurityConfig {
         httpSecurity: HttpSecurity,
         jwtAuthFilter: JwtAuthFilter,
         entryPointJson: EntryPointJson,
-        limitadorPorOrigen: LimitadorPorOrigen
+        limitadorPorOrigen: LimitadorPorOrigen,
+        corsConfigurationSource: CorsConfigurationSource
     ): SecurityFilterChain {
         return httpSecurity
             .csrf { it.disable() }
+            // Feature 006: browser origins from seguridad.cors.origenes, none by
+            // default (ConfiguracionCors).
+            .cors { it.configurationSource(corsConfigurationSource) }
+            // Feature 006, FR-011: on top of Spring Security's defaults
+            // (nosniff, X-Frame-Options DENY, Cache-Control no-store, HSTS on
+            // secure requests). The API serves JSON, CSV and PDF: nothing in a
+            // response should ever load, run or be framed.
+            .headers { h ->
+                h.contentSecurityPolicy {
+                    it.policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+                }
+                h.referrerPolicy { it.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER) }
+                h.permissionsPolicyHeader { it.policy("camera=(), microphone=(), geolocation=(), payment=()") }
+                h.httpStrictTransportSecurity { it.includeSubDomains(true).maxAgeInSeconds(31_536_000) }
+            }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
