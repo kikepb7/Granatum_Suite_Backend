@@ -12,6 +12,11 @@ jwt:
 logging:
   level:
     org.hibernate.internal.util.EntityPrinter: WARN
+    # Hibernate 7.2 (Spring Boot 4.0.8) prints entities through the
+    # org.hibernate.orm.core category instead: the pin above stopped covering
+    # it, and at DEBUG DNIs, emails and comments reached the logs. INFO keeps
+    # Hibernate's warnings and errors.
+    org.hibernate.orm.core: INFO
     org.hibernate.orm.jdbc.bind: WARN
 
 absences:
