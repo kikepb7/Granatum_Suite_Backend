@@ -14,7 +14,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 
 - Kotlin 2.2 / JVM 21
 - springdoc-openapi 3 (documento OpenAPI y Swagger UI)
-- Spring Boot 4 (Web, Security, Data JPA, Validation, Actuator)
+- Spring Boot 4.0 (Web, Security, Data JPA, Validation, Actuator)
 - Gradle multi-módulo con convention plugins propios (`build-logic/`)
 - PostgreSQL + Flyway
 - JWT (jjwt) con roles `ADMIN` / `ENCARGADO` / `EMPLEADO` / `REPRESENTANTE`
@@ -522,6 +522,11 @@ origina se confirma, y si falla no la deshace. Los leídos se borran a los 90
 días y todos a los 180 (`NOTIFICATIONS_DIAS_LEIDAS`, `NOTIFICATIONS_DIAS_TODAS`).
 
 ## Despliegue
+
+Paso a paso para producción (variables, primer arranque, primer `ADMIN`,
+copias de seguridad, actualizaciones): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
+Al etiquetar `vX.Y.Z` en `main`, la imagen se publica en
+`ghcr.io/<owner>/<repo>:X.Y.Z`.
 
 La aplicación se entrega como imagen de contenedor (feature 006):
 

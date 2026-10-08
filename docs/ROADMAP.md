@@ -14,24 +14,34 @@ ramas está en [RAMAS.md](RAMAS.md).
   contrato OpenAPI versionado (`docs/openapi.json`).
 - **Constitución** 2.3.0, una sola excepción viva: la depuración a los 4 años,
   construida pero apagada a propósito.
-- **Lo que impide ir a producción hoy**: el proyecto depende de **Spring Boot
+- **Lo que impedía ir a producción** (resuelto en `release/1.0.0`, R1): el proyecto depende de **Spring Boot
   `4.0.0-SNAPSHOT`** y de los repositorios de snapshots y milestones de Spring.
   Una snapshot cambia sin aviso: el mismo commit puede compilar distinto de un
   día a otro. Ninguna versión con snapshots puede llegar a `main`.
 
 ## 1.0.0 — primer despliegue (`release/1.0.0`)
 
-Solo estabilización y despliegue; ninguna feature nueva.
+Solo estabilización y despliegue; ninguna feature nueva. ✅ = hecho en la rama.
+
+Al pasar a la GA aparecieron dos cosas que la snapshot tapaba, ya corregidas:
+
+- **Testcontainers**: el BOM de Boot 4.0.8 gestiona la 2.0.x y solo el núcleo
+  subía, mezclado con módulos 1.20.4; y la 1.20.4 no encuentra Docker 29. Toda
+  la familia queda en 1.21.4, la última 1.x (la 2.x es M2).
+- **Datos personales en los logs**: Hibernate 7.2 imprime las entidades por la
+  categoría `org.hibernate.orm.core`, que la fijación anterior no cubría; los
+  tests `SinDatosPersonales*` lo detectaron con el log en `DEBUG`. Fijada a
+  `INFO`.
 
 | # | Tarea | Tipo | Bloquea |
 |---|---|---|---|
-| R1 | Pasar de Spring Boot `4.0.0-SNAPSHOT` a la GA `4.0.8` y quitar los repositorios `repo.spring.io/snapshot` y `/milestone` de `settings.gradle.kts` y `build-logic`. Quedarse en la línea 4.0: springdoc 3.0.x se construye contra ella. Build completo en verde y contrato OpenAPI sin cambios (o regenerado y revisado). | código | sí |
-| R2 | Versión `1.0.0` en `app/build.gradle.kts` y `CHANGELOG.md`. | código | sí |
-| R3 | Elegir plataforma de despliegue (Railway, Fly.io, Render, VPS con Docker…) y escribir `docs/DESPLIEGUE.md`: variables, base de datos, primer `ADMIN`, comprobación de salud. | decisión + docs | sí |
-| R4 | Publicar la imagen: trabajo de CI que, al etiquetar `v*`, sube la imagen a un registro (GHCR con `GITHUB_TOKEN` es lo natural). | código | sí, si el despliegue tira de un registro |
+| R1 ✅ | Pasar de Spring Boot `4.0.0-SNAPSHOT` a la GA `4.0.8` y quitar los repositorios `repo.spring.io/snapshot` y `/milestone` de `settings.gradle.kts` y `build-logic`. Quedarse en la línea 4.0: springdoc 3.0.x se construye contra ella. Build completo en verde y contrato OpenAPI sin cambios (o regenerado y revisado). | código | sí |
+| R2 ✅ | Versión `1.0.0` en `app/build.gradle.kts` y `CHANGELOG.md`. | código | sí |
+| R3 | Elegir plataforma de despliegue (Railway, Fly.io, Render, VPS con Docker…). La guía independiente de plataforma ya está en `docs/DESPLIEGUE.md` (variables, primer arranque, primer `ADMIN`, Argon2, copias, actualizaciones); falta la elección y lo propio de esa plataforma. | decisión | sí |
+| R4 ✅ | Publicar la imagen: trabajo de CI que, al etiquetar `v*`, sube la imagen a un registro (GHCR con `GITHUB_TOKEN` es lo natural). | código | sí, si el despliegue tira de un registro |
 | R5 | Recalibrar Argon2 en la máquina de destino (`specs/002-auth/research.md`) y ajustar `AUTH_ARGON2_*` y `DB_POOL_MAX_SIZE`. | operación | sí |
 | R6 | Variables de producción: `JWT_SECRET_BASE64`, `DB_*`, `AUTH_CODIGO_ARRANQUE` (y retirarlo tras crear el primer `ADMIN`), `SERVER_FORWARD_HEADERS_STRATEGY=native` si hay proxy, `CORS_ALLOWED_ORIGINS`. | operación | sí |
-| R7 | Copias de seguridad de la base de datos y prueba de restauración. El registro de jornada tiene valor legal: perderlo es un incumplimiento. | operación | sí |
+| R7 | Copias de seguridad de la base de datos y prueba de restauración (procedimiento en `docs/DESPLIEGUE.md`, apartado 6). El registro de jornada tiene valor legal: perderlo es un incumplimiento. | operación | sí |
 | R8 | Crear el primer `ADMIN` con el código de arranque y aprobar enseguida un segundo `ADMIN`. | operación | — |
 
 **Antes de usar facturación con facturas reales** (no bloquea el despliegue;
@@ -54,7 +64,7 @@ sin clave la facturación funciona en modo manual):
 | # | Tarea |
 |---|---|
 | M1 | Kotlin 2.2 → 2.4 (con el `allOpen` y el plugin JPA comprobados). |
-| M2 | Testcontainers 1.20 → 2.0 (cambia de paquetes; afecta a todos los tests de integración). |
+| M2 | Testcontainers 1.21 → 2.0 (cambian los nombres de los módulos y paquetes; afecta a todos los tests de integración). Al hacerlo, quitar la fijación de versión de `granatum.kotlin-common` y dejar que mande el BOM de Boot. |
 | M3 | mockk 1.13 → 1.14, jjwt 0.12.6 → 0.12.7. |
 | M4 | Observabilidad: métricas de Actuator (Prometheus), alertas sobre errores `5xx` y sobre los trabajos programados (depuraciones, avisos). |
 | M5 | Borrar las ramas `*-feature` antiguas, ya integradas. |

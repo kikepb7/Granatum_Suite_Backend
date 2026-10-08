@@ -1,17 +1,19 @@
 [versions]
 kotlin = "2.2.0"
-spring-boot = "4.0.0-SNAPSHOT"
+spring-boot = "4.0.8"
 spring-dependency-management = "1.1.7"
-# Aligned with the jackson-databind the build already resolved (2.20.1) when
-# the Anthropic SDK came in, which needs >= 2.19.4: until then jsr310 sat at
-# 2.17.0 next to a 2.20.1 databind. Feature 004, tasks.md T003.
-jackson = "2.20.1"
+# Aligned with the jackson-databind that Spring Boot's jackson-2-bom resolves
+# (2.21.5 in Boot 4.0.8). A lower jsr310 next to a higher databind is the
+# mismatch feature 004 fixed once already (tasks.md T003); move both together.
+jackson = "2.21.5"
 jakarta = "6.1.0"
 jwt = "0.12.6"
 mockk = "1.13.13"
-testcontainers = "1.20.4"
+# Last of the 1.x line, which works with Docker Engine 29 (1.20.x cannot find
+# the Docker environment there). 2.x renames the modules: docs/ROADMAP.md, M2.
+testcontainers = "1.21.4"
 # El BOM de Spring Boot 4 NO gestiona BouncyCastle (comprobado sobre
-# spring-boot-dependencies-4.0.0-SNAPSHOT.pom), asi que la version va aqui a mano.
+# spring-boot-dependencies-4.0.8.pom), asi que la version va aqui a mano.
 bouncycastle = "1.79"
 anthropic = "2.69.0"
 pdfbox = "3.0.8"

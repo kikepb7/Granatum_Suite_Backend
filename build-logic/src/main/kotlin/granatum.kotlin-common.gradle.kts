@@ -10,13 +10,25 @@ plugins {
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://repo.spring.io/milestone") }
-    maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
 dependencyManagement {
     imports {
         mavenBom("org.springframework.boot:spring-boot-dependencies:${libraries.findVersion("spring-boot").get()}")
+    }
+    // Boot 4.0.8 manages Testcontainers 2.0.x, whose modules were renamed: with
+    // only the core managed, the build mixed a 2.0.5 core with 1.20.4
+    // postgresql/junit-jupiter modules. Explicit entries win over the imported
+    // BOM, so the whole family stays on the catalog's version - the move to 2.x
+    // is its own change (docs/ROADMAP.md, M2), not a release's.
+    dependencies {
+        dependencySet("org.testcontainers:${libraries.findVersion("testcontainers").get()}") {
+            entry("testcontainers")
+            entry("database-commons")
+            entry("jdbc")
+            entry("postgresql")
+            entry("junit-jupiter")
+        }
     }
 }
 
