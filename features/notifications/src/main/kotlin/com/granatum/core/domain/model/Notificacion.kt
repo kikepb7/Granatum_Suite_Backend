@@ -27,8 +27,7 @@ data class Notificacion(
             TipoAviso.CORRECCION_RECHAZADA to "Se ha rechazado una corrección de un fichaje tuyo.",
             TipoAviso.AUSENCIA_PENDIENTE to "Hay una solicitud de ausencia pendiente de resolver.",
             TipoAviso.AUSENCIA_APROBADA to "Se ha aprobado una ausencia tuya.",
-            TipoAviso.AUSENCIA_RECHAZADA to "Se ha rechazado una solicitud de ausencia tuya.",
-            TipoAviso.REGISTRO_PENDIENTE to "Hay una solicitud de registro pendiente de aprobar."
+            TipoAviso.AUSENCIA_RECHAZADA to "Se ha rechazado una solicitud de ausencia tuya."
         )
     }
 }

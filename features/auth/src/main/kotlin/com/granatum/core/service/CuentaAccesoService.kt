@@ -1,9 +1,12 @@
 package com.granatum.core.service
 
+import com.granatum.core.domain.contract.AltaFichaPersonal
 import com.granatum.core.domain.contract.DirectorioEmpleados
+import com.granatum.core.domain.contract.FichasPersonal
 import com.granatum.core.domain.exception.CredencialesInvalidasException
 import com.granatum.core.domain.exception.CuentaNoEncontradaException
 import com.granatum.core.domain.exception.CuentaYaExisteException
+import com.granatum.core.domain.exception.DocumentoInvalidoException
 import com.granatum.core.domain.exception.EmailYaRegistradoException
 import com.granatum.core.domain.exception.EmpleadoNoEncontradoEnDirectorioException
 import com.granatum.core.domain.exception.PasswordDebilException
@@ -17,8 +20,11 @@ import com.granatum.core.infrastructure.crypto.VerificadorAcotado
 import com.granatum.core.infrastructure.database.entities.CuentaAccesoEntity
 import com.granatum.core.infrastructure.database.repositories.CuentaAccesoRepository
 import com.granatum.core.infrastructure.database.repositories.SesionRenovacionRepository
+import com.granatum.core.validation.NifValidator
 import org.springframework.stereotype.Service
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
+import java.time.LocalDate
 
 /**
  * Creating and changing credentials (US4): FR-018 to FR-023b, FR-027, FR-029b
@@ -39,8 +45,82 @@ class CuentaAccesoService(
     private val escritor: EscritorCredenciales,
     private val autenticacionService: AutenticacionService,
     private val eventos: RegistradorEventosSeguridad,
+    // Feature 009: onboarding creates the staff record too, through the
+    // contract timetracking implements (principle I).
+    private val fichas: FichasPersonal,
+    private val transacciones: TransactionTemplate,
     private val clock: Clock = Clock.systemUTC()
 ) {
+
+    /** The staff record and the account an ADMIN asks for in one onboarding (feature 009). */
+    data class DatosAlta(
+        val nombre: String,
+        val documento: String,
+        val puesto: String,
+        val tipoContrato: String,
+        val fechaAlta: LocalDate,
+        val email: String,
+        val rol: Role
+    ) {
+        override fun toString(): String = "DatosAlta(tipoContrato=$tipoContrato, rol=$rol)"
+    }
+
+    /** What onboarding produced, and the clear temporary password - the only moment it exists. */
+    data class AltaHecha(val cuenta: CuentaAccesoEntity, val fichaCreada: Boolean, val passwordTemporal: String) {
+        override fun toString(): String = "AltaHecha(cuentaId=${cuenta.id}, fichaCreada=$fichaCreada)"
+    }
+
+    /**
+     * An ADMIN onboards a person in one operation: staff record and account,
+     * with a generated temporary password that must be changed on first
+     * sign-in (feature 009, FR-004 to FR-009).
+     *
+     * ## Order
+     *
+     * The temporary password is generated and hashed first, outside any
+     * transaction - Argon2 takes ~110 ms and must not pin a connection. Then,
+     * in one transaction: the address is free, the staff record with this
+     * document is found or created, it has no account yet, and the account is
+     * stored. Any refusal rolls the whole thing back: never a staff record
+     * without its account because the email was taken (FR-009).
+     *
+     * A record that already exists is linked rather than duplicated (FR-007):
+     * the ADMIN may have registered the person in the staff register earlier,
+     * before they needed access.
+     */
+    fun darDeAlta(datos: DatosAlta): AltaHecha {
+        val documento = NifValidator.normalizar(datos.documento)
+        if (!NifValidator.esDniONieValido(documento)) throw DocumentoInvalidoException()
+        val email = NormalizadorEmail.normalizar(datos.email)
+
+        val temporal = generadorPassword.generar()
+        val hash = verificador.codificar(temporal)
+
+        val (cuenta, fichaCreada) = transacciones.execute {
+            if (cuentas.existsByEmail(email)) throw EmailYaRegistradoException()
+
+            val existente = fichas.buscarPorDocumento(documento)
+            if (existente != null && cuentas.existsByEmpleadoId(existente)) throw CuentaYaExisteException()
+            val empleadoId = existente ?: fichas.crear(
+                AltaFichaPersonal(datos.nombre.trim(), documento, datos.puesto.trim(), datos.tipoContrato, datos.fechaAlta)
+            )
+
+            cuentas.save(
+                CuentaAccesoEntity(
+                    empleadoId = empleadoId,
+                    email = email,
+                    rol = datos.rol,
+                    passwordHash = hash,
+                    // FR-006: the ADMIN knows this password; only the person's
+                    // own, set on first sign-in, is theirs.
+                    requiereCambioPassword = true
+                )
+            ) to (existente == null)
+        }!!
+
+        eventos.registrar(TipoEventoSeguridad.CUENTA_CREADA, cuenta.id)
+        return AltaHecha(cuenta, fichaCreada, temporal)
+    }
 
     /**
      * Grants access to a person who is already on the staff register, in one

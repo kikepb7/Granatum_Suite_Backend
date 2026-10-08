@@ -4,14 +4,11 @@ import com.granatum.core.domain.type.Role
 import com.granatum.core.infrastructure.crypto.VerificadorAcotado
 import com.granatum.core.infrastructure.database.entities.CuentaAccesoEntity
 import com.granatum.core.infrastructure.database.repositories.CuentaAccesoRepository
-import com.granatum.core.infrastructure.database.repositories.SolicitudRegistroRepository
-import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
-import java.time.Instant
 import java.util.UUID
 
 /**
@@ -63,18 +60,6 @@ abstract class BaseAuthIT {
     @Autowired lateinit var cuentas: CuentaAccesoRepository
     @Autowired lateinit var verificador: VerificadorAcotado
     @Autowired lateinit var directorio: DirectorioEmpleadosDoble
-    @Autowired lateinit var solicitudesRegistro: SolicitudRegistroRepository
-
-    /**
-     * Feature 005: the pending sign-up cap is global and this container is
-     * shared by every class, so one class's leftovers (the timing test leaves
-     * over a hundred) would make another's sign-ups answer 503. Expired through
-     * the same UPDATE the expiry job uses - never deleted.
-     */
-    @BeforeEach
-    fun sinSolicitudesPendientesAjenas() {
-        solicitudesRegistro.caducarAnterioresA(Instant.now().plusSeconds(3600), Instant.now())
-    }
 
     protected fun correoUnico(): String = "p-${UUID.randomUUID()}@granatum.es"
 

@@ -13,11 +13,10 @@ import com.granatum.core.domain.type.EntityId
  * Carries ids only: never a name, a comment or a reason, because a notice must
  * not carry personal data (feature 008, FR-006).
  *
- * @property referenciaId what the notice is about: a shift, a correction, an
- *   absence, a sign-up request.
+ * @property referenciaId what the notice is about: a shift, a correction or an
+ *   absence.
  * @property titularId the person it concerns, when it concerns one (the
- *   shift's owner, the absence's person); `null` for a sign-up, whose person
- *   has no staff record yet.
+ *   shift's owner, the absence's person).
  * @property autorId who caused it, so they are not notified about their own
  *   request; `null` when the system did (a job).
  */
@@ -37,6 +36,7 @@ enum class TipoAviso {
     CORRECCION_RECHAZADA,
     AUSENCIA_PENDIENTE,
     AUSENCIA_APROBADA,
-    AUSENCIA_RECHAZADA,
-    REGISTRO_PENDIENTE
+    AUSENCIA_RECHAZADA
+    // REGISTRO_PENDIENTE was removed with 005's sign-up requests (feature 009,
+    // V25): only the owner signs up now, and there is nothing to approve.
 }

@@ -1,0 +1,12 @@
+-- Feature 009: only the business owner signs up; everyone else is onboarded by
+-- an ADMIN. Feature 005's self sign-up with approval is gone, and with it the
+-- table that held its requests.
+--
+-- Dropped rather than kept: a pending row holds a name, a DNI, an email and a
+-- password hash, and with no flow left to resolve it, it has no purpose (GDPR
+-- art. 5.1.e). Resolved rows held no personal data (V20's CHECKs) and only
+-- recorded a flow that no longer exists.
+--
+-- V20 is not edited (principle II). The REGISTRO_* types in eventos_seguridad
+-- stay allowed: those events are history already written.
+DROP TABLE IF EXISTS solicitudes_registro;

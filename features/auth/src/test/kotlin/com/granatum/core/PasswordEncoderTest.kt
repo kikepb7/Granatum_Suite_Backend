@@ -165,4 +165,20 @@ class PasswordEncoderTest {
 
     private fun assertEquals(esperado: String?, real: String?, mensaje: String) =
         kotlin.test.assertEquals(esperado, real, mensaje)
+
+    /**
+     * Feature 009, recovery of the only ADMIN: without sign-up requests the
+     * hash can no longer come from one, so it is generated with the standard
+     * `argon2` command-line tool. Its encoded output is the format this encoder
+     * reads, parameters included - checked with the reference implementation's
+     * published vector (`echo -n password | argon2 somesalt -t 2 -m 16 -p 4 -l 24`),
+     * behind the `{argon2}` prefix the database stores.
+     */
+    @Test
+    fun `a hash from the argon2 command-line tool is accepted`() {
+        val deLaHerramienta = "{argon2}\$argon2i\$v=19\$m=65536,t=2,p=4\$c29tZXNhbHQ\$RdescudvJCsgt3ub+b+dWRWJTmaaJObG"
+
+        assertTrue(passwordEncoder.matches("password", deLaHerramienta))
+        assertFalse(passwordEncoder.matches("otra", deLaHerramienta))
+    }
 }

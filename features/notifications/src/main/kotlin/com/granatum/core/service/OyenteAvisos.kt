@@ -16,9 +16,9 @@ import java.util.UUID
  *
  * - **After commit**: a request that rolled back produces no notice of
  *   something that never happened (FR-008).
- * - **fallbackExecution**: some publishers have no transaction - sign-up hashes
- *   the password without holding a connection - and without this the listener
- *   would silently never run for them.
+ * - **fallbackExecution**: a publisher with no transaction (feature 005's
+ *   sign-up was one; none is today) would otherwise silently never be heard.
+ *   Kept so the next one does not have to rediscover it.
  * - **Failures stop here**: the operation that caused the notice is already
  *   committed, and a lost notice must not become an error for whoever made the
  *   request. After a commit Spring already contains a listener's exception;

@@ -151,56 +151,45 @@ class SinDatosPersonalesEnLogsIT : BaseAuthIT() {
     @Autowired lateinit var jwtService: JwtService
 
     /**
-     * Feature 005: sign-up carries a password, a name, a DNI, an email and a
-     * verification code, and goes through the same web-layer loggers. Every
-     * branch that touches them: a request, a wrong code, an approval, a
-     * rejection and a refused bootstrap.
+     * Feature 009: onboarding carries a name, a DNI, an email and a temporary
+     * password, and the owner's sign-up a bootstrap code - all through the same
+     * web-layer loggers. Every branch: onboarding, first sign-in with the
+     * temporary password, the forced change, and a refused sign-up.
      */
     @Test
-    fun `signing up, approving and rejecting leave no personal data in the logs`() {
+    fun `onboarding a person and the owner's sign-up leave no personal data in the logs`() {
         val admin = "Bearer ${jwtService.generateAccessToken(UUID.randomUUID(), Role.ADMIN)}"
-        val email = "registro-${UUID.randomUUID()}@granatum.es"
-        val password = "Registro-Fuga-${UUID.randomUUID().toString().take(8)}!1"
+        val email = "alta-${UUID.randomUUID()}@granatum.es"
         val nombre = "Nombre-Fuga-${UUID.randomUUID().toString().take(6)}"
         val numero = (10_000_000..99_999_999).random()
         val documento = "$numero${"TRWAGMYFPDXBNJZSQVHLCKE"[numero % 23]}"
-        fun alta(correo: String, extra: String = "") = post(
-            "/api/auth/registro",
-            """{"email":"$correo","password":"$password","nombre":"$nombre","documentoIdentidad":"$documento"$extra}"""
-        )
+        val definitiva = "Alta-Fuga-${UUID.randomUUID().toString().take(8)}!1"
 
-        val codigo = campo(alta(email), "codigoVerificacion")
-        val lista = RestClient.builder().baseUrl("http://localhost:$puerto").build()
-            .get().uri("/api/auth/registros").header("Authorization", admin)
-            .retrieve().body(String::class.java)!!
-        val id = Regex("\"id\"\\s*:\\s*\"([^\"]+)\"[^}]*\"email\"\\s*:\\s*\"$email\"").find(lista)!!.groupValues[1]
-
-        post("/api/auth/registros/$id/aprobar", """{"codigoVerificacion":"ZZZZZZZZ","rol":"EMPLEADO"}""", admin)
-        post(
-            "/api/auth/registros/$id/aprobar",
-            """{"codigoVerificacion":"$codigo","rol":"EMPLEADO","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01"}""",
+        val alta = post(
+            "/api/auth/altas",
+            """{"nombre":"$nombre","documentoIdentidad":"$documento","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01","email":"$email","rol":"EMPLEADO"}""",
             admin
         )
-
-        val otroEmail = "rechazo-${UUID.randomUUID()}@granatum.es"
-        val otroCodigo = campo(alta(otroEmail), "codigoVerificacion")
-        val listaOtra = RestClient.builder().baseUrl("http://localhost:$puerto").build()
-            .get().uri("/api/auth/registros").header("Authorization", admin)
-            .retrieve().body(String::class.java)!!
-        val otroId = Regex("\"id\"\\s*:\\s*\"([^\"]+)\"[^}]*\"email\"\\s*:\\s*\"$otroEmail\"").find(listaOtra)!!.groupValues[1]
-        post("/api/auth/registros/$otroId/rechazar", "", admin)
+        val temporal = campo(alta, "passwordTemporal")
+        val primerLogin = post("/api/auth/login", """{"email":"$email","password":"$temporal"}""")
+        post(
+            "/api/auth/change-password",
+            """{"passwordActual":"$temporal","passwordNueva":"$definitiva"}""",
+            auth = "Bearer ${campo(primerLogin, "accessToken")}"
+        )
 
         val arranque = "codigo-de-arranque-${UUID.randomUUID()}"
-        alta("arranque-${UUID.randomUUID()}@granatum.es", ""","codigoArranque":"$arranque"""")
+        post(
+            "/api/auth/registro",
+            """{"email":"jefe-${UUID.randomUUID()}@granatum.es","password":"$definitiva","nombre":"$nombre","documentoIdentidad":"$documento","codigoArranque":"$arranque"}"""
+        )
 
         val secretos = mapOf(
             "email" to email,
-            "email rechazado" to otroEmail,
-            "contraseña" to password,
             "nombre" to nombre,
             "documento" to documento,
-            "código de verificación" to codigo,
-            "código de verificación rechazado" to otroCodigo,
+            "contraseña temporal" to temporal,
+            "contraseña definitiva" to definitiva,
             "código de arranque" to arranque
         )
         secretos.forEach { (que, valor) ->

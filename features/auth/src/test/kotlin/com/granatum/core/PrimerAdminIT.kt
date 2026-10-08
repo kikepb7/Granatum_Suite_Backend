@@ -2,15 +2,13 @@ package com.granatum.core
 
 import com.granatum.core.domain.exception.CodigoArranqueInvalidoException
 import com.granatum.core.domain.exception.EmailYaRegistradoException
-import com.granatum.core.domain.type.EstadoSolicitudRegistro
 import com.granatum.core.domain.type.Role
 import com.granatum.core.domain.type.TipoEventoSeguridad
 import com.granatum.core.infrastructure.database.repositories.EventoSeguridadRepository
-import com.granatum.core.infrastructure.database.repositories.SolicitudRegistroRepository
 import com.granatum.core.service.AutenticacionService
 import com.granatum.core.service.DatosRegistro
 import com.granatum.core.service.RegistroService
-import com.granatum.core.service.ResultadoRegistro
+import com.granatum.core.service.AdminCreado
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,7 +28,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
- * The first ADMIN of a fresh installation (feature 005, US1): FR-009 to FR-014.
+ * The first ADMIN of a fresh installation - the business owner, the only one
+ * who signs up (feature 005 US1, feature 009): FR-009 to FR-013.
  *
  * Every test starts from "no ADMIN account": the shared container is reused by
  * other classes, so existing ADMIN accounts are demoted first. Demoting rather
@@ -47,7 +46,6 @@ class PrimerAdminIT : BaseAuthIT() {
     }
 
     @Autowired lateinit var registro: RegistroService
-    @Autowired lateinit var solicitudes: SolicitudRegistroRepository
     @Autowired lateinit var eventos: EventoSeguridadRepository
     @Autowired lateinit var autenticacion: AutenticacionService
     @Autowired lateinit var jdbc: JdbcTemplate
@@ -62,7 +60,7 @@ class PrimerAdminIT : BaseAuthIT() {
     private fun datos(
         email: String = correoUnico(),
         documento: String = dniValido(),
-        codigo: String? = CODIGO
+        codigo: String = CODIGO
     ) = DatosRegistro(email, password, "Jefa de Granatum", documento, codigo)
 
     @Test
@@ -72,7 +70,7 @@ class PrimerAdminIT : BaseAuthIT() {
 
         val resultado = registro.registrar(datos(email, documento))
 
-        val creado = assertIs<ResultadoRegistro.AdminCreado>(resultado)
+        val creado = assertIs<AdminCreado>(resultado)
         val cuenta = cuentas.findByEmail(email)!!
         assertEquals(Role.ADMIN, cuenta.rol)
         assertFalse(cuenta.requiereCambioPassword, "the person chose this password")
@@ -97,7 +95,7 @@ class PrimerAdminIT : BaseAuthIT() {
         val existente = directorio.registrarFicha(documento)
         val altasAntes = directorio.altas.size
 
-        val resultado = assertIs<ResultadoRegistro.AdminCreado>(registro.registrar(datos(documento = documento)))
+        val resultado = assertIs<AdminCreado>(registro.registrar(datos(documento = documento)))
 
         assertEquals(existente, resultado.empleadoId)
         assertEquals(altasAntes, directorio.altas.size, "no second staff record")
@@ -139,21 +137,6 @@ class PrimerAdminIT : BaseAuthIT() {
         assertEquals(Role.EMPLEADO, cuentas.findByEmail(existente.email)!!.rol)
     }
 
-    @Test
-    fun `pending requests with the same address are cancelled`() {
-        val email = correoUnico()
-        val pendiente = registro.registrar(datos(email, codigo = null))
-        assertIs<ResultadoRegistro.Pendiente>(pendiente)
-        val id = solicitudes.findAllByEstadoOrderByCreadaEnAsc(EstadoSolicitudRegistro.PENDIENTE)
-            .single { it.email == email }.id
-
-        registro.registrar(datos(email))
-
-        val anulada = solicitudes.findById(id).orElseThrow()
-        assertEquals(EstadoSolicitudRegistro.ANULADA, anulada.estado)
-        assertEquals(null, anulada.email, "a resolved request keeps no personal data")
-    }
-
     /**
      * Without the advisory lock both read "no ADMIN" at once and both become
      * ADMIN: two different rows, so no unique constraint stops it (D-002).
@@ -163,7 +146,7 @@ class PrimerAdminIT : BaseAuthIT() {
         val salida = CountDownLatch(1)
         val pool = Executors.newFixedThreadPool(2)
         val resultados = (1..2).map {
-            pool.submit<Result<ResultadoRegistro>> {
+            pool.submit<Result<AdminCreado>> {
                 val d = datos()
                 salida.await()
                 runCatching { registro.registrar(d) }

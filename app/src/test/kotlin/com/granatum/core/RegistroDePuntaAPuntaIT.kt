@@ -16,8 +16,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Feature 005 end to end, with the real `timetracking` behind the
- * `FichasPersonal` contract and the real `SecurityConfig` (SC-001, SC-002).
+ * Sign-up of the owner (feature 005 US1) and onboarding by an ADMIN (feature
+ * 009) end to end, with the real `timetracking` behind the `FichasPersonal`
+ * contract and the real `SecurityConfig`.
  *
  * ## The one piece of setup that touches other tests' data
  *
@@ -80,35 +81,54 @@ class RegistroDePuntaAPuntaIT {
         }
     }
 
+    /** Feature 009, FR-001: only the owner signs up; without the code nothing is stored. */
     @Test
-    fun `a worker signs up, an ADMIN approves with the code and the worker clocks in with their own password`() {
+    fun `signing up without the bootstrap code is refused and stores nothing`() {
+        val email = correo()
+
+        val respuesta = registro(email, dniValido())
+
+        assertEquals(400, respuesta.estado, respuesta.cuerpo)
+        assertTrue(respuesta.cuerpo.contains("\"code\":\"VALIDACION\""), respuesta.cuerpo)
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM cuentas_acceso WHERE email = ?", Int::class.java, email))
+    }
+
+    /**
+     * Feature 009, US2 end to end: the ADMIN onboards a person in one call with
+     * the real timetracking behind FichasPersonal, hands over the temporary
+     * password, and the person can do nothing but change it - then clocks in.
+     */
+    @Test
+    fun `an ADMIN onboards a worker, who changes the temporary password and clocks in`() {
         val admin = jwtService.generateAccessToken(UUID.randomUUID(), Role.ADMIN)
         val email = correo()
-        val documento = dniValido()
 
-        val alta = registro(email, documento)
-        assertEquals(202, alta.estado, alta.cuerpo)
-        val codigo = assertNotNull(campo(alta.cuerpo, "codigoVerificacion"))
-        assertEquals(401, login(email).estado, "no access before approval")
-
-        val lista = http.get("/api/auth/registros", admin)
-        val id = Regex("\"id\"\\s*:\\s*\"([^\"]+)\"[^}]*\"email\"\\s*:\\s*\"$email\"").find(lista.cuerpo)?.groupValues?.get(1)
-        assertNotNull(id, lista.cuerpo)
-
-        val aprobado = http.post(
-            "/api/auth/registros/$id/aprobar",
-            """{"codigoVerificacion":"$codigo","rol":"EMPLEADO","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01"}""",
+        val alta = http.post(
+            "/api/auth/altas",
+            """{"nombre":"Persona de prueba","documentoIdentidad":"${dniValido()}","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01","email":"$email","rol":"EMPLEADO"}""",
             admin
         )
-        assertEquals(201, aprobado.estado, aprobado.cuerpo)
-        val empleadoId = assertNotNull(campo(aprobado.cuerpo, "empleadoId"))
+        assertEquals(201, alta.estado, alta.cuerpo)
+        val temporal = assertNotNull(campo(alta.cuerpo, "passwordTemporal"))
+        val empleadoId = assertNotNull(campo(alta.cuerpo, "empleadoId"))
+        assertEquals("Florista", campo(http.get("/api/empleados/$empleadoId", admin).cuerpo, "puesto"))
 
-        val sesion = login(email)
-        assertEquals(200, sesion.estado, sesion.cuerpo)
-        assertTrue(sesion.cuerpo.contains("\"requiereCambioPassword\":false"), sesion.cuerpo)
+        val primera = http.post("/api/auth/login", """{"email":"$email","password":"$temporal"}""")
+        assertEquals(200, primera.estado, primera.cuerpo)
+        assertTrue(primera.cuerpo.contains("\"requiereCambioPassword\":true"), primera.cuerpo)
+        val provisional = assertNotNull(campo(primera.cuerpo, "accessToken"))
+        val entrada = """{"clientEventId":"${UUID.randomUUID()}","occurredAt":"${ClientePruebaHttp.haceMinutos(5)}"}"""
+        assertEquals(403, http.post("/api/fichajes/entrada", entrada, provisional).estado, "only the password change until it is done")
 
-        val ficha = http.get("/api/empleados/$empleadoId", admin)
-        assertEquals(200, ficha.estado)
-        assertEquals("Florista", campo(ficha.cuerpo, "puesto"))
+        val cambio = http.post(
+            "/api/auth/change-password",
+            """{"passwordActual":"$temporal","passwordNueva":"$password"}""",
+            provisional
+        )
+        assertEquals(200, cambio.estado, cambio.cuerpo)
+        val definitivo = assertNotNull(campo(cambio.cuerpo, "accessToken"))
+
+        assertEquals(201, http.post("/api/fichajes/entrada", entrada, definitivo).estado)
+        assertEquals(200, login(email).estado, "and the person's own password works from now on")
     }
 }

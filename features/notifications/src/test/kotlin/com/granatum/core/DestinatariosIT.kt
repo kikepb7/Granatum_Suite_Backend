@@ -63,17 +63,15 @@ class DestinatariosIT : BaseNotificacionesIT() {
         assertEquals(listOf(TipoAviso.CORRECCION_PENDIENTE to correccion), tipos(encargado))
     }
 
-    /** FR-004. Published without a transaction, as the sign-up does (fallbackExecution). */
+    /** fallbackExecution: published with no transaction around it, the notice is still stored. */
     @Test
-    fun `a pending sign-up reaches the ADMINs only, even published outside a transaction`() {
-        val admin = directorioRoles.con(Role.ADMIN)
-        val encargado = directorioRoles.con(Role.ENCARGADO)
-        val solicitud = UUID.randomUUID()
+    fun `a notice published outside a transaction is stored too`() {
+        val persona = UUID.randomUUID()
+        val fichaje = UUID.randomUUID()
 
-        publicador.publishEvent(AvisoDominio(TipoAviso.REGISTRO_PENDIENTE, solicitud))
+        publicador.publishEvent(AvisoDominio(TipoAviso.FICHAJE_SIN_SALIDA, fichaje, titularId = persona))
 
-        assertEquals(listOf(TipoAviso.REGISTRO_PENDIENTE to solicitud), tipos(admin))
-        assertTrue(tipos(encargado).isEmpty())
+        assertEquals(listOf(TipoAviso.FICHAJE_SIN_SALIDA to fichaje), tipos(persona))
     }
 
     @Test
@@ -118,10 +116,10 @@ class DestinatariosIT : BaseNotificacionesIT() {
         directorioRoles.fallar = true
 
         publicarEnTransaccion(AvisoDominio(TipoAviso.AUSENCIA_PENDIENTE, UUID.randomUUID(), autorId = UUID.randomUUID()))
-        // Without a transaction (fallbackExecution, as sign-up publishes) the
-        // listener runs inside publishEvent itself: this is the case the catch
-        // exists for - after a commit, Spring already contains the exception.
-        publicador.publishEvent(AvisoDominio(TipoAviso.REGISTRO_PENDIENTE, UUID.randomUUID()))
+        // Without a transaction (fallbackExecution) the listener runs inside
+        // publishEvent itself: this is the case the catch exists for - after a
+        // commit, Spring already contains the exception.
+        publicador.publishEvent(AvisoDominio(TipoAviso.AUSENCIA_PENDIENTE, UUID.randomUUID(), autorId = UUID.randomUUID()))
     }
 
     /** FR-007, D-002: the forgotten clock-out check sees the same open shift again and again. */

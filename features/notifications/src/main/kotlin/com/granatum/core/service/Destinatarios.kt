@@ -20,8 +20,6 @@ class Destinatarios(private val roles: DirectorioRoles) {
     fun de(aviso: AvisoDominio): Set<EntityId> = when (aviso.tipo) {
         TipoAviso.CORRECCION_PENDIENTE, TipoAviso.AUSENCIA_PENDIENTE ->
             roles.empleadosConRol(setOf(Role.ENCARGADO, Role.ADMIN)) - setOfNotNull(aviso.autorId)
-        TipoAviso.REGISTRO_PENDIENTE ->
-            roles.empleadosConRol(setOf(Role.ADMIN)) - setOfNotNull(aviso.autorId)
         TipoAviso.FICHAJE_SIN_SALIDA, TipoAviso.FICHAJE_INCOMPLETO,
         TipoAviso.CORRECCION_APROBADA, TipoAviso.CORRECCION_RECHAZADA,
         TipoAviso.AUSENCIA_APROBADA, TipoAviso.AUSENCIA_RECHAZADA ->

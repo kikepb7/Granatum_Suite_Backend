@@ -46,9 +46,7 @@ class RowLevelSecurityIT : BaseAuthIT() {
     private val tablasEsperadas = setOf(
         "cuentas_acceso",
         "sesiones_renovacion",
-        "eventos_seguridad",
-        // Feature 005: names, DNIs, emails and password hashes of pending sign-ups.
-        "solicitudes_registro"
+        "eventos_seguridad"
     )
 
     @Test
@@ -75,6 +73,20 @@ class RowLevelSecurityIT : BaseAuthIT() {
             "Missing tables: the migrations did not run, so the RLS assertion below " +
                 "would pass over an empty schema and prove nothing"
         )
+    }
+
+    /**
+     * Feature 009, V24: the sign-up requests of feature 005 are gone, and the
+     * personal data their pending rows held with them.
+     */
+    @Test
+    fun `the sign-up requests table no longer exists`() {
+        val existe = dataSource.connection.use { c ->
+            c.createStatement().use { s ->
+                s.executeQuery("SELECT to_regclass('public.solicitudes_registro') IS NOT NULL").use { it.next(); it.getBoolean(1) }
+            }
+        }
+        assertEquals(false, existe)
     }
 
     @Test

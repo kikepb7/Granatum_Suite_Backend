@@ -82,10 +82,16 @@
         "required" : [ "cuentaId", "email", "empleadoId", "passwordTemporal", "rol" ],
         "type" : "object"
       },
-      "AprobarRegistroRequest" : {
+      "AltaPersonaRequest" : {
         "properties" : {
-          "codigoVerificacion" : {
+          "documentoIdentidad" : {
             "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
             "minLength" : 0,
             "type" : "string"
           },
@@ -93,21 +99,54 @@
             "format" : "date",
             "type" : [ "string", "null" ]
           },
+          "nombre" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "puesto" : {
             "maxLength" : 100,
-            "minLength" : 1,
-            "type" : [ "string", "null" ]
+            "minLength" : 0,
+            "type" : "string"
           },
           "rol" : {
             "enum" : [ "ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE" ],
             "type" : [ "string", "null" ]
           },
           "tipoContrato" : {
+            "minLength" : 1,
             "pattern" : "JORNADA_COMPLETA|PARCIAL|POR_HORAS",
-            "type" : [ "string", "null" ]
+            "type" : "string"
           }
         },
-        "required" : [ "codigoVerificacion", "rol" ],
+        "required" : [ "documentoIdentidad", "email", "fechaAlta", "nombre", "puesto", "rol", "tipoContrato" ],
+        "type" : "object"
+      },
+      "AltaPersonaResponse" : {
+        "properties" : {
+          "cuentaId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "empleadoId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "fichaCreada" : {
+            "type" : "boolean"
+          },
+          "passwordTemporal" : {
+            "type" : "string"
+          },
+          "rol" : {
+            "enum" : [ "ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "cuentaId", "email", "empleadoId", "fichaCreada", "passwordTemporal", "rol" ],
         "type" : "object"
       },
       "AusenciaResponse" : {
@@ -1123,7 +1162,7 @@
             "type" : "string"
           },
           "tipo" : {
-            "enum" : [ "FICHAJE_SIN_SALIDA", "FICHAJE_INCOMPLETO", "CORRECCION_PENDIENTE", "CORRECCION_APROBADA", "CORRECCION_RECHAZADA", "AUSENCIA_PENDIENTE", "AUSENCIA_APROBADA", "AUSENCIA_RECHAZADA", "REGISTRO_PENDIENTE" ],
+            "enum" : [ "FICHAJE_SIN_SALIDA", "FICHAJE_INCOMPLETO", "CORRECCION_PENDIENTE", "CORRECCION_APROBADA", "CORRECCION_RECHAZADA", "AUSENCIA_PENDIENTE", "AUSENCIA_APROBADA", "AUSENCIA_RECHAZADA" ],
             "type" : "string"
           }
         },
@@ -1291,31 +1330,6 @@
         "required" : [ "refreshToken" ],
         "type" : "object"
       },
-      "RegistroAprobadoResponse" : {
-        "properties" : {
-          "cuentaId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "empleadoId" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "fichaCreada" : {
-            "type" : "boolean"
-          },
-          "rol" : {
-            "enum" : [ "ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE" ],
-            "type" : "string"
-          },
-          "solicitudId" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        },
-        "required" : [ "cuentaId", "empleadoId", "fichaCreada", "rol", "solicitudId" ],
-        "type" : "object"
-      },
       "RegistroAusenciaRequest" : {
         "properties" : {
           "causa" : {
@@ -1352,7 +1366,7 @@
           "codigoArranque" : {
             "maxLength" : 200,
             "minLength" : 0,
-            "type" : [ "string", "null" ]
+            "type" : "string"
           },
           "documentoIdentidad" : {
             "maxLength" : 20,
@@ -1376,14 +1390,11 @@
             "type" : "string"
           }
         },
-        "required" : [ "documentoIdentidad", "email", "nombre", "password" ],
+        "required" : [ "codigoArranque", "documentoIdentidad", "email", "nombre", "password" ],
         "type" : "object"
       },
       "RegistroResponse" : {
         "properties" : {
-          "codigoVerificacion" : {
-            "type" : [ "string", "null" ]
-          },
           "estado" : {
             "type" : "string"
           },
@@ -1563,33 +1574,6 @@
           }
         },
         "required" : [ "desde", "hasta", "tipo" ],
-        "type" : "object"
-      },
-      "SolicitudRegistroResponse" : {
-        "properties" : {
-          "creadaEn" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "documentoIdentidad" : {
-            "type" : "string"
-          },
-          "email" : {
-            "type" : "string"
-          },
-          "empleadoExistenteId" : {
-            "format" : "uuid",
-            "type" : [ "string", "null" ]
-          },
-          "id" : {
-            "format" : "uuid",
-            "type" : "string"
-          },
-          "nombre" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "creadaEn", "documentoIdentidad", "email", "id", "nombre" ],
         "type" : "object"
       },
       "StreamingResponseBody" : { },
@@ -2360,7 +2344,7 @@
     },
     "/api/ausencias/{id}/aprobar" : {
       "post" : {
-        "operationId" : "aprobar_2",
+        "operationId" : "aprobar_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2494,7 +2478,7 @@
     },
     "/api/ausencias/{id}/rechazar" : {
       "post" : {
-        "operationId" : "rechazar_2",
+        "operationId" : "rechazar_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -2567,6 +2551,74 @@
           }
         },
         "tags" : [ "ausencia-controller" ]
+      }
+    },
+    "/api/auth/altas" : {
+      "post" : {
+        "operationId" : "darDeAlta",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AltaPersonaRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AltaPersonaResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "alta-persona-controller" ]
       }
     },
     "/api/auth/change-password" : {
@@ -2984,7 +3036,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2992,7 +3044,7 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Created"
           },
           "400" : {
             "content" : {
@@ -3017,204 +3069,6 @@
         },
         "security" : [ ],
         "tags" : [ "registro-controller" ]
-      }
-    },
-    "/api/auth/registros" : {
-      "get" : {
-        "operationId" : "pendientes",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "items" : {
-                    "$ref" : "#/components/schemas/SolicitudRegistroResponse"
-                  },
-                  "type" : "array"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Petición no válida (VALIDACION)"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "El rol no permite esta operación (FORBIDDEN)"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
-          }
-        },
-        "tags" : [ "solicitud-registro-controller" ]
-      }
-    },
-    "/api/auth/registros/{id}/aprobar" : {
-      "post" : {
-        "operationId" : "aprobar_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AprobarRegistroRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RegistroAprobadoResponse"
-                }
-              }
-            },
-            "description" : "Created"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Petición no válida (VALIDACION)"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "El rol no permite esta operación (FORBIDDEN)"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
-          }
-        },
-        "tags" : [ "solicitud-registro-controller" ]
-      }
-    },
-    "/api/auth/registros/{id}/rechazar" : {
-      "post" : {
-        "operationId" : "rechazar_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "No Content"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Petición no válida (VALIDACION)"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "El rol no permite esta operación (FORBIDDEN)"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            },
-            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
-          }
-        },
-        "tags" : [ "solicitud-registro-controller" ]
       }
     },
     "/api/categorias" : {
