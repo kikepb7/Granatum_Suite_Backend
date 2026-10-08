@@ -126,6 +126,27 @@ class SecurityConfig {
                     // DNI of self-employed suppliers (research.md D-017).
                     .requestMatchers("/api/facturacion", "/api/facturacion/**")
                     .hasRole("ADMIN")
+                    // Absences (feature 007). Most specific first: the yearly
+                    // entitlement is ADMIN's; registering on someone's behalf
+                    // (sick leave included), approving, rejecting and closing a
+                    // sick leave are ENCARGADO's and ADMIN's; the rest -
+                    // requesting, cancelling, the own list and balance - is open
+                    // to the three staff roles, with ownership checked in the
+                    // service against the token subject. REPRESENTANTE is not
+                    // among them: the register of absences is not the working
+                    // time register art. 34.9 entitles them to.
+                    .requestMatchers("/api/ausencias/derechos/**")
+                    .hasRole("ADMIN")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/ausencias/registro",
+                        "/api/ausencias/*/aprobar",
+                        "/api/ausencias/*/rechazar",
+                        "/api/ausencias/*/alta"
+                    )
+                    .hasAnyRole("ADMIN", "ENCARGADO")
+                    .requestMatchers("/api/ausencias", "/api/ausencias/**")
+                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
                     .requestMatchers("/api/materiales/**", "/api/categorias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO")
                     // Staff management is ADMIN only: ENCARGADO runs inventory

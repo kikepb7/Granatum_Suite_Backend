@@ -10,17 +10,17 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear el módulo `features/absences` (`build.gradle.kts` como `features/timetracking`, solo `projects.common`), incluirlo en `settings.gradle.kts` y en las dependencias de `app/build.gradle.kts`
-- [ ] T002 [P] `AbsencesTestApplication`, `application.yml` de test y un doble de `DirectorioEmpleados` en `features/absences/src/test/kotlin/com/granatum/core/`
+- [X] T001 Crear el módulo `features/absences` (`build.gradle.kts` como `features/timetracking`, solo `projects.common`), incluirlo en `settings.gradle.kts` y en las dependencias de `app/build.gradle.kts`
+- [X] T002 [P] `AbsencesTestApplication`, `application.yml` de test y un doble de `DirectorioEmpleados` en `features/absences/src/test/kotlin/com/granatum/core/`
 
 ## Phase 2: Fundación
 
-- [ ] T003 Migración `features/absences/src/main/resources/db/migration/V22__create_ausencias_tables.sql` exactamente como data-model.md: `tipo VARCHAR(12)` en (`VACACIONES`,`PERMISO`,`BAJA_MEDICA`), `causa VARCHAR(24)` obligatoria solo en `PERMISO`, `hasta` nula solo en `BAJA_MEDICA`, `hasta >= desde`, `hasta - desde <= 365`, `comentario VARCHAR(500)` nunca en `BAJA_MEDICA`, `motivo_rechazo VARCHAR(500)` si y solo si `RECHAZADA`, `resuelta_*` con `APROBADA`/`RECHAZADA`, `cancelada_en` si y solo si `CANCELADA`, `version`; `derechos_vacaciones` con `dias BETWEEN 0 AND 366` y `anio BETWEEN 2000 AND 2100`; índices; RLS en las dos
-- [ ] T004 [P] `RowLevelSecurityIT` y `SinBorradoAusenciasTest` del módulo
-- [ ] T005 Modelo de dominio (`TipoAusencia`, `CausaPermiso`, `EstadoAusencia`, `Ausencia`, `SaldoVacaciones`), entidades y repositorios sin `delete` en `features/absences/src/main/kotlin/com/granatum/core/`
-- [ ] T006 Excepciones con nombres únicos en todo el producto y `AusenciasExceptionHandler` con los códigos del contrato
-- [ ] T007 Reglas en `app/src/main/kotlin/com/granatum/core/api/security/SecurityConfig.kt`: `/api/ausencias/derechos/**` `ADMIN`; `/api/ausencias/registro`, `/api/ausencias/*/aprobar`, `/rechazar`, `/alta` `ENCARGADO`/`ADMIN`; resto de `/api/ausencias/**` `ADMIN`/`ENCARGADO`/`EMPLEADO`
-- [ ] T008 Configuración `absences.vacaciones.dias-anuales: ${ABSENCES_DIAS_VACACIONES:30}` en `app` y en el test del módulo
+- [X] T003 Migración `features/absences/src/main/resources/db/migration/V22__create_ausencias_tables.sql` exactamente como data-model.md: `tipo VARCHAR(12)` en (`VACACIONES`,`PERMISO`,`BAJA_MEDICA`), `causa VARCHAR(24)` obligatoria solo en `PERMISO`, `hasta` nula solo en `BAJA_MEDICA`, `hasta >= desde`, `hasta - desde <= 365`, `comentario VARCHAR(500)` nunca en `BAJA_MEDICA`, `motivo_rechazo VARCHAR(500)` si y solo si `RECHAZADA`, `resuelta_*` con `APROBADA`/`RECHAZADA`, `cancelada_en` si y solo si `CANCELADA`, `version`; `derechos_vacaciones` con `dias BETWEEN 0 AND 366` y `anio BETWEEN 2000 AND 2100`; índices; RLS en las dos
+- [X] T004 [P] `RowLevelSecurityIT` y `SinBorradoAusenciasTest` del módulo
+- [X] T005 Modelo de dominio (`TipoAusencia`, `CausaPermiso`, `EstadoAusencia`, `Ausencia`, `SaldoVacaciones`), entidades y repositorios sin `delete` en `features/absences/src/main/kotlin/com/granatum/core/`
+- [X] T006 Excepciones con nombres únicos en todo el producto y `AusenciasExceptionHandler` con los códigos del contrato
+- [X] T007 Reglas en `app/src/main/kotlin/com/granatum/core/api/security/SecurityConfig.kt`: `/api/ausencias/derechos/**` `ADMIN`; `/api/ausencias/registro`, `/api/ausencias/*/aprobar`, `/rechazar`, `/alta` `ENCARGADO`/`ADMIN`; resto de `/api/ausencias/**` `ADMIN`/`ENCARGADO`/`EMPLEADO`
+- [X] T008 Configuración `absences.vacaciones.dias-anuales: ${ABSENCES_DIAS_VACACIONES:30}` en `app` y en el test del módulo
 
 ## Phase 3: US1 - Vacaciones y resolución (P1) 🎯 MVP
 

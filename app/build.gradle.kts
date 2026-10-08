@@ -12,6 +12,7 @@ dependencies {
     implementation(projects.features.timetracking)
     implementation(projects.features.auth)
     implementation(projects.features.invoices)
+    implementation(projects.features.absences)
 
     implementation(libs.kotlin.reflect)
     implementation(libs.spring.boot.starter.security)
