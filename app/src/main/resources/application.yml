@@ -24,7 +24,12 @@ spring:
       request-timeout: 130s
 
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    # prod unless told otherwise (feature 006, research.md D-004). It was dev,
+    # which meant a deployment that forgot this variable served
+    # POST /api/dev/token - a token for any role with no credential. Local work
+    # still runs as dev: bootRun sets it when neither the environment nor .env
+    # does (build-logic, granatum.spring-boot-app).
+    active: ${SPRING_PROFILES_ACTIVE:prod}
 
   datasource:
     # Works as-is against docker-compose's local Postgres and against Supabase
@@ -178,6 +183,14 @@ timetracking:
     verificacion-max-bytes: ${TIMETRACKING_VERIFICACION_MAX_BYTES:104857600}
 
 server:
+  # Feature 006, FR-009: no error response carries a stack trace, an exception
+  # class or message, or binding details - in any profile. ErroresJson reduces
+  # what is left to {code, message}.
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-exception: false
+    include-binding-errors: never
   # Where the client's address comes from (feature 006, D-002). "none": the
   # TCP peer. Behind a proxy or load balancer, "native" makes Tomcat use
   # X-Forwarded-For - but only from trusted (internal-network) proxies, so a

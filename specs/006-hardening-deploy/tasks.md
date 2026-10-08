@@ -35,12 +35,12 @@
 
 **Independent Test**: arrancar sin perfil → la ruta de desarrollo no existe.
 
-- [ ] T010 [US2] Test `app/src/test/kotlin/com/granatum/core/PerfilPorDefectoTest.kt`: sin `SPRING_PROFILES_ACTIVE`, el valor efectivo de `spring.profiles.active` en `application.yml` resuelve a `prod` y el contexto no tiene `DevAuthController`
-- [ ] T011 [US2] `application.yml`: `spring.profiles.active: ${SPRING_PROFILES_ACTIVE:prod}`; `build-logic/src/main/kotlin/granatum.spring-boot-app.gradle.kts`: `bootRun` fija `SPRING_PROFILES_ACTIVE=dev` si no viene del entorno ni de `.env`
-- [ ] T012 [US2] Test `app/src/test/kotlin/com/granatum/core/ErroresSinTrazaIT.kt`: ruta inexistente `404 RECURSO_NO_ENCONTRADO`, método no admitido `405 METODO_NO_PERMITIDO`, y ninguna respuesta contiene `trace`, `exception` ni `com.granatum`
-- [ ] T013 [US2] `server.error.*` en `application.yml` y `ErroresJson` (`DefaultErrorAttributes`) en `app/src/main/kotlin/com/granatum/core/api/errors/ErroresJson.kt`
-- [ ] T014 [US2] Test `features/auth/src/test/kotlin/com/granatum/core/ComprobacionCodigoArranqueTest.kt`: vacío arranca; 23 caracteres falla nombrando `AUTH_CODIGO_ARRANQUE` sin el valor; 24 arranca
-- [ ] T015 [US2] Implementar `ComprobacionCodigoArranque` en `features/auth/src/main/kotlin/com/granatum/core/infrastructure/crypto/ComprobacionCodigoArranque.kt`
+- [X] T010 [US2] Test `app/src/test/kotlin/com/granatum/core/PerfilPorDefectoTest.kt`: sin `SPRING_PROFILES_ACTIVE`, el valor efectivo de `spring.profiles.active` en `application.yml` resuelve a `prod` y el contexto no tiene `DevAuthController`
+- [X] T011 [US2] `application.yml`: `spring.profiles.active: ${SPRING_PROFILES_ACTIVE:prod}`; `build-logic/src/main/kotlin/granatum.spring-boot-app.gradle.kts`: `bootRun` fija `SPRING_PROFILES_ACTIVE=dev` si no viene del entorno ni de `.env`
+- [X] T012 [US2] Test `app/src/test/kotlin/com/granatum/core/ErroresSinTrazaIT.kt`: ruta inexistente `404 RECURSO_NO_ENCONTRADO`, método no admitido `405 METODO_NO_PERMITIDO`, y ninguna respuesta contiene `trace`, `exception` ni `com.granatum`
+- [X] T013 [US2] `server.error.*` en `application.yml` y `ErroresJson` (`DefaultErrorAttributes`) en `app/src/main/kotlin/com/granatum/core/api/errors/ErroresJson.kt`
+- [X] T014 [US2] Test `features/auth/src/test/kotlin/com/granatum/core/ComprobacionCodigoArranqueTest.kt`: vacío arranca; 23 caracteres falla nombrando `AUTH_CODIGO_ARRANQUE` sin el valor; 24 arranca
+- [X] T015 [US2] Implementar `ComprobacionCodigoArranque` en `features/auth/src/main/kotlin/com/granatum/core/infrastructure/crypto/ComprobacionCodigoArranque.kt`
 
 ---
 

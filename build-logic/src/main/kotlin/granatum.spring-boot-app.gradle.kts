@@ -21,5 +21,14 @@ java {
 // locally - which is the intended behaviour when a secret is missing, and the
 // reason the convenience belongs here rather than in a default value.
 tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
-    loadDotEnv(rootDir).forEach { (key, value) -> environment(key, value) }
+    val dotEnv = loadDotEnv(rootDir)
+    dotEnv.forEach { (key, value) -> environment(key, value) }
+
+    // The application's default profile is `prod` (feature 006), so that a
+    // deployment that forgets SPRING_PROFILES_ACTIVE does not run as `dev`.
+    // Running locally is the opposite case: `bootRun` keeps starting as `dev`
+    // unless the environment or `.env` says otherwise.
+    if (System.getenv("SPRING_PROFILES_ACTIVE") == null && "SPRING_PROFILES_ACTIVE" !in dotEnv) {
+        environment("SPRING_PROFILES_ACTIVE", "dev")
+    }
 }
