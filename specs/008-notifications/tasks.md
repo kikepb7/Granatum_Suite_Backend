@@ -45,4 +45,4 @@
 
 - [X] T016 [P] `app`: punta a punta (ausencia pedida → aviso al `ENCARGADO` con cuenta → aprobada → aviso a la persona), permisos de la bandeja, `SinColisionDeClasesIT`, `EsquemaCompletoRlsIT`
 - [X] T017 [P] README, ARCHITECTURE (eventos de dominio como contrato), `.env.example`
-- [ ] T018 `./gradlew build --rerun-tasks` en verde
+- [X] T018 `./gradlew build --rerun-tasks` en verde *(717 tests, 0 fallos, con el perfil `prod`)*
