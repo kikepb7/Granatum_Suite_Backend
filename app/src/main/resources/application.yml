@@ -178,6 +178,11 @@ timetracking:
     verificacion-max-bytes: ${TIMETRACKING_VERIFICACION_MAX_BYTES:104857600}
 
 server:
+  # Where the client's address comes from (feature 006, D-002). "none": the
+  # TCP peer. Behind a proxy or load balancer, "native" makes Tomcat use
+  # X-Forwarded-For - but only from trusted (internal-network) proxies, so a
+  # client cannot invent an address per request to escape the rate limits.
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:none}
   tomcat:
     # Also the WRITE timeout of a blocking response write, and that is why it is
     # set explicitly (feature 003, D-002). A record export holds a database
@@ -195,6 +200,25 @@ server:
     # answering. At its 2 MB default, an upload over the multipart limit can end
     # in a reset connection instead of the 413 (feature 004, finding T2).
     max-swallow-size: ${INVOICES_MAX_REQUEST_SIZE:50MB}
+
+# Hardening (feature 006). Per-origin request quotas, in memory, one value per
+# quota: N/period, or "off". None is a secret. See
+# specs/006-hardening-deploy/research.md D-001 to D-003.
+seguridad:
+  limites:
+    # POST /api/auth/login: what bounds password guessing from one address.
+    login: ${SEGURIDAD_LIMITE_LOGIN:10/1m}
+    # POST /api/auth/refresh and /api/auth/logout: the mobile app renews in the
+    # background, so this one is roomier.
+    sesion: ${SEGURIDAD_LIMITE_SESION:30/1m}
+    # POST /api/auth/registro, bootstrap code included: what bounds guessing it.
+    registro: ${SEGURIDAD_LIMITE_REGISTRO:5/1h}
+    # Everything under /api. /actuator is outside it, so health checks are
+    # never limited.
+    general: ${SEGURIDAD_LIMITE_GENERAL:300/1m}
+    # Addresses remembered per quota. When full, the least recently used is
+    # forgotten: memory never grows without bound (FR-006).
+    max-direcciones: ${SEGURIDAD_LIMITE_MAX_DIRECCIONES:10000}
 
 # Invoicing (feature 004). Only api-key is a secret, and it has no value here,
 # ever (principle VI): empty means manual mode - invoices are stored and filled

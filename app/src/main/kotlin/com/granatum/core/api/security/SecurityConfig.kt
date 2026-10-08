@@ -28,7 +28,8 @@ class SecurityConfig {
     fun filterChain(
         httpSecurity: HttpSecurity,
         jwtAuthFilter: JwtAuthFilter,
-        entryPointJson: EntryPointJson
+        entryPointJson: EntryPointJson,
+        limitadorPorOrigen: LimitadorPorOrigen
     ): SecurityFilterChain {
         return httpSecurity
             .csrf { it.disable() }
@@ -136,6 +137,9 @@ class SecurityConfig {
                     .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
             }
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
+            // Feature 006: per-origin quotas run before the token is even
+            // parsed, so a refused request costs a map lookup and nothing else.
+            .addFilterBefore(FiltroLimitePorOrigen(limitadorPorOrigen), JwtAuthFilter::class.java)
             .exceptionHandling { configure ->
                 // Replaces HttpStatusEntryPoint, which answered a 401 with an
                 // empty body - no `code` and no way to tell an expired token

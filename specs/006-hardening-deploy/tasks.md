@@ -12,11 +12,11 @@
 
 ## Phase 1: Fundación
 
-- [ ] T001 [P] Test unitario `app/src/test/kotlin/com/granatum/core/CuboFichasTest.kt`: con reloj inyectado, `N` consumos seguidos pasan y el siguiente no, con espera = segundos hasta la próxima ficha (redondeo hacia arriba, mínimo 1); se rellena de forma continua; no supera la capacidad tras mucho tiempo
-- [ ] T002 [P] Implementar `CuboFichas` (puro) en `app/src/main/kotlin/com/granatum/core/api/security/CuboFichas.kt`
-- [ ] T003 Test unitario `app/src/test/kotlin/com/granatum/core/LimitadorPorOrigenTest.kt`: direcciones independientes; el mapa no supera el máximo y olvida la menos usada; cupos independientes entre sí
-- [ ] T004 Implementar `LimitadorPorOrigen` y las propiedades `seguridad.limites.*` (capacidad y periodo por cupo, `max-direcciones`) en `app/src/main/kotlin/com/granatum/core/api/security/LimitadorPorOrigen.kt` y `app/src/main/resources/application.yml` (`SEGURIDAD_LIMITE_LOGIN` 10/1m, `SEGURIDAD_LIMITE_SESION` 30/1m, `SEGURIDAD_LIMITE_REGISTRO` 5/1h, `SEGURIDAD_LIMITE_GENERAL` 300/1m, `SEGURIDAD_LIMITE_MAX_DIRECCIONES` 10000)
-- [ ] T005 Límites muy altos en `app/src/test/resources/config/application.yml`, para que el resto de tests de `app` (todos desde `127.0.0.1`) no choquen con ellos; las pruebas del limitador los bajan con `@TestPropertySource`
+- [X] T001 [P] Test unitario `app/src/test/kotlin/com/granatum/core/CuboFichasTest.kt`: con reloj inyectado, `N` consumos seguidos pasan y el siguiente no, con espera = segundos hasta la próxima ficha (redondeo hacia arriba, mínimo 1); se rellena de forma continua; no supera la capacidad tras mucho tiempo
+- [X] T002 [P] Implementar `CuboFichas` (puro) en `app/src/main/kotlin/com/granatum/core/api/security/CuboFichas.kt`
+- [X] T003 Test unitario `app/src/test/kotlin/com/granatum/core/LimitadorPorOrigenTest.kt`: direcciones independientes; el mapa no supera el máximo y olvida la menos usada; cupos independientes entre sí
+- [X] T004 Implementar `LimitadorPorOrigen` y las propiedades `seguridad.limites.*` (capacidad y periodo por cupo, `max-direcciones`) en `app/src/main/kotlin/com/granatum/core/api/security/LimitadorPorOrigen.kt` y `app/src/main/resources/application.yml` (`SEGURIDAD_LIMITE_LOGIN` 10/1m, `SEGURIDAD_LIMITE_SESION` 30/1m, `SEGURIDAD_LIMITE_REGISTRO` 5/1h, `SEGURIDAD_LIMITE_GENERAL` 300/1m, `SEGURIDAD_LIMITE_MAX_DIRECCIONES` 10000)
+- [X] T005 Límites muy altos en `app/src/test/resources/config/application.yml`, para que el resto de tests de `app` (todos desde `127.0.0.1`) no choquen con ellos; las pruebas del limitador los bajan con `@TestPropertySource`
 
 ---
 
@@ -24,10 +24,10 @@
 
 **Independent Test**: superar el cupo de inicio de sesión desde una dirección → `429` con `Retry-After`; otra dirección sigue entrando.
 
-- [ ] T006 [US1] Test `app/src/test/kotlin/com/granatum/core/LimitePorOrigenIT.kt`: con cupo de login 3, la cuarta petición `429 DEMASIADAS_PETICIONES` con `Retry-After` y sin evento `LOGIN_*` nuevo (no llegó al servicio); con `forward-headers-strategy=native`, otra dirección en `X-Forwarded-For` no se ve afectada; registro limitado también con código de arranque; renovación y cierre con su propio cupo
-- [ ] T007 [US1] Test `app/src/test/kotlin/com/granatum/core/LimiteSinProxyIT.kt`: sin estrategia de reenvío, cambiar `X-Forwarded-For` **no** salta el límite (FR-005)
-- [ ] T008 [US1] Implementar `FiltroLimitePorOrigen` (`OncePerRequestFilter`, sin logs) en `app/src/main/kotlin/com/granatum/core/api/security/FiltroLimitePorOrigen.kt` y registrarlo en `SecurityConfig` antes de `JwtAuthFilter`; `server.forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:none}` en `application.yml`
-- [ ] T009 [US1] Ampliar un test de logs en `app` (`SinDireccionesEnLogsIT.kt`) con el log en `DEBUG`: peticiones limitadas y no limitadas no escriben la dirección de origen
+- [X] T006 [US1] Test `app/src/test/kotlin/com/granatum/core/LimitePorOrigenIT.kt`: con cupo de login 3, la cuarta petición `429 DEMASIADAS_PETICIONES` con `Retry-After` y sin evento `LOGIN_*` nuevo (no llegó al servicio); con `forward-headers-strategy=native`, otra dirección en `X-Forwarded-For` no se ve afectada; registro limitado también con código de arranque; renovación y cierre con su propio cupo
+- [X] T007 [US1] Test `app/src/test/kotlin/com/granatum/core/LimiteSinProxyIT.kt`: sin estrategia de reenvío, cambiar `X-Forwarded-For` **no** salta el límite (FR-005)
+- [X] T008 [US1] Implementar `FiltroLimitePorOrigen` (`OncePerRequestFilter`, sin logs) en `app/src/main/kotlin/com/granatum/core/api/security/FiltroLimitePorOrigen.kt` y registrarlo en `SecurityConfig` antes de `JwtAuthFilter`; `server.forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:none}` en `application.yml`
+- [X] T009 [US1] Ampliar un test de logs en `app` (`SinDireccionesEnLogsIT.kt`) con el log en `DEBUG`: peticiones limitadas y no limitadas no escriben la dirección de origen
 
 ---
 

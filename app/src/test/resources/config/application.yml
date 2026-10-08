@@ -13,3 +13,13 @@ invoices:
     # own credential lookup (research.md D-006). SinLlamadasRealesEnTestsIT
     # guards it.
     api-key: ""
+
+# Feature 006. Every app test talks to the server from 127.0.0.1, so with the
+# production quotas the suite would trip the limiter on itself. The limiter
+# tests lower these with @TestPropertySource.
+seguridad:
+  limites:
+    login: 1000000/1m
+    sesion: 1000000/1m
+    registro: 1000000/1m
+    general: 1000000/1m
