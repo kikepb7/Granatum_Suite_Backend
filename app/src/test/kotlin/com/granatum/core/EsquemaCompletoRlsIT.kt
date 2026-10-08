@@ -27,7 +27,7 @@ class EsquemaCompletoRlsIT {
     lateinit var dataSource: DataSource
 
     /**
-     * Every table the nineteen migrations create, across the four feature
+     * Every table the twenty-one migrations create, across the four feature
      * modules. This is the only test that sees them all together: each module's
      * own `RowLevelSecurityIT` only has that module's migrations on its
      * classpath.
@@ -47,7 +47,9 @@ class EsquemaCompletoRlsIT {
         // invoices (feature 004): what the company buys and sells, and from
         // whom - including the DNI of self-employed suppliers
         "empresa", "trimestres", "trimestre_eventos", "facturas", "factura_lineas_iva",
-        "factura_documentos", "factura_reconocimientos", "factura_cambios"
+        "factura_documentos", "factura_reconocimientos", "factura_cambios",
+        // auth, feature 005 (V20)
+        "solicitudes_registro"
     )
 
     @Test

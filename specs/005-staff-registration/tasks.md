@@ -96,14 +96,14 @@
 
 ## Phase 7: Pulido
 
-- [ ] T029 [P] Test `app/src/test/kotlin/com/granatum/core/AutorizacionRegistrosIT.kt`: rutas de `/api/auth/registros` con `ENCARGADO`, `EMPLEADO`, `REPRESENTANTE` → `403`, sin token → `401`; `POST /api/auth/registro` sin token responde (no `401`)
-- [ ] T030 [P] Test `app/src/test/kotlin/com/granatum/core/RegistroDePuntaAPuntaIT.kt` con la implementación real de `timetracking`: arranque, registro, aprobación creando ficha, login, y la ficha visible en `GET /api/empleados`
-- [ ] T031 [P] Ampliar `auth/test/kotlin/com/granatum/core/SinDatosPersonalesEnLogsIT.kt` (log en `DEBUG`): registrar, aprobar, rechazar y arrancar no escriben correo, nombre, documento, contraseña ni código
-- [ ] T032 [P] Añadir `solicitudes_registro` a `app/src/test/kotlin/com/granatum/core/EsquemaCompletoRlsIT.kt` (veintiuna migraciones)
-- [ ] T033 [P] README: estado del proyecto, rutas de registro, sección "El primer administrador" reescrita (código de arranque, retirarlo después, segundo `ADMIN`, procedimiento D-010), variables `AUTH_CODIGO_ARRANQUE`, `AUTH_REGISTRO_*`
-- [ ] T034 [P] `docs/ARCHITECTURE.md`: contrato `FichasPersonal`, V20–V21, por qué el registro vive en `auth`; y en `specs/002-auth/spec.md` una nota de que la 005 revierte "sin registro público"
-- [ ] T035 Recorrer `specs/005-staff-registration/quickstart.md` contra la app y corregirlo donde no coincida
-- [ ] T036 `./gradlew build --rerun-tasks` en verde; `git status` sin `.env` ni artefactos
+- [X] T029 [P] Test `app/src/test/kotlin/com/granatum/core/AutorizacionRegistrosIT.kt`: rutas de `/api/auth/registros` con `ENCARGADO`, `EMPLEADO`, `REPRESENTANTE` → `403`, sin token → `401`; `POST /api/auth/registro` sin token responde (no `401`)
+- [X] T030 [P] Test `app/src/test/kotlin/com/granatum/core/RegistroDePuntaAPuntaIT.kt` con la implementación real de `timetracking`: arranque, registro, aprobación creando ficha, login, y la ficha visible en `GET /api/empleados`
+- [X] T031 [P] Ampliar `auth/test/kotlin/com/granatum/core/SinDatosPersonalesEnLogsIT.kt` (log en `DEBUG`): registrar, aprobar, rechazar y arrancar no escriben correo, nombre, documento, contraseña ni código
+- [X] T032 [P] Añadir `solicitudes_registro` a `app/src/test/kotlin/com/granatum/core/EsquemaCompletoRlsIT.kt` (veintiuna migraciones)
+- [X] T033 [P] README: estado del proyecto, rutas de registro, sección "El primer administrador" reescrita (código de arranque, retirarlo después, segundo `ADMIN`, procedimiento D-010), variables `AUTH_CODIGO_ARRANQUE`, `AUTH_REGISTRO_*`
+- [X] T034 [P] `docs/ARCHITECTURE.md`: contrato `FichasPersonal`, V20–V21, por qué el registro vive en `auth`; y en `specs/002-auth/spec.md` una nota de que la 005 revierte "sin registro público"
+- [X] T035 Recorrer `specs/005-staff-registration/quickstart.md` contra la app y corregirlo donde no coincida
+- [X] T036 `./gradlew build --rerun-tasks` en verde; `git status` sin `.env` ni artefactos *(312 tests; un fallo intermitente de `ClienteLentoExportacionIT`, ajeno a esta feature y verde al repetirlo solo: es sensible a la carga de la máquina)*
 
 ---
 

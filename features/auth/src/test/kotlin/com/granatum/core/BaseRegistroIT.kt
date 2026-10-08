@@ -9,19 +9,14 @@ import com.granatum.core.service.AprobacionRegistroService
 import com.granatum.core.service.DatosRegistro
 import com.granatum.core.service.RegistroService
 import com.granatum.core.service.ResultadoRegistro
-import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcTemplate
-import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertIs
 
 /**
- * Shared helpers for the sign-up tests (feature 005).
- *
- * The container is shared across classes and the pending-request cap is
- * global, so each test starts by expiring whatever other tests left pending -
- * through the same UPDATE the expiry job uses, never by deleting.
+ * Shared helpers for the sign-up tests (feature 005). Other tests' pending
+ * requests are expired by [BaseAuthIT] before each test.
  */
 abstract class BaseRegistroIT : BaseAuthIT() {
 
@@ -33,11 +28,6 @@ abstract class BaseRegistroIT : BaseAuthIT() {
 
     protected val password = "Granatum-Florista-2026!"
     protected val adminId: UUID = UUID.randomUUID()
-
-    @BeforeEach
-    fun sinPendientesAjenas() {
-        solicitudes.caducarAnterioresA(Instant.now().plusSeconds(3600), Instant.now())
-    }
 
     protected fun dniValido(): String {
         val numero = (10_000_000..99_999_999).random()

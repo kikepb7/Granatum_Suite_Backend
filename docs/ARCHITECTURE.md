@@ -187,6 +187,30 @@ Reglas que este primer caso dejó claras:
   apunte a una persona que dejó de existir. Por eso además de prevenirse, se
   **detectan**: `GET /api/auth/cuentas/huerfanas` y un trabajo nocturno.
 
+El segundo, `FichasPersonal` (feature 005), es de **escritura**: `auth` busca la
+ficha de personal que tiene un documento y, si no la hay, la crea al aprobar un
+registro o al crear el primer `ADMIN`.
+
+```kotlin
+interface FichasPersonal {
+    fun buscarPorDocumento(documento: String): EntityId?
+    fun crear(alta: AltaFichaPersonal): EntityId
+}
+```
+
+- **Es un contrato aparte, no dos métodos más en `DirectorioEmpleados`.** Ese
+  se diseñó sin datos personales; este maneja nombre y documento y escribe.
+  Mezclarlos daría a cualquier consumidor del contrato estrecho una forma de
+  crear fichas. Dos contratos con un propósito cada uno se auditan de un vistazo.
+- **Se une a la transacción de quien llama.** Aprobar crea la ficha y la cuenta
+  juntas o ninguna; la implementación de `timetracking` usa la propagación por
+  defecto y el mismo `EmpleadoService.crear` que el alta manual.
+
+**Por qué el registro vive en `auth` y no en un módulo nuevo.** Lo que crea es
+una credencial, y registrarse y entrar comparten la tabla de cuentas: separarlos
+obligaría a compartir esa tabla entre módulos, que es justo lo que el principio
+I prohíbe.
+
 **Nombres de clase únicos en todo el producto.** Todos los módulos comparten el
 namespace `com.granatum.core` y cada uno va en su propio jar, así que dos clases
 con el mismo nombre cualificado significan que en ejecución solo se carga una:
@@ -303,7 +327,8 @@ inserción (`SinBorradoFacturacionIT`).
 Flyway comparte un único histórico en `classpath:db/migration` para todos los
 módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
 `timetracking` `V6`–`V11`, `auth` `V12`–`V14`, la exportación de
-`timetracking` `V15`–`V16` e `invoices` `V17`–`V19`. Es un acoplamiento real entre módulos — al añadir una
+`timetracking` `V15`–`V16`, `invoices` `V17`–`V19` y el registro de `auth`
+`V20`–`V21`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

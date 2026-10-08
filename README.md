@@ -26,7 +26,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway.
 - ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
 - ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
-- ⚠️ **Falta una vía para crear el primer `ADMIN` en producción** — ver [El primer administrador](#el-primer-administrador). Bloquea el primer despliegue.
+- ✅ Registro del personal — implementado. Cada persona se registra con su correo, la contraseña que elige, su nombre y su DNI/NIE; un `ADMIN` aprueba la solicitud con el código de verificación que la persona le dice en persona, elige el rol y la vincula a su ficha (o la crea). El primer `ADMIN` entra con un código de arranque fijado al desplegar. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (ver [El primer administrador](#el-primer-administrador) y [Registro](#registro-del-personal)).
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
 - ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
 
@@ -111,6 +111,10 @@ En resumen:
 | `POST /api/auth/cuentas` | `ADMIN` | Da acceso a una persona ya registrada; devuelve la contraseña temporal **una sola vez** |
 | `POST /api/auth/cuentas/{empleadoId}/restablecer` | `ADMIN` | Nueva temporal, cierra todas las sesiones, levanta el bloqueo |
 | `GET /api/auth/cuentas/huerfanas` | `ADMIN` | Cuentas cuya persona ya no existe |
+| `POST /api/auth/registro` | pública | Registro con correo, contraseña, nombre y DNI/NIE → solicitud pendiente y código de verificación (feature 005) |
+| `GET /api/auth/registros` | `ADMIN` | Solicitudes pendientes, de la más antigua a la más reciente |
+| `POST /api/auth/registros/{id}/aprobar` | `ADMIN` | Aprueba con el código, el rol y, si no hay ficha con ese DNI, los datos para crearla |
+| `POST /api/auth/registros/{id}/rechazar` | `ADMIN` | Rechaza; la solicitud deja de guardar datos personales |
 
 Cinco fallos seguidos bloquean la cuenta 1, 5, 15 y 60 minutos de forma
 creciente. Mientras dura el bloqueo, la respuesta es **idéntica** a la de una
@@ -119,8 +123,8 @@ costa de que quien se equivoca no sepa cuánto esperar.
 
 ### Variables de entorno
 
-Ninguna es un secreto, así que todas tienen valor por defecto. El único secreto
-sigue siendo `JWT_SECRET_BASE64`.
+Salvo `JWT_SECRET_BASE64` y `AUTH_CODIGO_ARRANQUE`, ninguna es un secreto, así que
+todas las demás tienen valor por defecto.
 
 | Variable | Defecto | Para qué |
 |----------|---------|----------|
@@ -132,6 +136,9 @@ sigue siendo `JWT_SECRET_BASE64`.
 | `AUTH_HASH_CONCURRENCIA` | 4 | Verificaciones simultáneas como máximo |
 | `AUTH_HASH_ESPERA_MS` | 1000 | Espera en cola antes de responder `503` |
 | `AUTH_PURGA_SESIONES_DIAS` | 30 | Antigüedad para purgar sesiones ya muertas |
+| `AUTH_CODIGO_ARRANQUE` | *(vacío)* | **Secreto.** Código para crear el primer `ADMIN`; vacío lo desactiva |
+| `AUTH_REGISTRO_MAX_PENDIENTES` | 50 | Solicitudes de registro pendientes a la vez como máximo |
+| `AUTH_REGISTRO_CADUCIDAD_DIAS` | 7 | Días tras los que caduca una solicitud sin resolver |
 
 > **Recalibra Argon2 en el hardware de destino antes de desplegar.** Los valores
 > por defecto cuestan ~110 ms en un Mac mini de 10 núcleos; en un contenedor
@@ -148,23 +155,66 @@ sigue siendo `JWT_SECRET_BASE64`.
 
 ### El primer administrador
 
-**Hoy no existe una vía para crearlo en producción.** Dar acceso a alguien exige
-un token de `ADMIN`; en desarrollo se obtiene con `POST /api/dev/token`, pero ese
-endpoint no existe con el perfil `prod`, a propósito, y no hay ninguna cuenta
-sembrada. Así que el primer despliegue no tiene con qué empezar.
+Se crea con el **código de arranque** (feature 005, research.md D-002):
 
-No se ha resuelto aquí porque cada alternativa es una decisión de seguridad:
+1. Al desplegar, fija `AUTH_CODIGO_ARRANQUE` con un valor largo y aleatorio
+   (`openssl rand -base64 24`) y dáselo solo a quien va a ser el primer `ADMIN`.
+2. Esa persona se registra con su correo, su contraseña, su nombre, su DNI y el
+   código:
 
-- **Sembrar por variables de entorno al arrancar** (correo y contraseña inicial
-  del primer `ADMIN`): sencillo, pero deja una credencial en la configuración del
-  despliegue que alguien tiene que acordarse de rotar.
-- **Una tarea de línea de comandos** que genere el hash con el mismo encoder y
-  emita el `INSERT`: no deja nada en la configuración, pero requiere acceso a la
-  base de datos para el primer arranque.
-- **Una ruta de arranque de un solo uso** que solo funcione con la tabla de
-  cuentas vacía: cómoda, pero es una ruta pública mientras no se use.
+   ```bash
+   curl -s -X POST https://<host>/api/auth/registro -H 'Content-Type: application/json' \
+     -d '{"email":"jefe@granatum.es","password":"...","nombre":"...","documentoIdentidad":"...","codigoArranque":"..."}'
+   ```
 
-La cuenta tiene que estar vinculada a una persona de `empleados`, como todas.
+   Responde `201` y ya puede iniciar sesión como `ADMIN`. Si no había ficha de
+   personal con ese DNI, se crea con puesto `Dirección`, jornada completa y alta
+   de hoy; se corrige con `PUT /api/empleados/{id}`.
+3. **Quita `AUTH_CODIGO_ARRANQUE` del despliegue.** Ya no sirve —el código deja
+   de funcionar en cuanto existe cualquier `ADMIN`—, pero no hay por qué tener
+   un secreto que no se usa.
+
+Un código incorrecto, uno que no está configurado o uno que llega cuando ya hay
+`ADMIN` responden igual, `403 CODIGO_ARRANQUE_INVALIDO`: nadie puede averiguar
+así si una instalación ya tiene administrador.
+
+**Aprueba pronto un segundo `ADMIN`.** No hay recuperación por correo, así que si
+el único `ADMIN` olvida su contraseña, la única salida pasa por la base de datos
+(research.md D-010): registrarse con un correo cualquiera y la contraseña nueva,
+copiar el `password_hash` de esa solicitud pendiente a la cuenta del `ADMIN` en
+`cuentas_acceso` (con `requiere_cambio_password = false`), y dejar caducar la
+solicitud. Así la aplicación genera el hash y nunca viaja una contraseña en claro.
+
+### Registro del personal
+
+El contrato está en
+[`specs/005-staff-registration/contracts/README.md`](specs/005-staff-registration/contracts/README.md)
+y el recorrido completo en
+[`specs/005-staff-registration/quickstart.md`](specs/005-staff-registration/quickstart.md).
+
+1. La persona se registra (`POST /api/auth/registro`) y recibe un **código de
+   verificación** de 8 caracteres. Todavía no puede entrar.
+2. Se lo dice al `ADMIN` **en persona**. Es lo que demuestra que quien tiene
+   delante hizo esa solicitud y no otra con su nombre: no hay correo saliente.
+3. El `ADMIN` la ve en `GET /api/auth/registros` y la aprueba con el código y el
+   rol. Si ya hay ficha de personal con ese DNI, la cuenta se vincula a ella; si
+   no, el `ADMIN` aporta puesto, tipo de contrato y fecha de alta y se crea.
+4. La persona entra con la contraseña que eligió, sin tener que cambiarla.
+
+Garantías:
+
+- **No delata correos.** Registrarse con un correo que ya tiene cuenta da la
+  misma respuesta, con un código de la misma forma, y en el mismo tiempo (se
+  mide en `IndistinguibilidadRegistroIT`). No se guarda nada aprobable.
+- **Cinco códigos incorrectos anulan la solicitud.**
+- **Nada personal se queda sin motivo.** Al aprobar, rechazar, caducar (7 días)
+  o anular, la solicitud pierde correo, nombre, DNI y huellas; la base de datos
+  rechaza lo contrario.
+- **Volumen acotado.** Como máximo 50 pendientes a la vez; el ritmo por origen
+  lo limita la feature de endurecimiento.
+
+El alta por un `ADMIN` con contraseña temporal (`POST /api/auth/cuentas`) sigue
+existiendo y funciona igual.
 
 ### Deuda declarada de esta feature
 

@@ -313,7 +313,10 @@ Decisiones tomadas por defecto ante detalles no especificados:
 
 ## Out of Scope
 
-- Registro público: nadie se da de alta por su cuenta.
+- Registro público: nadie se da de alta por su cuenta. *(Revertido por la
+  feature 005, a petición del responsable del producto: cada persona se
+  registra, pero el registro no da acceso hasta que un `ADMIN` lo aprueba. Ver
+  [`specs/005-staff-registration/`](../005-staff-registration/spec.md).)*
 - Verificación de la dirección de correo.
 - Recuperación de contraseña por correo electrónico.
 - Doble factor de autenticación.
