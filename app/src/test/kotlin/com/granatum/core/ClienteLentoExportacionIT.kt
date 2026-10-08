@@ -134,9 +134,24 @@ class ClienteLentoExportacionIT {
             assertTrue(String(inicio, 0, leidos).startsWith("HTTP/1.1 200"), String(inicio, 0, leidos).take(200))
 
             // From here on, the client reads nothing and keeps the socket open.
+            //
+            // Done means BOTH: the connection back in the pool and the export
+            // recorded as interrupted. Checking the pool alone raced: right
+            // after the blocked write fails and the connection comes back, the
+            // server briefly takes another one to record the interruption
+            // (D-003), and an assertion landing in that instant saw 1 active
+            // connection although nothing was held by the stalled client
+            // (measured: released after 15.2 s, then "expected 0 but was 1").
             val empiezo = System.nanoTime()
             val limite = empiezo + (TIMEOUT_SEGUNDOS + 15) * 1_000_000_000
-            while (pool.activeConnections > enReposo && System.nanoTime() < limite) Thread.sleep(200)
+            var anotada: Boolean? = null
+            while (System.nanoTime() < limite) {
+                if (pool.activeConnections == enReposo) {
+                    anotada = interrumpida(empleadoId)
+                    if (anotada != null && pool.activeConnections == enReposo) break
+                }
+                Thread.sleep(200)
+            }
             val segundos = (System.nanoTime() - empiezo) / 1_000_000_000.0
 
             println("ClienteLento: conexion devuelta tras %.1f s (activas=%d)".format(segundos, pool.activeConnections))
@@ -145,12 +160,6 @@ class ClienteLentoExportacionIT {
                 pool.activeConnections,
                 "the connection must return to the pool within timeout-segundos + 15 s, not stay with a stalled client"
             )
-
-            var anotada: Boolean? = null
-            while (anotada == null && System.nanoTime() < limite + 5_000_000_000) {
-                anotada = interrumpida(empleadoId)
-                if (anotada == null) Thread.sleep(200)
-            }
             assertEquals(true, anotada, "recorded, and as interrupted (D-003)")
         }
     }
