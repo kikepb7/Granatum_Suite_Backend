@@ -78,8 +78,8 @@
 
 **Independent Test**: crear dos, listar, rechazar una.
 
-- [ ] T025 [US4] Test `auth/test/kotlin/com/granatum/core/GestionSolicitudesIT.kt`: la lista solo trae pendientes, de la más antigua, con `empleadoExistenteId` cuando hay ficha y sin contraseña ni código en el JSON; rechazar `204`, estado `RECHAZADA` y datos a `NULL`; resolver dos veces `409`; id inexistente `404`; aprobar una anula las demás con el mismo correo o documento
-- [ ] T026 [US4] Implementar `listarPendientes` y `rechazar` en `AprobacionRegistroService` y sus rutas `GET /api/auth/registros` y `POST /api/auth/registros/{id}/rechazar` en `SolicitudRegistroController`
+- [X] T025 [US4] Test `auth/test/kotlin/com/granatum/core/GestionSolicitudesIT.kt`: la lista solo trae pendientes, de la más antigua, con `empleadoExistenteId` cuando hay ficha y sin contraseña ni código en el JSON; rechazar `204`, estado `RECHAZADA` y datos a `NULL`; resolver dos veces `409`; id inexistente `404`; aprobar una anula las demás con el mismo correo o documento
+- [X] T026 [US4] Implementar `listarPendientes` y `rechazar` en `AprobacionRegistroService` y sus rutas `GET /api/auth/registros` y `POST /api/auth/registros/{id}/rechazar` en `SolicitudRegistroController`
 
 ---
 
