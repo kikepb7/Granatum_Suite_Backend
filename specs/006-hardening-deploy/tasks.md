@@ -74,10 +74,10 @@
 
 ## Phase 7: Pulido
 
-- [ ] T025 [P] README: sección "Despliegue" (imagen, perfil, variables `SEGURIDAD_LIMITE_*`, `CORS_ALLOWED_ORIGINS`, `SERVER_FORWARD_HEADERS_STRATEGY`, varias instancias), estado del proyecto
-- [ ] T026 [P] `docs/ARCHITECTURE.md`: limitador (por qué propio, por qué cubeta, por qué `remoteAddr`), perfil por defecto, errores; constitución: nota de deuda cerrada sobre el perfil por defecto (PATCH)
-- [ ] T027 Recorrer `specs/006-hardening-deploy/quickstart.md` y corregirlo
-- [ ] T028 `./gradlew build --rerun-tasks` en verde; `git status` limpio
+- [X] T025 [P] README: sección "Despliegue" (imagen, perfil, variables `SEGURIDAD_LIMITE_*`, `CORS_ALLOWED_ORIGINS`, `SERVER_FORWARD_HEADERS_STRATEGY`, varias instancias), estado del proyecto
+- [X] T026 [P] `docs/ARCHITECTURE.md`: limitador (por qué propio, por qué cubeta, por qué `remoteAddr`), perfil por defecto, errores; constitución: nota de deuda cerrada sobre el perfil por defecto (PATCH)
+- [X] T027 Recorrer `specs/006-hardening-deploy/quickstart.md` y corregirlo
+- [X] T028 `./gradlew build --rerun-tasks` en verde; `git status` limpio *(645 tests, 0 fallos, forzando el perfil `prod` como en la CI)*
 
 ## Dependencies & Execution Order
 

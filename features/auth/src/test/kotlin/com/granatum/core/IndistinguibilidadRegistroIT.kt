@@ -95,8 +95,16 @@ class IndistinguibilidadRegistroIT : BaseRegistroIT() {
             registro.registrar(datos(existente.email))
         }
 
-        val nuevos = (1..muestras).map { medirMs { registro.registrar(datos()) } }
-        val repetidos = (1..muestras).map { medirMs { registro.registrar(datos(existente.email)) } }
+        // Interleaved, not one block after the other: under a full build the
+        // machine's load drifts, and two consecutive blocks would measure the
+        // drift instead of the code (seen once: 21% apart with blocks under a
+        // full build, with the same code that passes on its own).
+        val nuevos = mutableListOf<Double>()
+        val repetidos = mutableListOf<Double>()
+        repeat(muestras) {
+            nuevos += medirMs { registro.registrar(datos()) }
+            repetidos += medirMs { registro.registrar(datos(existente.email)) }
+        }
 
         val mNuevos = mediana(nuevos)
         val mRepetidos = mediana(repetidos)

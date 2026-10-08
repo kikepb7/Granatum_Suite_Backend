@@ -28,6 +28,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
 - ✅ Registro del personal — implementado. Cada persona se registra con su correo, la contraseña que elige, su nombre y su DNI/NIE; un `ADMIN` aprueba la solicitud con el código de verificación que la persona le dice en persona, elige el rol y la vincula a su ficha (o la crea). El primer `ADMIN` entra con un código de arranque fijado al desplegar. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (ver [El primer administrador](#el-primer-administrador) y [Registro](#registro-del-personal)).
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
+- ✅ Endurecimiento y despliegue — implementado. Límite de peticiones por dirección de origen en inicio de sesión, renovación, cierre de sesión, registro y en toda la API; perfil `prod` por defecto; errores sin trazas; cabeceras de seguridad; CORS explícito; imagen de contenedor sin privilegios y CI en todas las ramas. Especificado en [`specs/006-hardening-deploy/`](specs/006-hardening-deploy/) (ver [Despliegue](#despliegue)).
 - ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
 
 ## Arranque rápido
@@ -44,7 +45,7 @@ cp .env.example .env
 # 3. Genera tu clave de firma JWT y ponla en .env (JWT_SECRET_BASE64)
 openssl rand -base64 32
 
-# 4. Arranca la app (perfil "dev" por defecto, aplica las migraciones Flyway al arrancar)
+# 4. Arranca la app (bootRun usa el perfil "dev"; aplica las migraciones Flyway al arrancar)
 ./gradlew :app:bootRun
 ```
 
@@ -430,6 +431,82 @@ Son opcionales — el flujo SDD funciona sin ellas. Las útiles aquí son
 fetch plans) y `supabase-postgres-best-practices` (esquema, migraciones, RLS,
 índices), relevante porque el `datasource` ya admite Supabase y hoy la
 autorización vive solo en `SecurityConfig`, sin nada a nivel de base de datos.
+
+## Despliegue
+
+La aplicación se entrega como imagen de contenedor (feature 006):
+
+```bash
+docker build -t granatum-suite-backend .
+docker run -d --env-file prod.env -p 8080:8080 granatum-suite-backend
+```
+
+O, en local, junto a Postgres:
+
+```bash
+docker compose --profile app up -d --build   # sin --profile app solo arranca Postgres
+```
+
+Qué garantiza la imagen:
+
+- **Arranca como `prod`.** También la aplicación: si nadie fija
+  `SPRING_PROFILES_ACTIVE`, el perfil es `prod`, y `POST /api/dev/token` no
+  existe. Antes el defecto era `dev`, y olvidar la variable dejaba viva una ruta
+  que emite tokens de `ADMIN` sin credencial. Solo `./gradlew :app:bootRun`
+  arranca en `dev` si nadie dice otra cosa.
+- **Sin privilegios**: corre como el usuario `granatum` (uid 10001).
+- **Comprobación de salud** en `/actuator/health` cada 15 s.
+- **Sin secretos dentro**: `.dockerignore` deja fuera `.env`, el historial de git
+  y lo compilado; los secretos llegan como variables de entorno al arrancar.
+- Los tests **no** corren en `docker build`: los corre la CI antes, con Postgres
+  y Testcontainers.
+
+La CI (`.github/workflows/ci.yml`) corre en **todas las ramas** y en cada
+propuesta de cambio, y además construye la imagen y comprueba que no corre como
+`root` ni lleva `.env`.
+
+### Límites de peticiones
+
+Por dirección de origen, en memoria, con un cupo por grupo de rutas
+(`N/periodo`, u `off` para desactivarlo):
+
+| Variable | Defecto | Rutas |
+|----------|---------|-------|
+| `SEGURIDAD_LIMITE_LOGIN` | `10/1m` | `POST /api/auth/login` |
+| `SEGURIDAD_LIMITE_SESION` | `30/1m` | `POST /api/auth/refresh`, `POST /api/auth/logout` |
+| `SEGURIDAD_LIMITE_REGISTRO` | `5/1h` | `POST /api/auth/registro`, código de arranque incluido |
+| `SEGURIDAD_LIMITE_GENERAL` | `300/1m` | Todo `/api` (la comprobación de salud no está bajo `/api`) |
+| `SEGURIDAD_LIMITE_MAX_DIRECCIONES` | `10000` | Direcciones recordadas por cupo; al llenarse se olvida la menos usada |
+
+Superado un cupo, `429 DEMASIADAS_PETICIONES` con `Retry-After` en segundos, sin
+haber comprobado la contraseña ni escrito nada.
+
+> **Detrás de un proxy o balanceador**, todas las peticiones llegan desde la
+> dirección del proxy y compartirían cupo. Pon
+> `SERVER_FORWARD_HEADERS_STRATEGY=native`: Tomcat tomará la dirección real de
+> `X-Forwarded-For`, **solo** si la petición viene de un proxy de red interna.
+> No la actives sin proxy: cualquiera podría inventarse una dirección por
+> petición y saltarse los límites.
+
+> **Varias instancias**: cada una cuenta por su cuenta, así que el límite
+> efectivo es el configurado por el número de instancias. Los contadores
+> compartidos necesitarían infraestructura (Redis) que la constitución deja
+> fuera mientras no haga falta.
+
+Las direcciones de origen no se escriben en los logs ni en la base de datos.
+
+### CORS y cabeceras
+
+`CORS_ALLOWED_ORIGINS` lista los orígenes de navegador admitidos, separados por
+comas (`https://app.granatum.es`). **Vacío, ninguno**: toda petición de navegador
+de otro origen recibe `403`. La app móvil no envía `Origin` y no le afecta.
+
+Todas las respuestas llevan `Content-Security-Policy: default-src 'none'`,
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy:
+no-referrer`, `Permissions-Policy` sin permisos, `Cache-Control: no-store` y, en
+HTTPS, HSTS de un año. Ningún error lleva traza: lo que no responde un módulo
+responde `{code, message}` (`RECURSO_NO_ENCONTRADO`, `METODO_NO_PERMITIDO`,
+`ERROR_INTERNO`…).
 
 ## Supabase
 

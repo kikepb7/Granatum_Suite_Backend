@@ -19,12 +19,18 @@ done; echo
 
 ```bash
 docker compose --profile app up -d --build
+docker compose --profile app logs app | grep "profile is active"
 curl -s -o /dev/null -w "%{http_code}\n" -X POST "localhost:8080/api/dev/token?role=ADMIN"
 ```
 
-**Esperado**: la imagen arranca como `prod` y la ruta de desarrollo no existe
-(`401`/`404`, nunca un token). Una ruta inexistente responde `{code, message}`
-sin traza.
+**Esperado**: `The following 1 profile is active: "prod"` y la ruta de
+desarrollo responde `404`, nunca un token. Una ruta inexistente responde `{code,
+message}` sin traza.
+
+> Ojo con `docker run --env-file .env`: el `.env` local trae
+> `SPRING_PROFILES_ACTIVE=dev` y se impondría al `prod` de la imagen. Para un
+> despliegue usa un fichero de entorno propio, sin esa línea; `docker compose`
+> ya fija `prod` en el servicio `app`.
 
 ## 3. Cabeceras y CORS — US3
 
@@ -44,5 +50,5 @@ docker inspect --format '{{.State.Health.Status}}' $(docker compose --profile ap
 docker compose --profile app exec app ls /app
 ```
 
-**Esperado**: un uid distinto de `0`, `healthy`, y en `/app` solo las capas de la
-aplicación (sin `.env` ni código fuente).
+**Esperado**: `10001`, `healthy`, y en `/app` solo `BOOT-INF`, `META-INF` y
+`org` (las capas del jar), sin `.env` ni código fuente.

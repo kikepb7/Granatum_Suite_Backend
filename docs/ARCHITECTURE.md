@@ -151,6 +151,37 @@ enviado y la conexión se cortaba (`ExportacionHttpIT`). Y el
 `server.tomcat.connection-timeout` explícito es lo que libera la conexión a la
 base de datos cuando un cliente deja de leer (`ClienteLentoExportacionIT`).
 
+## Endurecimiento (feature 006)
+
+**Límite de peticiones propio, en memoria.** Una cubeta de fichas por cupo y
+dirección (`CuboFichas`, `LimitadorPorOrigen` en `app`), en un mapa LRU acotado.
+Propio y no una biblioteca porque son unas decenas de líneas y lo que aportaría
+una biblioteca —contadores distribuidos— exige infraestructura que la
+constitución deja fuera. Cubeta y no ventana fija porque una ventana fija admite
+el doble del cupo en el cambio de ventana.
+
+**El filtro va antes del JWT.** `FiltroLimitePorOrigen` se coloca en la cadena de
+seguridad antes de `JwtAuthFilter`: una petición rechazada cuesta un acceso a un
+mapa, nunca un hash Argon2 ni una escritura. Escribe el `429` él mismo —como
+`EntryPointJson` los `401`/`403`— porque ocurre antes del `DispatcherServlet`,
+donde no hay `@RestControllerAdvice` (desviación declarada del principio VIII).
+No es un bean: un `Filter` bean se registraría además fuera de la cadena.
+
+**La dirección es `remoteAddr`, nunca una cabecera leída a mano.** Detrás de un
+proxy, `server.forward-headers-strategy=native` deja que Tomcat la sustituya por
+la de `X-Forwarded-For` solo si la petición viene de un proxy de confianza.
+Leerla en el filtro permitiría inventarse una dirección por petición.
+
+**`prod` por defecto.** `spring.profiles.active` vale `prod` si nadie lo fija;
+`bootRun` pone `dev`. La ruta `POST /api/dev/token` ya no depende de que alguien
+recuerde una variable en el despliegue.
+
+**Errores.** `ErroresJson` (un `DefaultErrorAttributes`) reduce lo que llega a
+`/error` a `{code, message}`; `server.error.*` no incluye nunca trazas, clases ni
+mensajes de excepción. No es un `@ExceptionHandler(Exception::class)` porque ese
+se adelantaría a los resolutores de Spring y convertiría en `500` los `404`,
+`405` y `415`.
+
 ## Colaboración entre features: contratos en `common`
 
 **Patrón nuevo, introducido por `auth`.** Cuando una feature necesita un dato que

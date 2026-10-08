@@ -194,6 +194,10 @@ arranque en producción con `ddl-auto: validate`.
   para desarrollo local y ser inservibles en producción.
 - El endpoint `POST /api/dev/token` **NO DEBE** existir con el perfil `prod`
   activo, y `DevAuthControllerProfileTest` lo verifica.
+- Sin perfil explícito, la aplicación **DEBE** arrancar con `prod`, nunca con
+  `dev`: que la ruta anterior no exista no puede depender de que alguien
+  recuerde fijar una variable en el despliegue. `PerfilPorDefectoTest` lo
+  verifica. Solo el arranque local (`bootRun`) usa `dev` por defecto.
 - El gate de ese endpoint **DEBE** ser una lista de perfiles permitidos
   (`@Profile("dev")`), nunca una negación (`@Profile("!prod")`): una negación
   lo dejaría vivo bajo cualquier perfil futuro —`staging`, `qa`, `demo`— y el
@@ -395,7 +399,9 @@ Deuda cerrada, conservada aquí como historial:
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.0.2 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 2.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+
+*v2.1.0 (MINOR): el principio VI exige que, sin perfil explícito, la aplicación arranque como `prod` (feature 006). Hasta entonces el perfil por defecto era `dev`, y olvidar `SPRING_PROFILES_ACTIVE` en un despliegue dejaba viva `POST /api/dev/token`. Plan de migración: ninguno pendiente; la feature 006 cambió el defecto y añadió el test.*
 
 *v2.0.2 (PATCH): el principio I dice dónde viven los módulos de feature (`features/`), tras agruparlos ahí. Ninguna regla cambia: cada feature sigue siendo un módulo propio que solo depende de `common`.*
 
