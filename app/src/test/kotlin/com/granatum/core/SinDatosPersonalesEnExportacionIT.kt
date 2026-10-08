@@ -49,6 +49,14 @@ class SinDatosPersonalesEnExportacionIT {
     private val cliente by lazy { RestClient.builder().baseUrl("http://localhost:$puerto").build() }
     private val raiz = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     private val appender = ListAppender<ILoggingEvent>()
+
+    /**
+     * A snapshot of what was captured. Logback appends to the list while
+     * holding the appender's lock, and scheduled jobs or server threads may
+     * still be logging while the test reads: iterating the live list then
+     * throws ConcurrentModificationException (seen once in a full build).
+     */
+    private fun capturados(): List<ILoggingEvent> = synchronized(appender) { appender.list.toList() }
     private var nivelPrevio: Level? = null
 
     @AfterEach
@@ -117,9 +125,9 @@ class SinDatosPersonalesEnExportacionIT {
         assertTrue(String(plantilla, Charsets.UTF_8).contains(documento))
         assertTrue(String(mensual, Charsets.UTF_8).contains(nombre))
         assertEquals(200, verificacion)
-        assertTrue(appender.list.isNotEmpty(), "DEBUG was on and something was logged")
+        assertTrue(capturados().isNotEmpty(), "DEBUG was on and something was logged")
 
-        val delServidor = appender.list.filterNot { it.loggerName.startsWith("org.springframework.web.client") }
+        val delServidor = capturados().filterNot { it.loggerName.startsWith("org.springframework.web.client") }
         val fugas = listOf(nombre, documento, latitud, longitud).flatMap { dato ->
             delServidor
                 .filter { (it.formattedMessage + (it.throwableProxy?.message ?: "")).contains(dato) }

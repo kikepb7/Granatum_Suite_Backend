@@ -79,6 +79,14 @@ class SinDatosPersonalesEnLogsIT {
     @Autowired lateinit var job: MarcadoFichajesIncompletosJob
 
     private lateinit var appender: ListAppender<ILoggingEvent>
+
+    /**
+     * A snapshot of what was captured. Logback appends to the list while
+     * holding the appender's lock, and scheduled jobs or server threads may
+     * still be logging while the test reads: iterating the live list then
+     * throws ConcurrentModificationException (seen once in a full build).
+     */
+    private fun capturados(): List<ILoggingEvent> = synchronized(appender) { appender.list.toList() }
     private lateinit var raiz: Logger
 
     private val latitud = BigDecimal("37.123456")
@@ -112,7 +120,7 @@ class SinDatosPersonalesEnLogsIT {
     }
 
     private fun lineasQueContienen(texto: String): List<String> =
-        appender.list
+        capturados()
             .filter { (it.formattedMessage + (it.throwableProxy?.message ?: "")).contains(texto) }
             .map { "[${it.loggerName}] ${it.formattedMessage.take(160)}" }
 
@@ -216,7 +224,7 @@ class SinDatosPersonalesEnLogsIT {
             null
         )
 
-        appender.list.clear()
+        synchronized(appender) { appender.list.clear() }
         job.marcarIncompletos()
 
         val conId = lineasQueContienen(empleado.id.toString())

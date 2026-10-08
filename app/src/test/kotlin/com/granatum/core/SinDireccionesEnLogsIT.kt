@@ -34,6 +34,14 @@ class SinDireccionesEnLogsIT {
 
     private val raiz = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     private val appender = ListAppender<ILoggingEvent>()
+
+    /**
+     * A snapshot of what was captured. Logback appends to the list while
+     * holding the appender's lock, and scheduled jobs or server threads may
+     * still be logging while the test reads: iterating the live list then
+     * throws ConcurrentModificationException (seen once in a full build).
+     */
+    private fun capturados(): List<ILoggingEvent> = synchronized(appender) { appender.list.toList() }
     private var nivelPrevio: Level? = null
 
     @BeforeEach
@@ -65,8 +73,8 @@ class SinDireccionesEnLogsIT {
         assertEquals(401, login(direccion))
         assertEquals(429, login(direccion))
 
-        assertTrue(appender.list.isNotEmpty(), "the appender must have captured something")
-        val fugas = appender.list
+        assertTrue(capturados().isNotEmpty(), "the appender must have captured something")
+        val fugas = capturados()
             // The test's own HTTP client logs what it sends; it is not the server.
             .filterNot { it.loggerName.startsWith("org.springframework.web.client.") }
             .filter { it.formattedMessage.contains(direccion) }

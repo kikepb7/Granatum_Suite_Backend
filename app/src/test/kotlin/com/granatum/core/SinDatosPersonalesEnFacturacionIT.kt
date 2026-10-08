@@ -53,6 +53,14 @@ class SinDatosPersonalesEnFacturacionIT {
 
     private val raiz = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     private val appender = ListAppender<ILoggingEvent>()
+
+    /**
+     * A snapshot of what was captured. Logback appends to the list while
+     * holding the appender's lock, and scheduled jobs or server threads may
+     * still be logging while the test reads: iterating the live list then
+     * throws ConcurrentModificationException (seen once in a full build).
+     */
+    private fun capturados(): List<ILoggingEvent> = synchronized(appender) { appender.list.toList() }
     private var nivelPrevio: Level? = null
 
     @AfterEach
@@ -117,9 +125,9 @@ class SinDatosPersonalesEnFacturacionIT {
         val recibidas = Regex("Recibidas;Facturas;(\\d+)").find(csv.second)?.groupValues?.get(1)?.toInt() ?: 0
         assertTrue(recibidas >= 1, "the report carries this invoice: ${csv.second.take(400)}")
         assertEquals(200, json("GET", "/api/facturacion/reportes?periodo=TRIMESTRAL&anio=2026&trimestre=4&formato=pdf").first)
-        assertTrue(version.isNotEmpty() && appender.list.isNotEmpty(), "DEBUG was on and something was logged")
+        assertTrue(version.isNotEmpty() && capturados().isNotEmpty(), "DEBUG was on and something was logged")
 
-        val delServidor = appender.list.filterNot { it.loggerName.startsWith("org.springframework.web.client") }
+        val delServidor = capturados().filterNot { it.loggerName.startsWith("org.springframework.web.client") }
         val datos = listOf(
             ConReconocedorDeFacturaFija.NOMBRE, ConReconocedorDeFacturaFija.NIF,
             ConReconocedorDeFacturaFija.CONCEPTO, ConReconocedorDeFacturaFija.TOTAL, "3571.79", "4321,87"

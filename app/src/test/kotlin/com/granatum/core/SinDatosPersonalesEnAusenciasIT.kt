@@ -40,6 +40,14 @@ class SinDatosPersonalesEnAusenciasIT {
     private val http by lazy { ClientePruebaHttp(puerto) }
     private val raiz = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     private val appender = ListAppender<ILoggingEvent>()
+
+    /**
+     * A snapshot of what was captured. Logback appends to the list while
+     * holding the appender's lock, and scheduled jobs or server threads may
+     * still be logging while the test reads: iterating the live list then
+     * throws ConcurrentModificationException (seen once in a full build).
+     */
+    private fun capturados(): List<ILoggingEvent> = synchronized(appender) { appender.list.toList() }
     private var nivelPrevio: Level? = null
 
     @BeforeEach
@@ -82,9 +90,9 @@ class SinDatosPersonalesEnAusenciasIT {
         val rechazada = http.post("/api/ausencias/${campo(pedida.cuerpo, "id")}/rechazar", """{"motivo":"$motivo"}""", encargado)
         assertEquals(200, rechazada.estado, rechazada.cuerpo)
 
-        assertTrue(appender.list.isNotEmpty())
+        assertTrue(capturados().isNotEmpty())
         mapOf("comentario" to comentario, "motivo de rechazo" to motivo).forEach { (que, valor) ->
-            val fugas = appender.list
+            val fugas = capturados()
                 .filterNot { it.loggerName.startsWith("org.springframework.web.client.") }
                 .filter { it.formattedMessage.contains(valor) }
                 .map { "[${it.loggerName}] ${it.formattedMessage.take(200)}" }

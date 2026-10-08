@@ -54,6 +54,14 @@ class SinDatosPersonalesEnLogsIT : BaseAuthIT() {
     var puerto: Int = 0
 
     private lateinit var appender: ListAppender<ILoggingEvent>
+
+    /**
+     * A snapshot of what was captured. Logback appends to the list while
+     * holding the appender's lock, and scheduled jobs or server threads may
+     * still be logging while the test reads: iterating the live list then
+     * throws ConcurrentModificationException (seen once in a full build).
+     */
+    private fun capturados(): List<ILoggingEvent> = synchronized(appender) { appender.list.toList() }
     private lateinit var raiz: Logger
 
     @BeforeEach
@@ -81,7 +89,7 @@ class SinDatosPersonalesEnLogsIT : BaseAuthIT() {
         evento.loggerName.startsWith("org.springframework.web.client.")
 
     private fun lineasQueContienen(texto: String): List<String> =
-        appender.list
+        capturados()
             .filterNot { esDelClienteDelTest(it) }
             .filter { (it.formattedMessage + (it.throwableProxy?.message ?: "")).contains(texto) }
             .map { "[${it.loggerName}] ${it.formattedMessage.take(200)}" }
@@ -136,7 +144,7 @@ class SinDatosPersonalesEnLogsIT : BaseAuthIT() {
             "token de renovacion" to refresh
         )
 
-        assertTrue(appender.list.isNotEmpty(), "the appender must have captured something")
+        assertTrue(capturados().isNotEmpty(), "the appender must have captured something")
 
         secretos.forEach { (que, valor) ->
             val fugas = lineasQueContienen(valor)
