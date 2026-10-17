@@ -58,7 +58,7 @@ class SignUpService(
     private val events: SecurityEventRecorder,
     private val transactions: TransactionTemplate,
     private val entityManager: EntityManager,
-    @param:Value("\${auth.registro.codigo-arranque:}") private val bootstrapCode: String,
+    @param:Value("\${auth.sign-up.bootstrap-code:}") private val bootstrapCode: String,
     private val clock: Clock = Clock.systemUTC()
 ) {
 

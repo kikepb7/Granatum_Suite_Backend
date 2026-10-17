@@ -11,17 +11,17 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 - **Eventos** (spec 011). La plantilla crea eventos y les asigna material del
   inventario, que se retira al asignarlo y vuelve al quitarlo, al borrar el evento
   o al finalizarlo (solo, al terminar su día, o a mano). Sin stock suficiente,
-  `409 STOCK_INSUFICIENTE` con las unidades disponibles. `REPRESENTANTE` los
-  consulta. Constitución v2.5.0: `EMPLEADO` gestiona eventos (sigue sin acceso al
+  `409 INSUFFICIENT_STOCK` con las unidades disponibles. `REPRESENTATIVE` los
+  consulta. Constitución v2.5.0: `EMPLOYEE` gestiona eventos (sigue sin acceso al
   inventario).
-- `DELETE /api/materiales/{id}` de un material asignado a un evento programado
-  responde `409 MATERIAL_EN_USO`.
+- `DELETE /api/materials/{id}` de un material asignado a un evento programado
+  responde `409 MATERIAL_IN_USE`.
 
 ### Cambiado
 
-- **Solo el propietario se registra** (spec 009). `POST /api/auth/registro`
+- **Solo el propietario se registra** (spec 009). `POST /api/auth/sign-up`
   exige el código de arranque; sin él responde `400`.
-- **Alta del personal en un paso** por un `ADMIN`: `POST /api/auth/altas` crea la
+- **Alta del personal en un paso** por un `ADMIN`: `POST /api/auth/onboarding` crea la
   ficha y la cuenta y devuelve una contraseña provisional, que la persona cambia
   al entrar por primera vez.
 
@@ -29,19 +29,72 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
   descripción, dimensiones (alto y ancho, en cm), cantidad, localización
   (almacén `A`, `B` o `C` y sección `1`–`5`), una imagen opcional y sus fechas
   de alta y modificación. **Incompatible** con los clientes anteriores de
-  `/api/materiales`: cambian los cuerpos de petición y respuesta, y
-  `PATCH …/cantidad` pasa a recibir `cantidad`. La migración V26 descarta los
+  `/api/materials`: cambian los cuerpos de petición y respuesta, y
+  `PATCH …/quantity` pasa a recibir `quantity`. La migración V26 descarta los
   materiales existentes (eran datos de prueba) y su historial.
+- **Nombres en inglés** en todo el backend
+  ([docs/english-naming.md](docs/english-naming.md)): identificadores del
+  código, rutas REST, parámetros, campos JSON, valores de enums, roles (`ADMIN`,
+  `MANAGER`, `EMPLOYEE`, `REPRESENTATIVE`), códigos de error, tablas y columnas,
+  claves de configuración y nombres de variables de entorno. Los textos para
+  personas (`message` de los errores, avisos, PDF, CSV) y la documentación
+  siguen en español. Las migraciones V28 a V34 renombran tablas y columnas y
+  actualizan los valores guardados sin perder datos. **Incompatible** con los
+  clientes anteriores. Los tokens emitidos antes del despliegue llevan los roles
+  antiguos y dejan de valer: cada persona vuelve a iniciar sesión una vez.
+  Variables de entorno que un despliegue tiene que renombrar (antes → después):
+  - `AUTH_HASH_CONCURRENCIA` → `AUTH_HASH_CONCURRENCY`
+  - `AUTH_HASH_ESPERA_MS` → `AUTH_HASH_WAIT_MS`
+  - `AUTH_PURGA_SESIONES_DIAS` → `AUTH_SESSION_PURGE_DAYS`
+  - `AUTH_EVENTOS_RETENCION_DIAS` → `AUTH_SECURITY_EVENTS_RETENTION_DAYS`
+  - `AUTH_CODIGO_ARRANQUE` → `AUTH_BOOTSTRAP_CODE`
+  - `TIMETRACKING_EXPORTACION_CONCURRENCIA` → `TIMETRACKING_EXPORT_CONCURRENCY`
+  - `TIMETRACKING_EXPORTACION_ESPERA_MS` → `TIMETRACKING_EXPORT_WAIT_MS`
+  - `TIMETRACKING_EXPORTACION_TIMEOUT_SEGUNDOS` → `TIMETRACKING_EXPORT_TIMEOUT_SECONDS`
+  - `TIMETRACKING_EXPORTACION_TAMANO_LOTE` → `TIMETRACKING_EXPORT_BATCH_SIZE`
+  - `TIMETRACKING_VERIFICACION_MAX_BYTES` → `TIMETRACKING_VERIFICATION_MAX_BYTES`
+  - `TIMETRACKING_AVISO_SIN_SALIDA_HORAS` → `TIMETRACKING_MISSING_CLOCK_OUT_HOURS`
+  - `TIMETRACKING_AVISO_SIN_SALIDA_CRON` → `TIMETRACKING_MISSING_CLOCK_OUT_CRON`
+  - `TIMETRACKING_RETENCION_*` → `TIMETRACKING_RETENTION_*` (claves
+    `timetracking.retention.enabled`, `.cron` y `.years`; por ejemplo
+    `TIMETRACKING_RETENCION_HABILITADA` → `TIMETRACKING_RETENTION_ENABLED`)
+  - `INVOICES_RECONOCIMIENTO_CONCURRENCIA` → `INVOICES_RECOGNITION_CONCURRENCY`
+  - `INVOICES_RECONOCIMIENTO_TIMEOUT_SEGUNDOS` → `INVOICES_RECOGNITION_TIMEOUT_SECONDS`
+  - `INVOICES_REINTENTO_CRON` → `INVOICES_RETRY_CRON`
+  - `INVOICES_REINTENTO_TRAS_MINUTOS` → `INVOICES_RETRY_AFTER_MINUTES`
+  - `INVOICES_MAX_BYTES_POR_FICHERO` → `INVOICES_MAX_BYTES_PER_FILE`
+  - `INVOICES_PDF_MAX_PAGINAS` → `INVOICES_PDF_MAX_PAGES`
+  - `INVOICES_REFERENCIA_DIR` → `INVOICES_REFERENCE_DIR`
+  - `INVENTORY_IMAGENES_BUCKET` → `INVENTORY_IMAGES_BUCKET` (el bucket por
+    defecto sigue llamándose `materiales`)
+  - `INVENTORY_IMAGENES_URL_SEGUNDOS` → `INVENTORY_IMAGES_URL_SECONDS`
+  - `INVENTORY_IMAGENES_MAX_BYTES` → `INVENTORY_IMAGES_MAX_BYTES`
+  - `INVENTORY_IMAGENES_TIMEOUT_SEGUNDOS` → `INVENTORY_IMAGES_TIMEOUT_SECONDS`
+  - `EVENTS_FINALIZACION_CRON` → `EVENTS_FINISHING_CRON`
+  - `SEGURIDAD_LIMITE_LOGIN` → `SECURITY_RATE_LIMIT_LOGIN`
+  - `SEGURIDAD_LIMITE_SESION` → `SECURITY_RATE_LIMIT_SESSION`
+  - `SEGURIDAD_LIMITE_REGISTRO` → `SECURITY_RATE_LIMIT_SIGN_UP`
+  - `SEGURIDAD_LIMITE_GENERAL` → `SECURITY_RATE_LIMIT_GENERAL`
+  - `SEGURIDAD_LIMITE_MAX_DIRECCIONES` → `SECURITY_RATE_LIMIT_MAX_ADDRESSES`
+  - `ABSENCES_DIAS_VACACIONES` → `ABSENCES_VACATION_ANNUAL_DAYS`
+  - `NOTIFICATIONS_DIAS_LEIDAS` → `NOTIFICATIONS_READ_DAYS`
+  - `NOTIFICATIONS_DIAS_TODAS` → `NOTIFICATIONS_ALL_DAYS`
+  - `NOTIFICATIONS_LIMPIEZA_CRON` → `NOTIFICATIONS_CLEANUP_CRON`
+
+  Una variable con el nombre antiguo se ignora sin error y la aplicación usa el
+  valor por defecto. Para regenerar el contrato:
+  `OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApiContractIT'`
+  (antes `OPENAPI_ACTUALIZAR`).
 
 ### Añadido
 
 - **Imagen de cada material en Supabase Storage** (spec 010):
-  `PUT /api/materiales/{id}/imagen` (multipart, parte `imagen`) y
-  `DELETE /api/materiales/{id}/imagen`; las lecturas devuelven `imagenUrl`
+  `PUT /api/materials/{id}/image` (multipart, parte `image`) y
+  `DELETE /api/materials/{id}/image`; las lecturas devuelven `imageUrl`
   firmada y temporal. Variables nuevas: `SUPABASE_URL`,
-  `SUPABASE_SERVICE_ROLE_KEY` (secreto), `INVENTORY_IMAGENES_*`.
+  `SUPABASE_SERVICE_ROLE_KEY` (secreto), `INVENTORY_IMAGES_*`.
 - Filtro del listado de materiales por almacén y sección
-  (`GET /api/materiales?almacen=A&seccion=3`).
+  (`GET /api/materials?warehouse=A&section=3`).
 
 ### Eliminado
 

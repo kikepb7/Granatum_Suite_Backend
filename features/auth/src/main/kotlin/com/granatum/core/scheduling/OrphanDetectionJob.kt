@@ -19,7 +19,7 @@ class OrphanDetectionJob(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(cron = "\${auth.huerfanas.cron:0 30 4 * * *}", zone = "Europe/Madrid")
+    @Scheduled(cron = "\${auth.orphans.cron:0 30 4 * * *}", zone = "Europe/Madrid")
     fun detect() {
         val total = detection.findOrphans().size
         if (total > 0) {

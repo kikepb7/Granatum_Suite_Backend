@@ -10,16 +10,16 @@ invoices:
     # A literal empty value: no test of app ever calls the real Claude API, even
     # with ANTHROPIC_API_KEY in .env - which Gradle loads into every test task.
     # The real client is built only from this property, never from the SDK's
-    # own credential lookup (research.md D-006). SinLlamadasRealesEnTestsIT
+    # own credential lookup (research.md D-006). NoRealApiCallsInTestsIT
     # guards it.
     api-key: ""
 
 # Feature 006. Every app test talks to the server from 127.0.0.1, so with the
 # production quotas the suite would trip the limiter on itself. The limiter
 # tests lower these with @TestPropertySource.
-seguridad:
-  limites:
+security:
+  rate-limits:
     login: 1000000/1m
-    sesion: 1000000/1m
-    registro: 1000000/1m
+    session: 1000000/1m
+    sign-up: 1000000/1m
     general: 1000000/1m

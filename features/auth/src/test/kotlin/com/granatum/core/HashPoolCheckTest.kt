@@ -35,7 +35,7 @@ class HashPoolCheckTest {
 
         assertTrue(
             error.message!!.contains("DB_POOL_MAX_SIZE") &&
-                error.message!!.contains("AUTH_HASH_CONCURRENCIA"),
+                error.message!!.contains("AUTH_HASH_CONCURRENCY"),
             "the message has to name both environment variables and both ways out, " +
                 "because whoever hits it is looking at a startup failure and not at " +
                 "this code: ${error.message}"

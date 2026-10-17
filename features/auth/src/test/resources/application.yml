@@ -27,24 +27,24 @@ auth:
       iterations: 1
       parallelism: 1
   hash:
-    # Must match production, and must satisfy `pool >= 2 x concurrencia` -
+    # Must match production, and must satisfy `pool >= 2 x concurrency` -
     # see the note on this property in app/src/main/resources/application.yml.
     # It was 16 here, which with Hikari's default pool of 10 deadlocked the
     # pool under 20 concurrent failed sign-ins: every thread held one
     # connection for the lockout transaction and waited for a second one for
     # the security event. The bound itself is tested directly in
     # BoundedVerifierTest with a semaphore of 1.
-    concurrencia: 4
-    espera-ms: 2000
+    concurrency: 4
+    wait-ms: 2000
 
-  purga-sesiones:
-    dias: 30
+  session-purge:
+    days: 30
 
   # Features 005 and 009. No bootstrap code by default: tests that need one set
   # it with @TestPropertySource, so a test that forgets it sees the production
   # behaviour (sign-up disabled).
-  registro:
-    codigo-arranque: ""
+  sign-up:
+    bootstrap-code: ""
 
 spring:
   datasource:

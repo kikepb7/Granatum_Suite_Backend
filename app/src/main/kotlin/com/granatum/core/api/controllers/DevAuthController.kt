@@ -11,7 +11,7 @@ import java.util.UUID
 
 /**
  * Dev-only convenience endpoint to mint a JWT without a real auth/login flow
- * (that will arrive with the `timetracking`/`Empleado` module). Never active
+ * (that will arrive with the `timetracking`/`Employee` module). Never active
  * outside the `dev` profile.
  */
 @RestController

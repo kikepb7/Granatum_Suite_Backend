@@ -15,13 +15,13 @@ import kotlin.test.assertTrue
 class InfoVersionIT {
 
     @LocalServerPort
-    var puerto: Int = 0
+    var port: Int = 0
 
     @Test
     fun `the info endpoint reports a SemVer version, without authentication`() {
-        val cuerpo = RestClient.create("http://localhost:$puerto").get().uri("/actuator/info").retrieve().body(String::class.java)!!
+        val body = RestClient.create("http://localhost:$port").get().uri("/actuator/info").retrieve().body(String::class.java)!!
 
-        val version = Regex("\"version\"\\s*:\\s*\"([^\"]+)\"").find(cuerpo)?.groupValues?.get(1)
-        assertTrue(version != null && Regex("""\d+\.\d+\.\d+(-SNAPSHOT)?""").matches(version), cuerpo)
+        val version = Regex("\"version\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+        assertTrue(version != null && Regex("""\d+\.\d+\.\d+(-SNAPSHOT)?""").matches(version), body)
     }
 }

@@ -47,7 +47,7 @@ tasks.test {
 }
 
 tasks.register<Test>("claudeRealTest") {
-    description = "Measures recognition against the real Claude API (needs ANTHROPIC_API_KEY and INVOICES_REFERENCIA_DIR)."
+    description = "Measures recognition against the real Claude API (needs ANTHROPIC_API_KEY and INVOICES_REFERENCE_DIR)."
     group = "verification"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath

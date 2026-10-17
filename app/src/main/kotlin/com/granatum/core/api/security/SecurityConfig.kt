@@ -37,7 +37,7 @@ class SecurityConfig {
      */
     @Bean
     @Order(1)
-    fun documentacionChain(httpSecurity: HttpSecurity): SecurityFilterChain =
+    fun documentationChain(httpSecurity: HttpSecurity): SecurityFilterChain =
         httpSecurity
             .securityMatcher("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**")
             .csrf { it.disable() }
@@ -58,14 +58,14 @@ class SecurityConfig {
     fun filterChain(
         httpSecurity: HttpSecurity,
         jwtAuthFilter: JwtAuthFilter,
-        entryPointJson: EntryPointJson,
-        limitadorPorOrigen: LimitadorPorOrigen,
+        jsonEntryPoint: JsonEntryPoint,
+        originRateLimiter: OriginRateLimiter,
         corsConfigurationSource: CorsConfigurationSource
     ): SecurityFilterChain {
         return httpSecurity
             .csrf { it.disable() }
-            // Feature 006: browser origins from seguridad.cors.origenes, none by
-            // default (ConfiguracionCors).
+            // Feature 006: browser origins from security.cors.allowed-origins, none by
+            // default (CorsSettings).
             .cors { it.configurationSource(corsConfigurationSource) }
             // Feature 006, FR-011: on top of Spring Security's defaults
             // (nosniff, X-Frame-Options DENY, Cache-Control no-store, HSTS on
@@ -88,7 +88,7 @@ class SecurityConfig {
                     // Authorization header: there is nothing to authenticate
                     // with yet. Rate limiting for this endpoint belongs to the
                     // hardening feature; what bounds it today is the semaphore
-                    // in VerificadorAcotado, which caps the memory a flood of
+                    // in BoundedVerifier, which caps the memory a flood of
                     // sign-ins can reserve.
                     .requestMatchers(HttpMethod.POST, "/api/auth/login")
                     .permitAll()
@@ -107,28 +107,28 @@ class SecurityConfig {
                     // this is the one place that lets it through.
                     .requestMatchers(HttpMethod.POST, "/api/auth/change-password")
                     .hasAnyAuthority(
-                        JwtAuthFilter.AUTORIDAD_SOLO_CAMBIO_PASSWORD,
+                        JwtAuthFilter.PASSWORD_CHANGE_ONLY_AUTHORITY,
                         "ROLE_ADMIN",
-                        "ROLE_ENCARGADO",
-                        "ROLE_EMPLEADO",
-                        "ROLE_REPRESENTANTE"
+                        "ROLE_MANAGER",
+                        "ROLE_EMPLOYEE",
+                        "ROLE_REPRESENTATIVE"
                     )
                     // Sign-up (features 005 and 009): public, like login -
                     // there is nobody to authenticate yet. Only the business
                     // owner gets anywhere with it: it needs the deploy-time
                     // bootstrap code and stops working once an ADMIN exists.
-                    // Rate per origin: FiltroLimitePorOrigen.
-                    .requestMatchers(HttpMethod.POST, "/api/auth/registro")
+                    // Rate per origin: RateLimitFilter.
+                    .requestMatchers(HttpMethod.POST, "/api/auth/sign-up")
                     .permitAll()
                     // Onboarding a person (feature 009): staff record and
                     // account in one call, ADMIN only like every other way of
                     // handing out access.
-                    .requestMatchers("/api/auth/altas", "/api/auth/altas/**")
+                    .requestMatchers("/api/auth/onboarding", "/api/auth/onboarding/**")
                     .hasRole("ADMIN")
                     // FR-018 and FR-024: only ADMIN creates or resets
-                    // credentials. ENCARGADO runs inventory and approves
+                    // credentials. MANAGER runs inventory and approves
                     // corrections, but does not hand out access.
-                    .requestMatchers("/api/auth/cuentas/**", "/api/auth/cuentas")
+                    .requestMatchers("/api/auth/accounts/**", "/api/auth/accounts")
                     .hasRole("ADMIN")
                     // ASYNC (feature 003): a streamed download ends with an async
                     // dispatch that runs the chain again, and JwtAuthFilter, a
@@ -136,74 +136,74 @@ class SecurityConfig {
                     // was denied after the file had been sent, and the
                     // connection was dropped. An async dispatch only resumes a
                     // request whose REQUEST dispatch was already authorised; no
-                    // client can start one. `ExportacionHttpIT` guards it.
+                    // client can start one. `ExportHttpIT` guards it.
                     .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD, DispatcherType.ASYNC)
                     .permitAll()
                     // The export log and file verification (feature 003, D-014):
-                    // ADMIN only. Deliberately not under /api/fichajes, whose GET
+                    // ADMIN only. Deliberately not under /api/shifts, whose GET
                     // rule admits all four roles - nesting it there would have
                     // made one forgotten matcher order expose who exported whose
                     // register to everyone with read access.
-                    .requestMatchers("/api/exportaciones", "/api/exportaciones/**")
+                    .requestMatchers("/api/exports", "/api/exports/**")
                     .hasRole("ADMIN")
                     // Invoicing (feature 004): ADMIN only, every route under
                     // one prefix and one rule, so no route added later can be
                     // left unprotected by a forgotten matcher. Invoices say
                     // whom the company buys from and sells to, and carry the
                     // DNI of self-employed suppliers (research.md D-017).
-                    .requestMatchers("/api/facturacion", "/api/facturacion/**")
+                    .requestMatchers("/api/invoicing", "/api/invoicing/**")
                     .hasRole("ADMIN")
                     // Absences (feature 007). Most specific first: the yearly
                     // entitlement is ADMIN's; registering on someone's behalf
                     // (sick leave included), approving, rejecting and closing a
-                    // sick leave are ENCARGADO's and ADMIN's; the rest -
+                    // sick leave are MANAGER's and ADMIN's; the rest -
                     // requesting, cancelling, the own list and balance - is open
                     // to the three staff roles, with ownership checked in the
-                    // service against the token subject. REPRESENTANTE is not
+                    // service against the token subject. REPRESENTATIVE is not
                     // among them: the register of absences is not the working
                     // time register art. 34.9 entitles them to.
-                    .requestMatchers("/api/ausencias/derechos/**")
+                    .requestMatchers("/api/absences/entitlements/**")
                     .hasRole("ADMIN")
                     .requestMatchers(
                         HttpMethod.POST,
-                        "/api/ausencias/registro",
-                        "/api/ausencias/*/aprobar",
-                        "/api/ausencias/*/rechazar",
-                        "/api/ausencias/*/alta"
+                        "/api/absences/record",
+                        "/api/absences/*/approve",
+                        "/api/absences/*/reject",
+                        "/api/absences/*/discharge"
                     )
-                    .hasAnyRole("ADMIN", "ENCARGADO")
-                    .requestMatchers("/api/ausencias", "/api/ausencias/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
+                    .hasAnyRole("ADMIN", "MANAGER")
+                    .requestMatchers("/api/absences", "/api/absences/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE")
                     // Notices (feature 008): everyone's own inbox, checked
-                    // against the token subject in the service. REPRESENTANTE
+                    // against the token subject in the service. REPRESENTATIVE
                     // included - it receives nothing, but an empty inbox is
                     // not a secret.
-                    .requestMatchers("/api/notificaciones", "/api/notificaciones/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
-                    .requestMatchers("/api/materiales/**", "/api/categorias/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO")
+                    .requestMatchers("/api/notifications", "/api/notifications/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE", "REPRESENTATIVE")
+                    .requestMatchers("/api/materials/**", "/api/categories/**")
+                    .hasAnyRole("ADMIN", "MANAGER")
                     // Events (feature 011, constitution v2.5.0): the staff prepares
-                    // them - EMPLEADO included - and REPRESENTANTE may read them.
+                    // them - EMPLOYEE included - and REPRESENTATIVE may read them.
                     // Assigning material to an event is not access to the
-                    // inventory: /api/eventos/materiales shows only what is needed
-                    // to choose, and EMPLEADO still has no /api/materiales.
-                    .requestMatchers(HttpMethod.GET, "/api/eventos", "/api/eventos/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
-                    .requestMatchers("/api/eventos", "/api/eventos/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
-                    // Staff management is ADMIN only: ENCARGADO runs inventory
+                    // inventory: /api/events/materials shows only what is needed
+                    // to choose, and EMPLOYEE still has no /api/materials.
+                    .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE", "REPRESENTATIVE")
+                    .requestMatchers("/api/events", "/api/events/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE")
+                    // Staff management is ADMIN only: MANAGER runs inventory
                     // and approves corrections, but does not manage people.
-                    .requestMatchers("/api/empleados/**")
+                    .requestMatchers("/api/employees/**")
                     .hasRole("ADMIN")
-                    // REPRESENTANTE is read-only over the register, so it may
+                    // REPRESENTATIVE is read-only over the register, so it may
                     // reach these paths with GET and nothing else. Resource
-                    // ownership (an EMPLEADO only seeing their own) is checked
+                    // ownership (an EMPLOYEE only seeing their own) is checked
                     // in the service against the JWT subject, because a path
                     // matcher cannot express it.
-                    .requestMatchers(HttpMethod.GET, "/api/fichajes/**", "/api/correcciones/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
-                    .requestMatchers("/api/fichajes/**", "/api/correcciones/**")
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
+                    .requestMatchers(HttpMethod.GET, "/api/shifts/**", "/api/corrections/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE", "REPRESENTATIVE")
+                    .requestMatchers("/api/shifts/**", "/api/corrections/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE")
                     // Hardened from `authenticated()` to requiring a real role.
                     //
                     // A token pending a password change **is** authenticated, so
@@ -212,21 +212,21 @@ class SecurityConfig {
                     // opposite of deny-by-default and exactly the kind of hole
                     // nobody notices, because adding a route is what opens it.
                     //
-                    // `ComodinSecurityConfigIT` guards this line, and it needs
+                    // `SecurityConfigCatchAllIT` guards this line, and it needs
                     // to: reverting it to `authenticated()` breaks nothing else.
                     .anyRequest()
-                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
+                    .hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE", "REPRESENTATIVE")
             }
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
             // Feature 006: per-origin quotas run before the token is even
             // parsed, so a refused request costs a map lookup and nothing else.
-            .addFilterBefore(FiltroLimitePorOrigen(limitadorPorOrigen), JwtAuthFilter::class.java)
+            .addFilterBefore(RateLimitFilter(originRateLimiter), JwtAuthFilter::class.java)
             .exceptionHandling { configure ->
                 // Replaces HttpStatusEntryPoint, which answered a 401 with an
                 // empty body - no `code` and no way to tell an expired token
-                // from an invalid one, which FR-006 requires. See EntryPointJson.
-                configure.authenticationEntryPoint(entryPointJson)
-                configure.accessDeniedHandler(entryPointJson)
+                // from an invalid one, which FR-006 requires. See JsonEntryPoint.
+                configure.authenticationEntryPoint(jsonEntryPoint)
+                configure.accessDeniedHandler(jsonEntryPoint)
             }
             .build()
     }

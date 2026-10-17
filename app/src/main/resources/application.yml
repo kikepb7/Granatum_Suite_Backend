@@ -7,7 +7,7 @@ spring:
       # Feature 004 uploads photos and PDFs of invoices. Spring's defaults (1 MB
       # per file, 10 MB per request) would reject any phone photo. Both limits
       # are the REQUEST's on purpose: the 10 MB per FILE is enforced by the
-      # invoices service, so one oversized file comes back as DEMASIADO_GRANDE
+      # invoices service, so one oversized file comes back as TOO_LARGE
       # while the others in the same upload are accepted. A per-file limit here
       # would fail the whole batch before reaching the controller
       # (specs/004-invoices research.md D-007, finding I1).
@@ -19,7 +19,7 @@ spring:
       # The record export streams through StreamingResponseBody, which runs as
       # an async request. Left unset, the container's own async timeout applies
       # and cuts a large export off mid-file with no visible error. Set above
-      # timetracking.exportacion.timeout-segundos (120) so that, of the two, the
+      # timetracking.export.timeout-seconds (120) so that, of the two, the
       # export's own limit is the one that acts.
       request-timeout: 130s
 
@@ -81,13 +81,13 @@ logging:
     # written `toString()` on each entity entirely:
     #
     # - EntityPrinter dumps every persistent property of an entity, which for
-    #   EmpleadoEntity means the identity document.
+    #   EmployeeEntity means the identity document.
     # - the jdbc.bind logger prints bound statement parameters, which means
     #   every value that reaches the database, locations included.
     #
     # Pinned above DEBUG so raising the root level to diagnose a problem in
     # production cannot expose them by accident - which is exactly the scenario
-    # a diagnostic session is. Found by SinDatosPersonalesEnLogsIT, which raises
+    # a diagnostic session is. Found by the NoPersonalDataInLogsIT tests, which raises
     # the root logger to DEBUG on purpose to prove these survive it.
     org.hibernate.internal.util.EntityPrinter: WARN
     # Hibernate 7.2 (Spring Boot 4.0.8) prints entities through the
@@ -143,59 +143,59 @@ auth:
     #
     # INVARIANT: the connection pool must be at least TWICE this value.
     # A failed sign-in holds one connection for the lockout transition (which
-    # takes a row lock) while RegistradorEventosSeguridad opens a second,
+    # takes a row lock) while SecurityEventRecorder opens a second,
     # nested transaction for the security event. With N threads past the
     # semaphore each needing two connections, a pool smaller than 2N deadlocks:
     # every thread holds one and waits for another that nobody will release.
     # Measured the hard way - 20 concurrent failures against a pool of 10 hung
     # until the connection timeout.
     # With 4 here and DB_POOL_MAX_SIZE at 10, the ceiling is 8 of 10.
-    concurrencia: ${AUTH_HASH_CONCURRENCIA:4}
+    concurrency: ${AUTH_HASH_CONCURRENCY:4}
     # Cuanto espera un login en cola antes de recibir 503. Derivado del
     # presupuesto de 2 s de SC-011: 1 s deja un segundo entero de margen.
-    espera-ms: ${AUTH_HASH_ESPERA_MS:1000}
+    wait-ms: ${AUTH_HASH_WAIT_MS:1000}
 
-  purga-sesiones:
-    dias: ${AUTH_PURGA_SESIONES_DIAS:30}
+  session-purge:
+    days: ${AUTH_SESSION_PURGE_DAYS:30}
 
-  # Retention of eventos_seguridad (debt of feature 002, closed): two years by
+  # Retention of security_events (debt of feature 002, closed): two years by
   # default, enough to investigate an incident after the fact. Not the
   # working-time register, so principle III's four years do not apply - and
   # keeping an audit log for ever breaches GDPR art. 5.1.e from the other side.
-  eventos:
-    retencion-dias: ${AUTH_EVENTOS_RETENCION_DIAS:730}
+  security-events:
+    retention-days: ${AUTH_SECURITY_EVENTS_RETENTION_DAYS:730}
 
   # Sign-up of the business owner (features 005 and 009).
-  registro:
+  sign-up:
     # The ONLY secret of this block, and with no value here, ever (principle
     # VI). It lets the owner sign up as the first ADMIN of a fresh installation
     # and stops working the moment any ADMIN exists; everyone else is onboarded
     # by an ADMIN. Empty means sign-up disabled. Remove it from the deployment
     # once the owner exists. See specs/005-staff-registration research.md D-002.
-    codigo-arranque: ${AUTH_CODIGO_ARRANQUE:}
+    bootstrap-code: ${AUTH_BOOTSTRAP_CODE:}
 
 timetracking:
   # Feature 008: shifts open longer than this get a "forgotten clock-out?"
   # notice to their owner. Checked every half hour.
-  aviso-sin-salida:
-    horas: ${TIMETRACKING_AVISO_SIN_SALIDA_HORAS:10}
-    cron: ${TIMETRACKING_AVISO_SIN_SALIDA_CRON:0 */30 * * * *}
-  exportacion:
+  missing-clock-out:
+    hours: ${TIMETRACKING_MISSING_CLOCK_OUT_HOURS:10}
+    cron: ${TIMETRACKING_MISSING_CLOCK_OUT_CRON:0 */30 * * * *}
+  export:
     # How many exports may run at once. Each holds ONE database connection for
     # as long as it streams (a single snapshot transaction, so the file is
     # coherent and two identical exports are byte-identical). Beyond this, 503
     # with Retry-After. See specs/003-timetracking-export/research.md D-002.
-    concurrencia: ${TIMETRACKING_EXPORTACION_CONCURRENCIA:2}
-    espera-ms: ${TIMETRACKING_EXPORTACION_ESPERA_MS:1000}
-    timeout-segundos: ${TIMETRACKING_EXPORTACION_TIMEOUT_SEGUNDOS:120}
-    tamano-lote: ${TIMETRACKING_EXPORTACION_TAMANO_LOTE:500}
-    # Upper bound for POST /api/exportaciones/verificar, which hashes the body
+    concurrency: ${TIMETRACKING_EXPORT_CONCURRENCY:2}
+    wait-ms: ${TIMETRACKING_EXPORT_WAIT_MS:1000}
+    timeout-seconds: ${TIMETRACKING_EXPORT_TIMEOUT_SECONDS:120}
+    batch-size: ${TIMETRACKING_EXPORT_BATCH_SIZE:500}
+    # Upper bound for POST /api/exports/verify, which hashes the body
     # as it reads it and never stores it. 100 MB.
-    verificacion-max-bytes: ${TIMETRACKING_VERIFICACION_MAX_BYTES:104857600}
+    verification-max-bytes: ${TIMETRACKING_VERIFICATION_MAX_BYTES:104857600}
 
 server:
   # Feature 006, FR-009: no error response carries a stack trace, an exception
-  # class or message, or binding details - in any profile. ErroresJson reduces
+  # class or message, or binding details - in any profile. JsonErrorAttributes reduces
   # what is left to {code, message}.
   error:
     include-stacktrace: never
@@ -215,7 +215,7 @@ server:
     # timeout (it only applies to queries) nor the async request timeout frees
     # it. This one does: the blocked write fails, the export is recorded as
     # interrupted and the connection goes back to the pool. Left at Tomcat's
-    # implicit 60 s, ClienteLentoExportacionIT measured 65 s of a connection
+    # implicit 60 s, SlowExportClientIT measured 65 s of a connection
     # held by a stalled client. It also bounds how long Tomcat waits for a
     # request's headers and between keep-alive requests, for which 10 s is
     # ample for this API.
@@ -228,31 +228,31 @@ server:
 # Hardening (feature 006). Per-origin request quotas, in memory, one value per
 # quota: N/period, or "off". None is a secret. See
 # specs/006-hardening-deploy/research.md D-001 to D-003.
-seguridad:
-  limites:
+security:
+  rate-limits:
     # POST /api/auth/login: what bounds password guessing from one address.
-    login: ${SEGURIDAD_LIMITE_LOGIN:10/1m}
+    login: ${SECURITY_RATE_LIMIT_LOGIN:10/1m}
     # POST /api/auth/refresh and /api/auth/logout: the mobile app renews in the
     # background, so this one is roomier.
-    sesion: ${SEGURIDAD_LIMITE_SESION:30/1m}
-    # POST /api/auth/registro, bootstrap code included: what bounds guessing it.
-    registro: ${SEGURIDAD_LIMITE_REGISTRO:5/1h}
+    session: ${SECURITY_RATE_LIMIT_SESSION:30/1m}
+    # POST /api/auth/sign-up, bootstrap code included: what bounds guessing it.
+    sign-up: ${SECURITY_RATE_LIMIT_SIGN_UP:5/1h}
     # Everything under /api. /actuator is outside it, so health checks are
     # never limited.
-    general: ${SEGURIDAD_LIMITE_GENERAL:300/1m}
+    general: ${SECURITY_RATE_LIMIT_GENERAL:300/1m}
     # Addresses remembered per quota. When full, the least recently used is
     # forgotten: memory never grows without bound (FR-006).
-    max-direcciones: ${SEGURIDAD_LIMITE_MAX_DIRECCIONES:10000}
+    max-addresses: ${SECURITY_RATE_LIMIT_MAX_ADDRESSES:10000}
   cors:
     # Browser origins admitted, comma-separated (https://app.granatum.es,...).
     # Empty: no browser origin at all. The mobile app sends no Origin and does
     # not need one.
-    origenes: ${CORS_ALLOWED_ORIGINS:}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
 # OpenAPI document (springdoc): /v3/api-docs and the Swagger UI at
 # /swagger-ui.html. Off unless OPENAPI_ENABLED=true - on in the dev profile.
 # The contract the apps generate code from is also committed, in
-# docs/openapi.json, kept in step by ContratoOpenApiIT.
+# docs/openapi.json, kept in step by OpenApiContractIT.
 springdoc:
   api-docs:
     enabled: ${OPENAPI_ENABLED:false}
@@ -265,26 +265,26 @@ springdoc:
   # Deterministic output, so the committed copy only changes when the API does.
   writer-with-order-by-keys: true
   # Without this, every exception handler's status is listed on every
-  # operation of every module; ConfiguracionOpenApi documents the common ones.
+  # operation of every module; OpenApiSettings documents the common ones.
   override-with-generic-response: false
   default-produces-media-type: application/json
 
 # Absences (feature 007). Not a secret.
 absences:
-  vacaciones:
+  vacation:
     # Yearly holiday entitlement in calendar days when the ADMIN has not set
     # one for the person and year: the minimum of art. 38 of the Workers'
     # Statute.
-    dias-anuales: ${ABSENCES_DIAS_VACACIONES:30}
+    annual-days: ${ABSENCES_VACATION_ANNUAL_DAYS:30}
 
 # Notices (feature 008). None is a secret.
 notifications:
-  limpieza:
+  cleanup:
     # Read notices older than this many days, and any older than the second,
     # are deleted daily: a notice has no legal value (research D-005).
-    dias-leidas: ${NOTIFICATIONS_DIAS_LEIDAS:90}
-    dias-todas: ${NOTIFICATIONS_DIAS_TODAS:180}
-    cron: ${NOTIFICATIONS_LIMPIEZA_CRON:0 10 5 * * *}
+    read-days: ${NOTIFICATIONS_READ_DAYS:90}
+    all-days: ${NOTIFICATIONS_ALL_DAYS:180}
+    cron: ${NOTIFICATIONS_CLEANUP_CRON:0 10 5 * * *}
 
 # Invoicing (feature 004). Only api-key is a secret, and it has no value here,
 # ever (principle VI): empty means manual mode - invoices are stored and filled
@@ -294,34 +294,34 @@ invoices:
     api-key: ${ANTHROPIC_API_KEY:}
     model: ${INVOICES_CLAUDE_MODEL:claude-opus-5-5}
     effort: ${INVOICES_CLAUDE_EFFORT:medium}
-  reconocimiento:
-    concurrencia: ${INVOICES_RECONOCIMIENTO_CONCURRENCIA:3}
-    timeout-segundos: ${INVOICES_RECONOCIMIENTO_TIMEOUT_SEGUNDOS:120}
+  recognition:
+    concurrency: ${INVOICES_RECOGNITION_CONCURRENCY:3}
+    timeout-seconds: ${INVOICES_RECOGNITION_TIMEOUT_SECONDS:120}
     # Picks up invoices left pending by a restart or a failure.
-    reintento-cron: ${INVOICES_REINTENTO_CRON:0 */5 * * * *}
-    reintento-tras-minutos: ${INVOICES_REINTENTO_TRAS_MINUTOS:10}
-  documentos:
-    max-bytes-por-fichero: ${INVOICES_MAX_BYTES_POR_FICHERO:10485760}
-    pdf-max-paginas: ${INVOICES_PDF_MAX_PAGINAS:20}
+    retry-cron: ${INVOICES_RETRY_CRON:0 */5 * * * *}
+    retry-after-minutes: ${INVOICES_RETRY_AFTER_MINUTES:10}
+  documents:
+    max-bytes-per-file: ${INVOICES_MAX_BYTES_PER_FILE:10485760}
+    pdf-max-pages: ${INVOICES_PDF_MAX_PAGES:20}
 
 # Materials' images (feature 010) in a PRIVATE Supabase Storage bucket. Only
 # service-key is a secret, and it has no value here, ever (principle VI). With
 # the URL or the key empty there is no Storage: the inventory works and only
 # image uploads are rejected (specs/010-inventory-materials-refactor D-010).
 inventory:
-  imagenes:
+  images:
     supabase-url: ${SUPABASE_URL:}
     service-key: ${SUPABASE_SERVICE_ROLE_KEY:}
-    bucket: ${INVENTORY_IMAGENES_BUCKET:materiales}
+    bucket: ${INVENTORY_IMAGES_BUCKET:materiales}
     # How long a signed image URL works.
-    url-segundos: ${INVENTORY_IMAGENES_URL_SEGUNDOS:3600}
+    url-seconds: ${INVENTORY_IMAGES_URL_SECONDS:3600}
     # Per file, enforced by the service; the multipart limits above are the
     # request's.
-    max-bytes: ${INVENTORY_IMAGENES_MAX_BYTES:10485760}
-    timeout-segundos: ${INVENTORY_IMAGENES_TIMEOUT_SEGUNDOS:30}
+    max-bytes: ${INVENTORY_IMAGES_MAX_BYTES:10485760}
+    timeout-seconds: ${INVENTORY_IMAGES_TIMEOUT_SECONDS:30}
 
 # Feature 011: the events of days already gone are finished, and their material
 # returned to the inventory, at 00:05 Europe/Madrid by default.
 events:
-  finalizacion:
-    cron: ${EVENTS_FINALIZACION_CRON:0 5 0 * * *}
+  finishing:
+    cron: ${EVENTS_FINISHING_CRON:0 5 0 * * *}

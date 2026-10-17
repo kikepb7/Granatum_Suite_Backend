@@ -29,7 +29,7 @@ class BootstrapCodeCheckTest {
         val code = "granatum-corto-2026-abc"
         val error = assertFailsWith<IllegalStateException> { BootstrapCodeCheck(code).verify() }
 
-        assertTrue(error.message!!.contains("AUTH_CODIGO_ARRANQUE"), error.message)
+        assertTrue(error.message!!.contains("AUTH_BOOTSTRAP_CODE"), error.message)
         assertFalse(error.message!!.contains(code), "the secret must not end up in a startup log")
     }
 }

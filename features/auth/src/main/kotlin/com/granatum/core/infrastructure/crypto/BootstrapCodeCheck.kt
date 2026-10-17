@@ -17,14 +17,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BootstrapCodeCheck(
-    @param:Value("\${auth.registro.codigo-arranque:}") private val code: String
+    @param:Value("\${auth.sign-up.bootstrap-code:}") private val code: String
 ) {
 
     @PostConstruct
     fun verify() {
         val trimmed = code.trim()
         check(trimmed.isEmpty() || trimmed.length >= MIN_LENGTH) {
-            "AUTH_CODIGO_ARRANQUE es demasiado corto: necesita al menos $MIN_LENGTH caracteres " +
+            "AUTH_BOOTSTRAP_CODE es demasiado corto: necesita al menos $MIN_LENGTH caracteres " +
                 "(genera uno con `openssl rand -base64 24`) o déjalo vacío para desactivar el arranque."
         }
     }

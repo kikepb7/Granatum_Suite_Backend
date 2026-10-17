@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
  *
  * ## Why the timeout is configuration
  *
- * `auth.hash.espera-ms` is the only thing that decides whether a queued sign-in
+ * `auth.hash.wait-ms` is the only thing that decides whether a queued sign-in
  * breaches SC-011 (< 2 s). The default of 1000 ms leaves a full second of margin
  * over that budget; as a hard-coded constant it could not be adjusted when the
  * Argon2 parameters are recalibrated for the target hardware, which is exactly
@@ -42,8 +42,8 @@ import java.util.concurrent.TimeUnit
 @Component
 class BoundedVerifier(
     private val passwordEncoder: PasswordEncoder,
-    @param:Value("\${auth.hash.concurrencia}") private val concurrency: Int,
-    @param:Value("\${auth.hash.espera-ms}") private val waitMs: Long
+    @param:Value("\${auth.hash.concurrency}") private val concurrency: Int,
+    @param:Value("\${auth.hash.wait-ms}") private val waitMs: Long
 ) {
 
     // Fair, so a queued request is served in order instead of being overtaken

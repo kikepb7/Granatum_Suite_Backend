@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
  * SC-001, SC-002, FR-007 against the **real** Claude API. Costs money, so it is
  * tagged out of `test` and runs only through `claudeRealTest`, by hand:
  *
- *     ANTHROPIC_API_KEY=... INVOICES_REFERENCIA_DIR=/ruta ./gradlew :features:invoices:claudeRealTest
+ *     ANTHROPIC_API_KEY=... INVOICES_REFERENCE_DIR=/ruta ./gradlew :features:invoices:claudeRealTest
  *
  * The directory holds real invoices of the company - **never committed** - each
  * `X.pdf` / `X.jpg` / `X.png` next to an `X.json` with the expected values
@@ -42,9 +42,9 @@ class RecognitionPrecisionIT {
     @Test
     fun `recognition of the reference invoices meets SC-001 and SC-002`() {
         val key = System.getenv("ANTHROPIC_API_KEY").orEmpty()
-        val dir = System.getenv("INVOICES_REFERENCIA_DIR")?.let(::File)
+        val dir = System.getenv("INVOICES_REFERENCE_DIR")?.let(::File)
         assumeTrue(key.isNotBlank(), "sin ANTHROPIC_API_KEY: no se mide nada")
-        assumeTrue(dir != null && dir.isDirectory, "sin INVOICES_REFERENCIA_DIR: no hay facturas de referencia")
+        assumeTrue(dir != null && dir.isDirectory, "sin INVOICES_REFERENCE_DIR: no hay facturas de referencia")
 
         val recognizer = ClaudeInvoiceRecognizer(
             InvoiceClaudeSettings(

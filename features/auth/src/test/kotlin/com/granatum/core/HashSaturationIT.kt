@@ -49,8 +49,8 @@ class HashSaturationIT : BaseAuthIT() {
         @DynamicPropertySource
         @JvmStatic
         fun boundToMaximum(registry: DynamicPropertyRegistry) {
-            registry.add("auth.hash.concurrencia") { "1" }
-            registry.add("auth.hash.espera-ms") { "1" }
+            registry.add("auth.hash.concurrency") { "1" }
+            registry.add("auth.hash.wait-ms") { "1" }
             // Real-ish cost, so one verification actually holds the permit long
             // enough for the others to time out. With 1 MiB / t=1 they would all
             // sail through and the test would prove nothing.

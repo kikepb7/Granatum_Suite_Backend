@@ -36,7 +36,7 @@ La imagen arranca con el perfil `prod`, como usuario sin privilegios (uid
 
 | Variable | Qué es |
 |---|---|
-| `AUTH_CODIGO_ARRANQUE` | **Secreto**, 24 caracteres o más (`openssl rand -base64 24`). Permite crear el primer `ADMIN` (apartado 4). **Quítala** en cuanto exista. |
+| `AUTH_BOOTSTRAP_CODE` | **Secreto**, 24 caracteres o más (`openssl rand -base64 24`). Permite crear el primer `ADMIN` (apartado 4). **Quítala** en cuanto exista. |
 
 ### Según el entorno
 
@@ -44,15 +44,15 @@ La imagen arranca con el perfil `prod`, como usuario sin privilegios (uid
 |---|---|
 | `SERVER_FORWARD_HEADERS_STRATEGY=native` | Si hay un proxy o balanceador delante (casi todas las plataformas gestionadas). Sin ella, todas las peticiones parecen venir del proxy y comparten los límites. |
 | `CORS_ALLOWED_ORIGINS` | El dominio de la app web (`https://app.granatum.es`). Vacío = ningún navegador de otro origen. |
-| `DB_POOL_MAX_SIZE` | Al menos el doble de `AUTH_HASH_CONCURRENCIA` (la app se niega a arrancar si no). Con el *transaction pooler* de Supabase, ver README → Supabase. |
+| `DB_POOL_MAX_SIZE` | Al menos el doble de `AUTH_HASH_CONCURRENCY` (la app se niega a arrancar si no). Con el *transaction pooler* de Supabase, ver README → Supabase. |
 | `AUTH_ARGON2_MEMORY_KB`, `AUTH_ARGON2_ITERATIONS` | Recalibrados en la máquina de destino (apartado 5). |
 | `ANTHROPIC_API_KEY` | **Secreto.** Solo si se usa el reconocimiento de facturas, y tras el contrato de encargado del tratamiento con Anthropic. Sin ella, la facturación funciona en modo manual. |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Para las imágenes de los materiales. La clave `service_role` es un **secreto** con acceso total al proyecto Supabase. Antes, crear el bucket (ver abajo). Sin ellas, el inventario funciona y solo se rechaza la subida de imágenes. |
-| `INVENTORY_IMAGENES_BUCKET` | Si el bucket no se llama `materiales`. |
+| `INVENTORY_IMAGES_BUCKET` | Si el bucket no se llama `materiales`. |
 | `OPENAPI_ENABLED=true` | Solo si se quiere exponer `/v3/api-docs` y Swagger UI en ese entorno. |
 
 **Bucket de imágenes.** Una vez por entorno, en el panel de Supabase → Storage →
-*New bucket*: nombre `materiales` (o el de `INVENTORY_IMAGENES_BUCKET`) y
+*New bucket*: nombre `materiales` (o el de `INVENTORY_IMAGES_BUCKET`) y
 **sin** marcar *Public bucket*. No hace falta ninguna política: el backend usa la
 clave `service_role`, que no pasa por las políticas de `storage.objects`, y sin
 políticas nadie más puede leer ni escribir (specs/010 research.md D-002). Las
@@ -83,24 +83,24 @@ valores por defecto razonables; la lista completa está en `.env.example`.
 Es la única persona que se registra; al resto se la da de alta (apartado 4 bis).
 
 ```bash
-curl -s -X POST https://<host>/api/auth/registro -H 'Content-Type: application/json' \
-  -d '{"email":"…","password":"…","nombre":"…","documentoIdentidad":"…","codigoArranque":"<AUTH_CODIGO_ARRANQUE>"}'
+curl -s -X POST https://<host>/api/auth/sign-up -H 'Content-Type: application/json' \
+  -d '{"email":"…","password":"…","name":"…","identityDocument":"…","bootstrapCode":"<AUTH_BOOTSTRAP_CODE>"}'
 ```
 
 Responde `201` y ya se puede iniciar sesión como `ADMIN`. Después:
 
-1. **Quita `AUTH_CODIGO_ARRANQUE`** del entorno y reinicia. Ya no sirve (deja de
+1. **Quita `AUTH_BOOTSTRAP_CODE`** del entorno y reinicia. Ya no sirve (deja de
    funcionar en cuanto hay un `ADMIN`), pero un secreto sin uso es un riesgo sin
    beneficio.
-2. **Da de alta un segundo `ADMIN`** cuanto antes (`POST /api/auth/altas` con
-   `"rol": "ADMIN"`): no hay recuperación de contraseña por correo. El
+2. **Da de alta un segundo `ADMIN`** cuanto antes (`POST /api/auth/onboarding` con
+   `"role": "ADMIN"`): no hay recuperación de contraseña por correo. El
    procedimiento de emergencia, en el README (*El primer administrador*).
 3. Corrige la ficha del primer `ADMIN` (puesto, contrato, fecha de alta) con
-   `PUT /api/empleados/{id}`.
+   `PUT /api/employees/{id}`.
 
 ## 4 bis. Dar de alta al personal
 
-Cada persona la da de alta un `ADMIN` con `POST /api/auth/altas` (ficha y
+Cada persona la da de alta un `ADMIN` con `POST /api/auth/onboarding` (ficha y
 acceso en un paso). La respuesta trae la contraseña provisional una sola vez;
 entrégasela en persona. Al entrar, la aplicación le obliga a cambiarla.
 
@@ -111,7 +111,7 @@ en un contenedor pequeño pueden costar varias veces más, y cada inicio de
 sesión los paga. Mide en la máquina real con el procedimiento de
 `specs/002-auth/research.md` ("Cómo se midió") y ajusta `AUTH_ARGON2_*` para
 quedarte entre 100 y 300 ms. Recuerda: la memoria es **por inicio de sesión
-simultáneo** (`AUTH_HASH_CONCURRENCIA`, 4 por defecto).
+simultáneo** (`AUTH_HASH_CONCURRENCY`, 4 por defecto).
 
 ## 6. Copias de seguridad
 
@@ -144,9 +144,23 @@ un incumplimiento, no solo una molestia.
 ## 7. Actualizar a una versión nueva
 
 1. Haz una copia de la base de datos (apartado 6).
-2. Cambia la imagen a la nueva versión (`:1.1.0`) y reinicia. Flyway aplica las
+2. Revisa el `CHANGELOG.md` de la versión: si renombra variables de entorno,
+   renómbralas en la plataforma **antes** de arrancar la imagen nueva. Una
+   variable con el nombre antiguo no da error: se ignora en silencio y la
+   aplicación usa el valor por defecto.
+3. Cambia la imagen a la nueva versión (`:1.1.0`) y reinicia. Flyway aplica las
    migraciones nuevas al arrancar.
-3. Comprueba `/actuator/info` y `/actuator/health`.
+4. Comprueba `/actuator/info` y `/actuator/health`.
+
+**Paso a nombres en inglés** (la versión siguiente a la 1.0.0). Las variables
+de entorno pasan a inglés, y un despliegue que venga de la 1.0.0 tiene que
+renombrar las que tenga definidas; la lista completa, de nombre antiguo a nuevo,
+está en el `CHANGELOG.md`. Las que más suelen estar puestas:
+`AUTH_CODIGO_ARRANQUE` → `AUTH_BOOTSTRAP_CODE`,
+`AUTH_HASH_CONCURRENCIA` → `AUTH_HASH_CONCURRENCY` y
+`SEGURIDAD_LIMITE_*` → `SECURITY_RATE_LIMIT_*`. Las migraciones `V28`–`V34`
+renombran tablas y columnas sin perder datos, y los tokens emitidos antes del
+despliegue dejan de valer: cada persona vuelve a iniciar sesión una vez.
 
 **Volver atrás**: las migraciones solo van hacia delante. Si una versión trae
 migraciones, volver a la imagen anterior no deshace el esquema; la vuelta segura
@@ -156,12 +170,13 @@ no es opcional.
 ## 8. Lista de comprobación
 
 - [ ] Imagen con versión concreta, no `latest`.
+- [ ] Si se actualiza un despliegue existente: variables de entorno renombradas según el `CHANGELOG.md` de la versión (en el paso a inglés, todas las que tengan nombre en español).
 - [ ] `JWT_SECRET_BASE64`, `DB_PASSWORD` como secretos de la plataforma.
 - [ ] Sin `SPRING_PROFILES_ACTIVE=dev`; `POST /api/dev/token` responde `404`.
 - [ ] `SERVER_FORWARD_HEADERS_STRATEGY=native` si hay proxy.
 - [ ] `CORS_ALLOWED_ORIGINS` con el dominio de la app web.
 - [ ] Argon2 medido en la máquina de destino.
-- [ ] Propietario registrado como primer `ADMIN`, `AUTH_CODIGO_ARRANQUE` retirado, segundo `ADMIN` dado de alta.
+- [ ] Propietario registrado como primer `ADMIN`, `AUTH_BOOTSTRAP_CODE` retirado, segundo `ADMIN` dado de alta.
 - [ ] Copias diarias activas y una restauración probada.
-- [ ] Decidido si se activa la depuración a los 4 años (`TIMETRACKING_RETENCION_HABILITADA`; ver README).
+- [ ] Decidido si se activa la depuración a los 4 años (`TIMETRACKING_RETENTION_ENABLED`; ver README).
 - [ ] Bucket de imágenes **privado** creado y `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` como secretos (o asumido que no se suben imágenes).

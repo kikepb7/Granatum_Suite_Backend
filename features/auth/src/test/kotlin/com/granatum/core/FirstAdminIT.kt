@@ -38,7 +38,7 @@ import kotlin.test.assertTrue
  */
 @Testcontainers
 @SpringBootTest(classes = [AuthTestApplication::class])
-@TestPropertySource(properties = ["auth.registro.codigo-arranque=${FirstAdminIT.CODE}"])
+@TestPropertySource(properties = ["auth.sign-up.bootstrap-code=${FirstAdminIT.CODE}"])
 class FirstAdminIT : BaseAuthIT() {
 
     companion object {

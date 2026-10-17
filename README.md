@@ -17,7 +17,7 @@ sustituyendo la feature de ejemplo por el módulo `inventory` real. Ver
 - Spring Boot 4.0 (Web, Security, Data JPA, Validation, Actuator)
 - Gradle multi-módulo con convention plugins propios (`build-logic/`)
 - PostgreSQL + Flyway
-- JWT (jjwt) con roles `ADMIN` / `ENCARGADO` / `EMPLEADO` / `REPRESENTANTE`
+- JWT (jjwt) con roles `ADMIN` / `MANAGER` / `EMPLOYEE` / `REPRESENTATIVE`
 - Argon2 (Spring Security) para las contraseñas
 - SDK de Anthropic para Java (lectura de facturas) y PDFBox (PDF)
 - JUnit 5 + MockK; Testcontainers para tests de integración con Postgres real
@@ -32,16 +32,16 @@ en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Estado del proyecto
 
-- ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway. Desde la feature 010 cada material es categoría, descripción, alto y ancho (cm), cantidad, localización (almacén `A`/`B`/`C` y sección `1`–`5`), una imagen opcional en Supabase Storage y sus fechas de alta y modificación. Especificado en [`specs/010-inventory-materials-refactor/`](specs/010-inventory-materials-refactor/).
-- ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
-- ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
+- ✅ `inventory` (Material, Category, MaterialHistory) — implementado y con migraciones Flyway. Desde la feature 010 cada material es categoría, descripción, alto y ancho (cm), cantidad, localización (almacén `A`/`B`/`C` y sección `1`–`5`), una imagen opcional en Supabase Storage y sus fechas de alta y modificación. Especificado en [`specs/010-inventory-materials-refactor/`](specs/010-inventory-materials-refactor/).
+- ✅ `timetracking` (Employee, Shift, ShiftBreak, ShiftCorrectionRequest) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
+- ✅ `auth` (Account, RefreshSession, SecurityEvent) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
 - ✅ Alta del personal — implementado. Solo el propietario se registra, una vez, con un código de arranque fijado al desplegar, y entra como `ADMIN`. A cualquier otra persona la da de alta un `ADMIN` en un solo paso (ficha y acceso) y le entrega una contraseña provisional, que tiene que cambiar al entrar por primera vez. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (US1) y [`specs/009-owner-onboarding/`](specs/009-owner-onboarding/) (ver [El primer administrador](#el-primer-administrador) y [Alta del personal](#alta-del-personal)).
 - ✅ Exportación del registro de jornada — implementada. Cada persona descarga su registro, la representación legal y quien gestiona la plantilla el de todos, y para cada persona la descarga mensual con su total. CSV para hoja de cálculo española, una huella SHA-256 por fichero y un registro de quién exportó qué. Especificada en [`specs/003-timetracking-export/`](specs/003-timetracking-export/). Con ella, la depuración a los 4 años queda **desbloqueada pero desactivada** (ver [Exportación](#exportación-del-registro-de-jornada)).
 - ✅ Endurecimiento y despliegue — implementado. Límite de peticiones por dirección de origen en inicio de sesión, renovación, cierre de sesión, registro y en toda la API; perfil `prod` por defecto; errores sin trazas; cabeceras de seguridad; CORS explícito; imagen de contenedor sin privilegios y CI en todas las ramas. Especificado en [`specs/006-hardening-deploy/`](specs/006-hardening-deploy/) (ver [Despliegue](#despliegue)).
-- ✅ `absences` (Ausencia, DerechoVacaciones) — implementado. Vacaciones y permisos retribuidos que la persona pide y un `ENCARGADO` o `ADMIN` aprueba o rechaza; bajas médicas que registran ellos, sin ningún dato de salud; sin solapamientos por persona; saldo anual en días naturales (30 por defecto, ajustable por el `ADMIN`); nada se borra. Especificado en [`specs/007-absences/`](specs/007-absences/) (ver [Ausencias](#ausencias-y-vacaciones)).
-- ✅ `notifications` (Notificacion) — implementado. Avisos dentro de la aplicación: salida de fichaje olvidada, fichaje incompleto, correcciones y ausencias pendientes (a quien las resuelve), sus resoluciones (a quien las pidió) y registros pendientes (a los `ADMIN`). Cada persona ve solo los suyos; sin datos personales; los antiguos se borran solos. Especificado en [`specs/008-notifications/`](specs/008-notifications/) (ver [Notificaciones](#notificaciones)).
-- ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
-- ✅ `events` (Evento, materiales del evento) — implementado. La plantilla (`ADMIN`, `ENCARGADO`, `EMPLEADO`) crea eventos con nombre, descripción y fecha, y les asigna material del inventario: asignarlo lo retira del inventario al momento y quitarlo, finalizar o borrar el evento lo devuelve, con su entrada en el historial del material. Sin stock suficiente no se asigna nada y se dice cuántas unidades hay. Al terminar el día del evento se finaliza solo. `REPRESENTANTE` los consulta. Especificado en [`specs/011-events/`](specs/011-events/) (ver [Eventos](#eventos)).
+- ✅ `absences` (Absence, VacationEntitlement) — implementado. Vacaciones y permisos retribuidos que la persona pide y un `MANAGER` o `ADMIN` aprueba o rechaza; bajas médicas que registran ellos, sin ningún dato de salud; sin solapamientos por persona; saldo anual en días naturales (30 por defecto, ajustable por el `ADMIN`); nada se borra. Especificado en [`specs/007-absences/`](specs/007-absences/) (ver [Ausencias](#ausencias-y-vacaciones)).
+- ✅ `notifications` (Notification) — implementado. Avisos dentro de la aplicación: salida de fichaje olvidada, fichaje incompleto, correcciones y ausencias pendientes (a quien las resuelve) y sus resoluciones (a quien las pidió). Cada persona ve solo los suyos; sin datos personales; los antiguos se borran solos. Especificado en [`specs/008-notifications/`](specs/008-notifications/) (ver [Notificaciones](#notificaciones)).
+- ✅ `invoices` (Invoice, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
+- ✅ `events` (Event, materiales del evento) — implementado. La plantilla (`ADMIN`, `MANAGER`, `EMPLOYEE`) crea eventos con nombre, descripción y fecha, y les asigna material del inventario: asignarlo lo retira del inventario al momento y quitarlo, finalizar o borrar el evento lo devuelve, con su entrada en el historial del material. Sin stock suficiente no se asigna nada y se dice cuántas unidades hay. Al terminar el día del evento se finaliza solo. `REPRESENTATIVE` los consulta. Especificado en [`specs/011-events/`](specs/011-events/) (ver [Eventos](#eventos)).
 
 ## Arranque rápido
 
@@ -81,35 +81,35 @@ Lo de abajo usa el emisor de desarrollo por brevedad. Con una cuenta real, el
 token sale de `POST /api/auth/login` (ver [Autenticación](#autenticación)).
 
 ```bash
-# Consigue un token de desarrollo con rol ENCARGADO
-TOKEN=$(curl -s -X POST "http://localhost:8080/api/dev/token?role=ENCARGADO" | jq -r .accessToken)
+# Consigue un token de desarrollo con rol MANAGER
+TOKEN=$(curl -s -X POST "http://localhost:8080/api/dev/token?role=MANAGER" | jq -r .accessToken)
 
 # Crea una categoría
-CATEGORIA_ID=$(curl -s -X POST http://localhost:8080/api/categorias \
+CATEGORY_ID=$(curl -s -X POST http://localhost:8080/api/categories \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nombre": "Cilindros", "descripcion": "Cilindros de cristal"}' | jq -r .id)
+  -d '{"name": "Cilindros", "description": "Cilindros de cristal"}' | jq -r .id)
 
 # Crea un material en el almacén B, sección 4 (dimensiones en cm)
-MATERIAL_ID=$(curl -s -X POST http://localhost:8080/api/materiales \
+MATERIAL_ID=$(curl -s -X POST http://localhost:8080/api/materials \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d "{
-    \"categoriaId\": \"$CATEGORIA_ID\",
-    \"descripcion\": \"Cilindro de cristal de 40 cm\",
-    \"dimensiones\": {\"alto\": 40, \"ancho\": 15},
-    \"cantidad\": 10,
-    \"localizacion\": {\"almacen\": \"B\", \"seccion\": 4}
+    \"categoryId\": \"$CATEGORY_ID\",
+    \"description\": \"Cilindro de cristal de 40 cm\",
+    \"dimensions\": {\"height\": 40, \"width\": 15},
+    \"quantity\": 10,
+    \"location\": {\"warehouse\": \"B\", \"section\": 4}
   }" | jq -r .id)
 
 # Sube su imagen (JPEG, PNG o WebP, hasta 10 MB; necesita Supabase Storage)
-curl -X PUT http://localhost:8080/api/materiales/$MATERIAL_ID/imagen \
-  -H "Authorization: Bearer $TOKEN" -F imagen=@foto.jpg
+curl -X PUT http://localhost:8080/api/materials/$MATERIAL_ID/image \
+  -H "Authorization: Bearer $TOKEN" -F image=@foto.jpg
 
 # Lo que hay en el almacén B, sección 4
-curl "http://localhost:8080/api/materiales?almacen=B&seccion=4" -H "Authorization: Bearer $TOKEN"
+curl "http://localhost:8080/api/materials?warehouse=B&section=4" -H "Authorization: Bearer $TOKEN"
 ```
 
-La cantidad solo cambia con `PATCH /api/materiales/{id}/cantidad`
-(`{"cantidad": 7, "motivo": "..."}`), que la anota en el historial; el `PUT`
+La cantidad solo cambia con `PATCH /api/materials/{id}/quantity`
+(`{"quantity": 7, "reason": "..."}`), que la anota en el historial; el `PUT`
 del material no la toca. Rutas y errores en
 [`specs/010-inventory-materials-refactor/contracts/README.md`](specs/010-inventory-materials-refactor/contracts/README.md).
 
@@ -118,14 +118,14 @@ del material no la toca. Rutas y errores en
 Cada material tiene como mucho una imagen, guardada en un bucket **privado** de
 Supabase Storage. El backend la valida (tipo por sus primeros bytes, tamaño) y la
 sube con la clave `service_role`; el material guarda solo la ruta y las lecturas
-devuelven `imagenUrl`, un enlace firmado que caduca (1 h por defecto). Sustituir
-la imagen, quitarla (`DELETE …/imagen`) o borrar el material elimina el fichero.
+devuelven `imageUrl`, un enlace firmado que caduca (1 h por defecto). Sustituir
+la imagen, quitarla (`DELETE …/image`) o borrar el material elimina el fichero.
 
 Se configura con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` (secreto), más
-`INVENTORY_IMAGENES_BUCKET` (por defecto `materiales`) y
-`INVENTORY_IMAGENES_URL_SEGUNDOS`. **Sin ellas el inventario funciona** y solo
-la subida responde `503 ALMACEN_IMAGENES_NO_DISPONIBLE`; si Storage falla al
-consultar, el material sale sin `imagenUrl` en lugar de fallar. Por qué Storage
+`INVENTORY_IMAGES_BUCKET` (por defecto `materiales`) y
+`INVENTORY_IMAGES_URL_SECONDS`. **Sin ellas el inventario funciona** y solo
+la subida responde `503 IMAGE_STORAGE_UNAVAILABLE`; si Storage falla al
+consultar, el material sale sin `imageUrl` en lugar de fallar. Por qué Storage
 y no la base de datos, y por qué la subida pasa por el backend:
 [research.md D-001 y D-002](specs/010-inventory-materials-refactor/research.md).
 
@@ -142,11 +142,11 @@ En resumen:
 | `POST /api/auth/refresh` | pública | Renueva; el token presentado deja de servir en el acto |
 | `POST /api/auth/logout` | pública | Cierra **esa** sesión; las de otros dispositivos siguen |
 | `POST /api/auth/change-password` | autenticada | Única operación permitida mientras la contraseña es temporal |
-| `POST /api/auth/cuentas` | `ADMIN` | Da acceso a una persona ya registrada; devuelve la contraseña temporal **una sola vez** |
-| `POST /api/auth/cuentas/{empleadoId}/restablecer` | `ADMIN` | Nueva temporal, cierra todas las sesiones, levanta el bloqueo |
-| `GET /api/auth/cuentas/huerfanas` | `ADMIN` | Cuentas cuya persona ya no existe |
-| `POST /api/auth/registro` | pública | Solo el propietario: registro con el código de arranque mientras no haya ningún `ADMIN` |
-| `POST /api/auth/altas` | `ADMIN` | Da de alta a una persona (ficha y acceso) y devuelve su contraseña provisional **una sola vez** |
+| `POST /api/auth/accounts` | `ADMIN` | Da acceso a una persona ya registrada; devuelve la contraseña temporal **una sola vez** |
+| `POST /api/auth/accounts/{employeeId}/reset` | `ADMIN` | Nueva temporal, cierra todas las sesiones, levanta el bloqueo |
+| `GET /api/auth/accounts/orphans` | `ADMIN` | Cuentas cuya persona ya no existe |
+| `POST /api/auth/sign-up` | pública | Solo el propietario: registro con el código de arranque mientras no haya ningún `ADMIN` |
+| `POST /api/auth/onboarding` | `ADMIN` | Da de alta a una persona (ficha y acceso) y devuelve su contraseña provisional **una sola vez** |
 
 Cinco fallos seguidos bloquean la cuenta 1, 5, 15 y 60 minutos de forma
 creciente. Mientras dura el bloqueo, la respuesta es **idéntica** a la de una
@@ -155,7 +155,7 @@ costa de que quien se equivoca no sepa cuánto esperar.
 
 ### Variables de entorno
 
-Salvo `JWT_SECRET_BASE64` y `AUTH_CODIGO_ARRANQUE`, ninguna es un secreto, así que
+Salvo `JWT_SECRET_BASE64` y `AUTH_BOOTSTRAP_CODE`, ninguna es un secreto, así que
 todas las demás tienen valor por defecto.
 
 | Variable | Defecto | Para qué |
@@ -165,11 +165,11 @@ todas las demás tienen valor por defecto.
 | `AUTH_ARGON2_MEMORY_KB` | 65536 | Memoria por verificación de contraseña |
 | `AUTH_ARGON2_ITERATIONS` | 3 | Iteraciones de Argon2id |
 | `AUTH_ARGON2_PARALLELISM` | 1 | Carriles de Argon2id |
-| `AUTH_HASH_CONCURRENCIA` | 4 | Verificaciones simultáneas como máximo |
-| `AUTH_HASH_ESPERA_MS` | 1000 | Espera en cola antes de responder `503` |
-| `AUTH_PURGA_SESIONES_DIAS` | 30 | Antigüedad para purgar sesiones ya muertas |
-| `AUTH_EVENTOS_RETENCION_DIAS` | 730 | Días que se conservan los eventos de seguridad |
-| `AUTH_CODIGO_ARRANQUE` | *(vacío)* | **Secreto.** Código con el que el propietario se registra como primer `ADMIN`; vacío desactiva el registro |
+| `AUTH_HASH_CONCURRENCY` | 4 | Verificaciones simultáneas como máximo |
+| `AUTH_HASH_WAIT_MS` | 1000 | Espera en cola antes de responder `503` |
+| `AUTH_SESSION_PURGE_DAYS` | 30 | Antigüedad para purgar sesiones ya muertas |
+| `AUTH_SECURITY_EVENTS_RETENTION_DAYS` | 730 | Días que se conservan los eventos de seguridad |
+| `AUTH_BOOTSTRAP_CODE` | *(vacío)* | **Secreto.** Código con el que el propietario se registra como primer `ADMIN`; vacío desactiva el registro |
 
 > **Recalibra Argon2 en el hardware de destino antes de desplegar.** Los valores
 > por defecto cuestan ~110 ms en un Mac mini de 10 núcleos; en un contenedor
@@ -178,7 +178,7 @@ todas las demás tienen valor por defecto.
 > Si subes la memoria, recuerda que es memoria **por login simultáneo**.
 
 > **`DB_POOL_MAX_SIZE` tiene que ser al menos el doble de
-> `AUTH_HASH_CONCURRENCIA`.** Una petición de autenticación puede usar dos
+> `AUTH_HASH_CONCURRENCY`.** Una petición de autenticación puede usar dos
 > conexiones a la vez (su transacción y la del registro de seguridad), y con un
 > pool menor las peticiones simultáneas se bloquean entre sí hasta el timeout.
 > La aplicación **se niega a arrancar** si no se cumple, con un mensaje que dice
@@ -189,31 +189,31 @@ todas las demás tienen valor por defecto.
 Es el **propietario del negocio**, la única persona que se registra (features
 005 y 009). Lo hace con el **código de arranque**:
 
-1. Al desplegar, fija `AUTH_CODIGO_ARRANQUE` con un valor largo y aleatorio
+1. Al desplegar, fija `AUTH_BOOTSTRAP_CODE` con un valor largo y aleatorio
    (`openssl rand -base64 24`) y dáselo solo al propietario.
 2. El propietario se registra con su correo, su contraseña, su nombre, su DNI y el
    código:
 
    ```bash
-   curl -s -X POST https://<host>/api/auth/registro -H 'Content-Type: application/json' \
-     -d '{"email":"jefe@granatum.es","password":"...","nombre":"...","documentoIdentidad":"...","codigoArranque":"..."}'
+   curl -s -X POST https://<host>/api/auth/sign-up -H 'Content-Type: application/json' \
+     -d '{"email":"jefe@granatum.es","password":"...","name":"...","identityDocument":"...","bootstrapCode":"..."}'
    ```
 
    Responde `201` y ya puede iniciar sesión como `ADMIN`. Si no había ficha de
    personal con ese DNI, se crea con puesto `Dirección`, jornada completa y alta
-   de hoy; se corrige con `PUT /api/empleados/{id}`.
-3. **Quita `AUTH_CODIGO_ARRANQUE` del despliegue.** Ya no sirve —el código deja
+   de hoy; se corrige con `PUT /api/employees/{id}`.
+3. **Quita `AUTH_BOOTSTRAP_CODE` del despliegue.** Ya no sirve —el código deja
    de funcionar en cuanto existe cualquier `ADMIN`—, pero no hay por qué tener
    un secreto que no se usa.
 
 Un código incorrecto, uno que no está configurado o uno que llega cuando ya hay
-`ADMIN` responden igual, `403 CODIGO_ARRANQUE_INVALIDO`: nadie puede averiguar
+`ADMIN` responden igual, `403 INVALID_BOOTSTRAP_CODE`: nadie puede averiguar
 así si una instalación ya tiene administrador.
 
-Sin código de arranque, el registro responde `400 VALIDACION`: nadie más puede
+Sin código de arranque, el registro responde `400 VALIDATION`: nadie más puede
 registrarse.
 
-**Da de alta pronto un segundo `ADMIN`** (`POST /api/auth/altas` con `"rol":
+**Da de alta pronto un segundo `ADMIN`** (`POST /api/auth/onboarding` con `"role":
 "ADMIN"`). No hay recuperación por correo: si el único `ADMIN` olvida su
 contraseña, la salida pasa por la base de datos. Se genera el hash con la
 herramienta estándar `argon2` (su formato es el que lee la aplicación;
@@ -224,10 +224,10 @@ echo -n 'Provisional-2026!' | argon2 "$(openssl rand -base64 12)" -id -t 3 -m 16
 ```
 
 ```sql
-UPDATE cuentas_acceso
+UPDATE accounts
    SET password_hash = '{argon2}' || '<salida de argon2>',
-       requiere_cambio_password = true,
-       intentos_fallidos = 0, nivel_bloqueo = 0, bloqueada_hasta = NULL
+       password_change_required = true,
+       failed_attempts = 0, lockout_level = 0, locked_until = NULL
  WHERE email = '<correo del ADMIN>';
 ```
 
@@ -240,34 +240,34 @@ alta un `ADMIN`, en un solo paso, y le entrega las credenciales (feature 009,
 contrato en [`specs/009-owner-onboarding/contracts/README.md`](specs/009-owner-onboarding/contracts/README.md)).
 
 ```bash
-curl -s -X POST https://<host>/api/auth/altas -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
-  -d '{"nombre":"Ana Martín","documentoIdentidad":"12345678Z","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01","email":"ana@granatum.es","rol":"EMPLEADO"}'
+curl -s -X POST https://<host>/api/auth/onboarding -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"name":"Ana Martín","identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","email":"ana@granatum.es","role":"EMPLOYEE"}'
 ```
 
 1. Se crean la ficha de personal y la cuenta en una sola operación. Si ya había
    una ficha con ese DNI (sin cuenta), la cuenta se vincula a ella.
-2. La respuesta trae `passwordTemporal` **una sola vez**: el `ADMIN` se la
+2. La respuesta trae `temporaryPassword` **una sola vez**: el `ADMIN` se la
    entrega a la persona junto con su correo.
 3. La persona entra con ella y la aplicación solo le deja cambiarla; a partir
    de ahí, usa la suya.
 4. Si la provisional se pierde antes de entregarla, `POST
-   /api/auth/cuentas/{empleadoId}/restablecer` genera otra.
+   /api/auth/accounts/{employeeId}/reset` genera otra.
 
 Un correo ya usado, un DNI con la letra mal o una ficha que ya tiene cuenta
 rechazan el alta sin crear nada. El alta por partes —crear la ficha con
-`POST /api/empleados` y darle acceso con `POST /api/auth/cuentas`— sigue
+`POST /api/employees` y darle acceso con `POST /api/auth/accounts`— sigue
 existiendo.
 
 ### Deuda declarada de esta feature
 
-- ~~**`eventos_seguridad` no tiene plazo de conservación.**~~ Cerrada: un
+- ~~**`security_events` no tiene plazo de conservación.**~~ Cerrada: un
   trabajo diario borra los eventos de más de dos años
-  (`AUTH_EVENTOS_RETENCION_DIAS`, 730). No es el registro de jornada, así que el
+  (`AUTH_SECURITY_EVENTS_RETENTION_DAYS`, 730). No es el registro de jornada, así que el
   principio III no le aplica, pero el art. 5.1.e del RGPD sí. Dos años es el
   valor por defecto documentado; cambiarlo es decisión del responsable del
   producto.
-- **Desviación declarada del principio VIII.** El error `PASSWORD_DEBIL` lleva un
-  tercer campo, `requisitos`, además de `code` y `message`. Lo exige FR-023 —hay
+- **Desviación declarada del principio VIII.** El error `WEAK_PASSWORD` lleva un
+  tercer campo, `requirements`, además de `code` y `message`. Lo exige FR-023 —hay
   que decir qué requisito falla, y un cliente que marque campos necesita
   identificadores, no una frase—, pero el principio fija el formato en esos dos
   campos exactamente, así que queda escrito aquí en lugar de pasar en silencio.
@@ -281,19 +281,19 @@ el contrato, en
 
 | Ruta | Quién | Qué hace |
 |------|-------|----------|
-| `GET /api/fichajes/export?desde=&hasta=[&empleadoId=]` | los cuatro roles | El registro de un rango. `EMPLEADO`: solo el suyo. El resto: una persona o, sin `empleadoId`, toda la plantilla (incluidas las personas dadas de baja) |
-| `GET /api/fichajes/empleado/{id}/resumen/descarga?anio=&mes=` | la propia persona, `ENCARGADO`, `ADMIN`, `REPRESENTANTE` | El mes natural con su total, tipo de contrato y si el mes ha terminado. Es el resumen del art. 12.4.c para contratos a tiempo parcial |
-| `GET /api/exportaciones` | `ADMIN` | Quién exportó qué. Filtros: `empleadoId` (incluye las exportaciones de toda la plantilla), `generadaDesde`/`generadaHasta`, `cubreDesde`/`cubreHasta` (por solapamiento) |
-| `POST /api/exportaciones/verificar` | `ADMIN` | Envía un fichero como cuerpo (`text/csv`) y dice si salió de aquí y cuándo. No se guarda nada del fichero |
+| `GET /api/shifts/export?from=&to=[&employeeId=]` | los cuatro roles | El registro de un rango. `EMPLOYEE`: solo el suyo. El resto: una persona o, sin `employeeId`, toda la plantilla (incluidas las personas dadas de baja) |
+| `GET /api/shifts/employee/{id}/summary/download?year=&month=` | la propia persona, `MANAGER`, `ADMIN`, `REPRESENTATIVE` | El mes natural con su total, tipo de contrato y si el mes ha terminado. Es el resumen del art. 12.4.c para contratos a tiempo parcial |
+| `GET /api/exports` | `ADMIN` | Quién exportó qué. Filtros: `employeeId` (incluye las exportaciones de toda la plantilla), `generatedFrom`/`generatedTo`, `coversFrom`/`coversTo` (por solapamiento) |
+| `POST /api/exports/verify` | `ADMIN` | Envía un fichero como cuerpo (`text/csv`) y dice si salió de aquí y cuándo. No se guarda nada del fichero |
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" -OJ \
-  "http://localhost:8080/api/fichajes/export?desde=2026-10-01&hasta=2026-10-31"
+  "http://localhost:8080/api/shifts/export?from=2026-10-01&to=2026-10-31"
 ```
 
 El fichero es CSV en UTF-8 con BOM, separador `;` y fin de línea CRLF, para que se
 abra sin asistente en una hoja de cálculo con configuración española. Ninguna celda
-se ejecuta como fórmula. La ubicación no sale nunca, y con rol `REPRESENTANTE` la
+se ejecuta como fórmula. La ubicación no sale nunca, y con rol `REPRESENTATIVE` la
 columna del documento de identidad no existe. Dos exportaciones iguales sin cambios
 entre medias dan el mismo fichero byte a byte.
 
@@ -305,8 +305,8 @@ registros con valor legal es una decisión de cada entorno. Para activarla:
 
 ```yaml
 timetracking:
-  retencion:
-    habilitada: true
+  retention:
+    enabled: true
 ```
 
 > **Es irreversible.** Lo que la depuración borra no se recupera. Antes de
@@ -314,7 +314,7 @@ timetracking:
 > disposición de cada persona.
 
 La depuración borra también las exportaciones anotadas cuyo periodo cubierto ya
-ha salido entero del plazo, y cuenta cuántas en `depuraciones_retencion`.
+ha salido entero del plazo, y cuenta cuántas en `retention_purges`.
 
 ### Variables de entorno
 
@@ -322,17 +322,17 @@ Ninguna es un secreto.
 
 | Variable | Defecto | Para qué |
 |----------|---------|----------|
-| `TIMETRACKING_EXPORTACION_CONCURRENCIA` | 2 | Exportaciones simultáneas como máximo; cada una ocupa una conexión mientras se descarga |
-| `TIMETRACKING_EXPORTACION_ESPERA_MS` | 1000 | Espera antes de responder `503 EXPORTACION_SATURADA` con `Retry-After` |
-| `TIMETRACKING_EXPORTACION_TIMEOUT_SEGUNDOS` | 120 | Tiempo máximo de la lectura de una exportación |
-| `TIMETRACKING_EXPORTACION_TAMANO_LOTE` | 500 | Fichajes por lote al recorrer el registro |
-| `TIMETRACKING_VERIFICACION_MAX_BYTES` | 104857600 | Tamaño máximo de un fichero a verificar (`413` por encima) |
+| `TIMETRACKING_EXPORT_CONCURRENCY` | 2 | Exportaciones simultáneas como máximo; cada una ocupa una conexión mientras se descarga |
+| `TIMETRACKING_EXPORT_WAIT_MS` | 1000 | Espera antes de responder `503 EXPORT_BUSY` con `Retry-After` |
+| `TIMETRACKING_EXPORT_TIMEOUT_SECONDS` | 120 | Tiempo máximo de la lectura de una exportación |
+| `TIMETRACKING_EXPORT_BATCH_SIZE` | 500 | Fichajes por lote al recorrer el registro |
+| `TIMETRACKING_VERIFICATION_MAX_BYTES` | 104857600 | Tamaño máximo de un fichero a verificar (`413` por encima) |
 | `SERVER_TOMCAT_CONNECTION_TIMEOUT` | 10s | Además, lo que puede retener una conexión a la base de datos un cliente que deja de leer una descarga |
 
 ### Errores de validación
 
 Todos los `400` de validación de la API, de cualquier módulo, responden ahora
-`{"code": "VALIDACION", "message": …}`, sin traza y sin el valor rechazado.
+`{"code": "VALIDATION", "message": …}`, sin traza y sin el valor rechazado.
 Antes salían con el cuerpo por defecto de Spring, que en `dev` incluía la traza y
 el valor enviado (un correo, o una contraseña demasiado larga).
 
@@ -341,18 +341,18 @@ el valor enviado (un correo, o una contraseña demasiado larga).
 El ciclo completo, con comandos que se pueden copiar, está en
 [`specs/004-invoices/quickstart.md`](specs/004-invoices/quickstart.md); el contrato,
 en [`specs/004-invoices/contracts/README.md`](specs/004-invoices/contracts/README.md).
-**Todas las rutas son solo `ADMIN`**, bajo `/api/facturacion`.
+**Todas las rutas son solo `ADMIN`**, bajo `/api/invoicing`.
 
 | Ruta | Qué hace |
 |------|----------|
-| `PUT /api/facturacion/empresa` | Razón social y NIF de la empresa: deciden qué es emitido y qué recibido |
-| `POST /api/facturacion/facturas` | Sube una o varias (JPEG, PNG, WebP o PDF, hasta 10 MB cada una); `202` y se reconocen en segundo plano |
-| `GET /api/facturacion/facturas[?desde&hasta&parte&tipo&estado]` | Listado con filtros |
-| `GET / PUT /api/facturacion/facturas/{id}` | Ver una con sus avisos, o corregirla |
-| `POST …/{id}/confirmar`, `…/descartar`, `…/reconocer` | Confirmar (si no tiene avisos bloqueantes), descartar (no borra), reintentar el reconocimiento |
-| `GET …/{id}/original`, `…/{id}/historial` | El fichero tal cual se subió; lo que propuso el reconocimiento y cada cambio |
-| `GET /api/facturacion/reportes?periodo=MENSUAL\|TRIMESTRAL\|ANUAL&anio=…[&formato=csv\|pdf]` | Totales de emitidas y recibidas, IVA por tipo, retenciones |
-| `POST /api/facturacion/trimestres/{anio}/{t}/cerrar`, `…/reabrir` | Cerrar un trimestre declarado; reabrirlo exige un motivo |
+| `PUT /api/invoicing/company` | Razón social y NIF de la empresa: deciden qué es emitido y qué recibido |
+| `POST /api/invoicing/invoices` | Sube una o varias (JPEG, PNG, WebP o PDF, hasta 10 MB cada una); `202` y se reconocen en segundo plano |
+| `GET /api/invoicing/invoices[?from&to&party&type&status]` | Listado con filtros |
+| `GET / PUT /api/invoicing/invoices/{id}` | Ver una con sus avisos, o corregirla |
+| `POST …/{id}/confirm`, `…/discard`, `…/recognize` | Confirmar (si no tiene avisos bloqueantes), descartar (no borra), reintentar el reconocimiento |
+| `GET …/{id}/original`, `…/{id}/history` | El fichero tal cual se subió; lo que propuso el reconocimiento y cada cambio |
+| `GET /api/invoicing/reports?period=MONTHLY\|QUARTERLY\|YEARLY&year=…[&format=csv\|pdf]` | Totales de emitidas y recibidas, IVA por tipo, retenciones |
+| `POST /api/invoicing/quarters/{year}/{quarter}/close`, `…/reopen` | Cerrar un trimestre declarado; reabrirlo exige un motivo |
 
 ### El reconocimiento con Claude
 
@@ -365,7 +365,7 @@ cuadra.
 
 - **Coste**: unos 0,05 $ por factura con Opus 5.5 (unos 10 $ al mes con 200
   facturas). Los tokens reales de cada reconocimiento quedan guardados en
-  `factura_reconocimientos`.
+  `invoice_recognitions`.
 - **Sin `ANTHROPIC_API_KEY` funciona en modo manual**: las facturas se guardan y
   se rellenan a mano; no se envía nada a ningún sitio.
 - **Protección de datos**: las facturas de autónomos llevan su DNI. Anthropic
@@ -374,13 +374,13 @@ cuadra.
 - **Medir la precisión** con facturas reales (que no se versionan):
 
 ```bash
-ANTHROPIC_API_KEY=... INVOICES_REFERENCIA_DIR=/ruta/a/facturas ./gradlew :features:invoices:claudeRealTest
+ANTHROPIC_API_KEY=... INVOICES_REFERENCE_DIR=/ruta/a/facturas ./gradlew :features:invoices:claudeRealTest
 ```
 
 > **Supabase**: los originales se guardan en Postgres. El plan gratuito de
 > Supabase (500 MB) se llenaría en unos meses de facturas; en producción hace
 > falta un plan de pago o pasar los originales a Supabase Storage (la interfaz
-> `AlmacenDocumentos` está para eso).
+> `InvoiceDocumentStore` está para eso).
 
 ### Variables de entorno
 
@@ -394,11 +394,11 @@ la clave vacía y un test lo comprueba.
 | `INVOICES_CLAUDE_MODEL` | `claude-opus-5-5` | Modelo del reconocimiento |
 | `INVOICES_CLAUDE_EFFORT` | `medium` | Esfuerzo del modelo |
 | `INVOICES_CLAUDE_FALLBACKS` | `true` | Respaldo del servidor si el modelo rechaza; desactivable si la API lo rechazara |
-| `INVOICES_RECONOCIMIENTO_CONCURRENCIA` | 3 | Reconocimientos simultáneos |
-| `INVOICES_RECONOCIMIENTO_TIMEOUT_SEGUNDOS` | 120 | Tiempo máximo de una llamada |
+| `INVOICES_RECOGNITION_CONCURRENCY` | 3 | Reconocimientos simultáneos |
+| `INVOICES_RECOGNITION_TIMEOUT_SECONDS` | 120 | Tiempo máximo de una llamada |
 | `INVOICES_MAX_REQUEST_SIZE` | 50MB | Tamaño máximo de una subida (varios ficheros) |
-| `INVOICES_MAX_BYTES_POR_FICHERO` | 10485760 | Tamaño máximo de cada fichero |
-| `INVOICES_PDF_MAX_PAGINAS` | 20 | Páginas máximas de un PDF |
+| `INVOICES_MAX_BYTES_PER_FILE` | 10485760 | Tamaño máximo de cada fichero |
+| `INVOICES_PDF_MAX_PAGES` | 20 | Páginas máximas de un PDF |
 
 ## Desarrollo guiado por especificaciones (SDD)
 
@@ -493,11 +493,11 @@ de arrancar el servidor.
   en `specs/<feature>/contracts/README.md`.
 - **Fuera del contrato**: `POST /api/dev/token`, que solo existe en `dev`.
 
-`ContratoOpenApiIT` falla si un controlador cambia y `docs/openapi.json` no. Tras
+`OpenApiContractIT` falla si un controlador cambia y `docs/openapi.json` no. Tras
 un cambio intencionado de la API, regenera la copia y súbela con ese cambio:
 
 ```bash
-OPENAPI_ACTUALIZAR=true ./gradlew :app:test --tests '*ContratoOpenApiIT'
+OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApiContractIT'
 ```
 
 ## Ausencias y vacaciones
@@ -506,23 +506,23 @@ El contrato está en [`specs/007-absences/contracts/README.md`](specs/007-absenc
 
 | Ruta | Quién | Qué hace |
 |------|-------|----------|
-| `POST /api/ausencias` | `EMPLEADO`, `ENCARGADO`, `ADMIN` | Pedir vacaciones o un permiso para uno mismo → `PENDIENTE` |
-| `POST /api/ausencias/registro` | `ENCARGADO`, `ADMIN` | Registrar en nombre de otra persona, aprobada (bajas médicas, regularizaciones) |
-| `GET /api/ausencias?empleadoId&desde&hasta&estado` | `EMPLEADO`, `ENCARGADO`, `ADMIN` | Calendario; un `EMPLEADO` solo recibe las suyas |
-| `POST /api/ausencias/{id}/aprobar` · `/rechazar` | `ENCARGADO`, `ADMIN` | Nunca las propias; rechazar exige motivo |
-| `POST /api/ausencias/{id}/cancelar` | la persona | Pendiente, o aprobada que aún no ha empezado |
-| `POST /api/ausencias/{id}/alta` | `ENCARGADO`, `ADMIN` | Cierra una baja abierta |
-| `GET /api/ausencias/saldo?anio` | `EMPLEADO`, `ENCARGADO`, `ADMIN` | Derecho, aprobados, pendientes y disponibles |
-| `PUT /api/ausencias/derechos/{empleadoId}/{anio}` | `ADMIN` | Derecho anual de una persona |
+| `POST /api/absences` | `EMPLOYEE`, `MANAGER`, `ADMIN` | Pedir vacaciones o un permiso para uno mismo → `PENDING` |
+| `POST /api/absences/record` | `MANAGER`, `ADMIN` | Registrar en nombre de otra persona, aprobada (bajas médicas, regularizaciones) |
+| `GET /api/absences?employeeId&from&to&status` | `EMPLOYEE`, `MANAGER`, `ADMIN` | Calendario; un `EMPLOYEE` solo recibe las suyas |
+| `POST /api/absences/{id}/approve` · `/reject` | `MANAGER`, `ADMIN` | Nunca las propias; rechazar exige motivo |
+| `POST /api/absences/{id}/cancel` | la persona | Pendiente, o aprobada que aún no ha empezado |
+| `POST /api/absences/{id}/discharge` | `MANAGER`, `ADMIN` | Cierra una baja abierta |
+| `GET /api/absences/balance?year` | `EMPLOYEE`, `MANAGER`, `ADMIN` | Derecho, aprobados, pendientes y disponibles |
+| `PUT /api/absences/entitlements/{employeeId}/{year}` | `ADMIN` | Derecho anual de una persona |
 
 - **Sin solapamientos**: dos ausencias vigentes de una persona no se pisan, ni
   con peticiones simultáneas (un bloqueo por persona en la base de datos).
-- **Días naturales**: 30 por año por defecto (`ABSENCES_DIAS_VACACIONES`), el
+- **Días naturales**: 30 por año por defecto (`ABSENCES_VACATION_ANNUAL_DAYS`), el
   mínimo del art. 38 del Estatuto. Sin festivos ni prorrateo: el `ADMIN` ajusta
   el derecho de quien entra a mitad de año.
 - **Bajas sin datos de salud**: solo el tipo; ni comentario ni causa, y la base
   de datos lo impide.
-- `REPRESENTANTE` no accede: el art. 34.9 le da el registro de jornada, no las
+- `REPRESENTATIVE` no accede: el art. 34.9 le da el registro de jornada, no las
   ausencias.
 
 ## Notificaciones
@@ -532,23 +532,22 @@ contrato está en [`specs/008-notifications/contracts/README.md`](specs/008-noti
 
 | Ruta | Qué hace |
 |------|----------|
-| `GET /api/notificaciones?soloNoLeidas=false` | Las propias, de la más reciente, hasta 100 |
-| `GET /api/notificaciones/no-leidas` | `{"total": n}` |
-| `POST /api/notificaciones/{id}/leida` | Marca una; ajena → `404` |
-| `POST /api/notificaciones/leidas` | Marca todas |
+| `GET /api/notifications?unreadOnly=false` | Las propias, de la más reciente, hasta 100 |
+| `GET /api/notifications/unread` | `{"total": n}` |
+| `POST /api/notifications/{id}/read` | Marca una; ajena → `404` |
+| `POST /api/notifications/read` | Marca todas |
 
 | Aviso | A quién |
 |-------|---------|
-| `FICHAJE_SIN_SALIDA` | Titular de un fichaje abierto más de 10 h (`TIMETRACKING_AVISO_SIN_SALIDA_HORAS`) |
-| `FICHAJE_INCOMPLETO` | Titular del fichaje que se marca incompleto |
-| `CORRECCION_PENDIENTE`, `AUSENCIA_PENDIENTE` | `ENCARGADO` y `ADMIN`, menos quien la pidió |
-| `CORRECCION_APROBADA/RECHAZADA`, `AUSENCIA_APROBADA/RECHAZADA` | Titular |
-| `REGISTRO_PENDIENTE` | `ADMIN` |
+| `SHIFT_WITHOUT_CLOCK_OUT` | Titular de un fichaje abierto más de 10 h (`TIMETRACKING_MISSING_CLOCK_OUT_HOURS`) |
+| `SHIFT_INCOMPLETE` | Titular del fichaje que se marca incompleto |
+| `CORRECTION_PENDING`, `ABSENCE_PENDING` | `MANAGER` y `ADMIN`, menos quien la pidió |
+| `CORRECTION_APPROVED/REJECTED`, `ABSENCE_APPROVED/REJECTED` | Titular |
 
 Un aviso es un tipo y un identificador; el texto es fijo por tipo, así que
 nunca lleva nombres, motivos ni comentarios. Se crea solo si la operación que lo
 origina se confirma, y si falla no la deshace. Los leídos se borran a los 90
-días y todos a los 180 (`NOTIFICATIONS_DIAS_LEIDAS`, `NOTIFICATIONS_DIAS_TODAS`).
+días y todos a los 180 (`NOTIFICATIONS_READ_DAYS`, `NOTIFICATIONS_ALL_DAYS`).
 
 ## Eventos
 
@@ -557,25 +556,25 @@ El contrato está en [`specs/011-events/contracts/README.md`](specs/011-events/c
 
 | Ruta | Qué hace |
 |------|----------|
-| `GET /api/eventos?estado=PROGRAMADO` | Lista; programados por fecha, finalizados del más reciente |
-| `POST /api/eventos` | Crea (`nombre`, `descripcion`, `fecha` de hoy o futura) |
-| `PUT /api/eventos/{id}/materiales/{materialId}` | Fija cuántas unidades lleva; solo se mueve la diferencia |
-| `DELETE /api/eventos/{id}/materiales/{materialId}` | Lo quita y devuelve sus unidades |
-| `POST /api/eventos/{id}/finalizar` | Finaliza y devuelve todo (idempotente) |
-| `GET /api/eventos/materiales` | Selector: materiales con sus unidades libres |
+| `GET /api/events?status=SCHEDULED` | Lista; programados por fecha, finalizados del más reciente |
+| `POST /api/events` | Crea (`name`, `description`, `date` de hoy o futura) |
+| `PUT /api/events/{id}/materials/{materialId}` | Fija cuántas unidades lleva; solo se mueve la diferencia |
+| `DELETE /api/events/{id}/materials/{materialId}` | Lo quita y devuelve sus unidades |
+| `POST /api/events/{id}/finish` | Finaliza y devuelve todo (idempotente) |
+| `GET /api/events/materials` | Selector: materiales con sus unidades libres |
 
 - **Asignar es retirar del inventario.** La cantidad de un material baja al
-  asignarlo y sube al devolverlo, con una entrada `CANTIDAD` en su historial que
-  nombra el evento. Una sola sentencia condicional (`cantidad >= n`) hace imposible
-  el negativo aunque dos personas asignen a la vez (`StockMaterialesIT`).
-- **Sin stock no se asigna nada**: `409 STOCK_INSUFICIENTE` con `disponible`.
+  asignarlo y sube al devolverlo, con una entrada `QUANTITY` en su historial que
+  nombra el evento. Una sola sentencia condicional (`quantity >= n`) hace imposible
+  el negativo aunque dos personas asignen a la vez (`MaterialInventoryIT`).
+- **Sin stock no se asigna nada**: `409 INSUFFICIENT_STOCK` con `available`.
 - **Finalización automática** a las 00:05 de Madrid de todos los eventos de días
-  anteriores (`EVENTS_FINALIZACION_CRON` → `events.finalizacion.cron`); también a
+  anteriores (`EVENTS_FINISHING_CRON` → `events.finishing.cron`); también a
   mano. La devolución automática queda en el historial a nombre de quien creó el
   evento, con un motivo que dice que fue automática.
 - **Un material asignado a un evento programado no se puede borrar** del
-  inventario (`409 MATERIAL_EN_USO`).
-- `EMPLEADO` gestiona eventos pero sigue sin acceder a `/api/materiales`
+  inventario (`409 MATERIAL_IN_USE`).
+- `EMPLOYEE` gestiona eventos pero sigue sin acceder a `/api/materials`
   (constitución v2.5.0): el selector expone solo lo necesario para elegir.
 
 ## Despliegue
@@ -623,13 +622,13 @@ Por dirección de origen, en memoria, con un cupo por grupo de rutas
 
 | Variable | Defecto | Rutas |
 |----------|---------|-------|
-| `SEGURIDAD_LIMITE_LOGIN` | `10/1m` | `POST /api/auth/login` |
-| `SEGURIDAD_LIMITE_SESION` | `30/1m` | `POST /api/auth/refresh`, `POST /api/auth/logout` |
-| `SEGURIDAD_LIMITE_REGISTRO` | `5/1h` | `POST /api/auth/registro`, código de arranque incluido |
-| `SEGURIDAD_LIMITE_GENERAL` | `300/1m` | Todo `/api` (la comprobación de salud no está bajo `/api`) |
-| `SEGURIDAD_LIMITE_MAX_DIRECCIONES` | `10000` | Direcciones recordadas por cupo; al llenarse se olvida la menos usada |
+| `SECURITY_RATE_LIMIT_LOGIN` | `10/1m` | `POST /api/auth/login` |
+| `SECURITY_RATE_LIMIT_SESSION` | `30/1m` | `POST /api/auth/refresh`, `POST /api/auth/logout` |
+| `SECURITY_RATE_LIMIT_SIGN_UP` | `5/1h` | `POST /api/auth/sign-up`, código de arranque incluido |
+| `SECURITY_RATE_LIMIT_GENERAL` | `300/1m` | Todo `/api` (la comprobación de salud no está bajo `/api`) |
+| `SECURITY_RATE_LIMIT_MAX_ADDRESSES` | `10000` | Direcciones recordadas por cupo; al llenarse se olvida la menos usada |
 
-Superado un cupo, `429 DEMASIADAS_PETICIONES` con `Retry-After` en segundos, sin
+Superado un cupo, `429 TOO_MANY_REQUESTS` con `Retry-After` en segundos, sin
 haber comprobado la contraseña ni escrito nada.
 
 > **Detrás de un proxy o balanceador**, todas las peticiones llegan desde la
@@ -656,8 +655,8 @@ Todas las respuestas llevan `Content-Security-Policy: default-src 'none'`,
 `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy:
 no-referrer`, `Permissions-Policy` sin permisos, `Cache-Control: no-store` y, en
 HTTPS, HSTS de un año. Ningún error lleva traza: lo que no responde un módulo
-responde `{code, message}` (`RECURSO_NO_ENCONTRADO`, `METODO_NO_PERMITIDO`,
-`ERROR_INTERNO`…).
+responde `{code, message}` (`RESOURCE_NOT_FOUND`, `METHOD_NOT_ALLOWED`,
+`INTERNAL_ERROR`…).
 
 ## Supabase
 
@@ -720,14 +719,14 @@ sujetos a RLS, así que sigue funcionando sin cambios.
 `RowLevelSecurityIT` falla el build si alguna tabla se queda sin RLS, así que
 una migración futura que cree una tabla y lo olvide no llega a `main`.
 
-Donde más importa es en `cuentas_acceso`, que guarda correos y hashes de
+Donde más importa es en `accounts`, que guarda correos y hashes de
 contraseña: sin RLS, PostgREST la serviría a cualquiera con la clave anónima.
 
 **`flyway_schema_history` también, al arrancar.** La tabla de control de Flyway
 vive en `public` y PostgREST la serviría (versiones y descripciones de las
 migraciones). No se puede proteger desde una migración —Flyway mantiene un lock
 sobre ella durante toda su ejecución y el `ALTER TABLE` se bloquearía contra sí
-mismo—, así que lo hace `RlsHistorialFlyway` al terminar el arranque, cuando
+mismo—, así que lo hace `FlywayHistoryRls` al terminar el arranque, cuando
 Flyway ya ha soltado el lock. Ya no hay paso manual. Solo si la aplicación
 conecta con un rol que no es el propietario de esa tabla (`FLYWAY_DB_USERNAME`
 distinto), el arranque avisa en el log y hay que ejecutarlo a mano:
@@ -753,8 +752,8 @@ docker compose down -v   # apaga y limpia los volúmenes locales
 ├── app/            # módulo ejecutable: main class, seguridad, config, application.yml
 ├── common/         # kernel compartido: excepciones, JWT, roles y contratos entre features
 ├── features/       # un módulo Gradle por feature, cada uno depende solo de common
-│   ├── inventory/      # dominio de inventario (Material, Categoria, HistorialMaterial)
-│   ├── timetracking/   # registro de jornada (Empleado, Fichaje, Pausa, correcciones, exportación)
+│   ├── inventory/      # dominio de inventario (Material, Category, MaterialHistory)
+│   ├── timetracking/   # registro de jornada (Employee, Shift, ShiftBreak, correcciones, exportación)
 │   ├── auth/           # inicio de sesión, sesiones, bloqueo, alta y restablecimiento
 │   └── invoices/       # facturación: subida, reconocimiento con Claude, revisión, reportes, trimestres
 ├── build-logic/    # convention plugins de Gradle (composite build)

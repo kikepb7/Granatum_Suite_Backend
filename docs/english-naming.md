@@ -151,6 +151,8 @@ Mismo criterio: traducción literal en `UPPER_SNAKE_CASE`. Los que ya están en 
 | `MATERIAL_EN_USO` | `MATERIAL_IN_USE` | `EVENTO_NOT_FOUND` | `EVENT_NOT_FOUND` |
 | `EVENTO_FINALIZADO` | `EVENT_FINISHED` | `STOCK_INSUFICIENTE` (`disponible`) | `INSUFFICIENT_STOCK` (`available`) |
 | `FECHA_PASADA` | `DATE_IN_PAST` | `PWD_CHANGE_ONLY` (autoridad interna) | sin cambios |
+| `RECURSO_NO_ENCONTRADO` (`/error`) | `RESOURCE_NOT_FOUND` | `METODO_NO_PERMITIDO` (`/error`) | `METHOD_NOT_ALLOWED` |
+| `TIPO_NO_ADMITIDO` (`/error`) | `UNSUPPORTED_MEDIA_TYPE` | `ERROR_<estado>` (`/error`) | `ERROR_<estado>` sin cambios |
 
 ## Base de datos
 
@@ -162,3 +164,34 @@ editan (principio II).
 
 Consecuencia al desplegar: los tokens emitidos antes llevan los roles antiguos y dejan de valer;
 cada persona vuelve a iniciar sesión una vez.
+
+## Configuración y variables de entorno
+
+Las claves de configuración (`application.yml`) y las variables de entorno siguen la misma regla.
+Las que ya estaban en inglés (`DB_*`, `JWT_*`, `SUPABASE_*`, `ANTHROPIC_API_KEY`, `CORS_ALLOWED_ORIGINS`,
+`OPENAPI_ENABLED`, `AUTH_ARGON2_*`, `AUTH_REFRESH_EXPIRATION_DAYS`, `INVOICES_CLAUDE_*`,
+`INVOICES_MAX_REQUEST_SIZE`) no cambian. Un despliegue existente tiene que renombrar estas:
+
+| Antes | Después |
+|---|---|
+| `AUTH_HASH_CONCURRENCIA` · `AUTH_HASH_ESPERA_MS` | `AUTH_HASH_CONCURRENCY` · `AUTH_HASH_WAIT_MS` |
+| `AUTH_PURGA_SESIONES_DIAS` | `AUTH_SESSION_PURGE_DAYS` |
+| `AUTH_EVENTOS_RETENCION_DIAS` | `AUTH_SECURITY_EVENTS_RETENTION_DAYS` |
+| `AUTH_CODIGO_ARRANQUE` | `AUTH_BOOTSTRAP_CODE` |
+| `TIMETRACKING_AVISO_SIN_SALIDA_HORAS` · `_CRON` | `TIMETRACKING_MISSING_CLOCK_OUT_HOURS` · `_CRON` |
+| `TIMETRACKING_EXPORTACION_CONCURRENCIA` · `_ESPERA_MS` · `_TIMEOUT_SEGUNDOS` · `_TAMANO_LOTE` | `TIMETRACKING_EXPORT_CONCURRENCY` · `_WAIT_MS` · `_TIMEOUT_SECONDS` · `_BATCH_SIZE` |
+| `TIMETRACKING_VERIFICACION_MAX_BYTES` | `TIMETRACKING_VERIFICATION_MAX_BYTES` |
+| `TIMETRACKING_RETENCION_HABILITADA` (enlace relajado) | `TIMETRACKING_RETENTION_ENABLED` |
+| `SEGURIDAD_LIMITE_LOGIN` · `_SESION` · `_REGISTRO` · `_GENERAL` · `_MAX_DIRECCIONES` | `SECURITY_RATE_LIMIT_LOGIN` · `_SESSION` · `_SIGN_UP` · `_GENERAL` · `_MAX_ADDRESSES` |
+| `ABSENCES_DIAS_VACACIONES` | `ABSENCES_VACATION_ANNUAL_DAYS` |
+| `NOTIFICATIONS_DIAS_LEIDAS` · `_DIAS_TODAS` · `_LIMPIEZA_CRON` | `NOTIFICATIONS_READ_DAYS` · `_ALL_DAYS` · `_CLEANUP_CRON` |
+| `INVOICES_RECONOCIMIENTO_CONCURRENCIA` · `_TIMEOUT_SEGUNDOS` | `INVOICES_RECOGNITION_CONCURRENCY` · `_TIMEOUT_SECONDS` |
+| `INVOICES_REINTENTO_CRON` · `INVOICES_REINTENTO_TRAS_MINUTOS` | `INVOICES_RETRY_CRON` · `INVOICES_RETRY_AFTER_MINUTES` |
+| `INVOICES_MAX_BYTES_POR_FICHERO` · `INVOICES_PDF_MAX_PAGINAS` | `INVOICES_MAX_BYTES_PER_FILE` · `INVOICES_PDF_MAX_PAGES` |
+| `INVOICES_REFERENCIA_DIR` (solo tests reales) | `INVOICES_REFERENCE_DIR` |
+| `INVENTORY_IMAGENES_BUCKET` · `_URL_SEGUNDOS` · `_MAX_BYTES` · `_TIMEOUT_SEGUNDOS` | `INVENTORY_IMAGES_BUCKET` · `_URL_SECONDS` · `_MAX_BYTES` · `_TIMEOUT_SECONDS` |
+| `EVENTS_FINALIZACION_CRON` | `EVENTS_FINISHING_CRON` |
+| `OPENAPI_ACTUALIZAR` (regenerar `docs/openapi.json`) | `OPENAPI_UPDATE` |
+
+Una variable antigua que quede en el entorno no da error: se ignora y se usa el valor por defecto.
+El nombre del bucket por defecto sigue siendo `materiales`, porque es un recurso ya creado en Supabase.
