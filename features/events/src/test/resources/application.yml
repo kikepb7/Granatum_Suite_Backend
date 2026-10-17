@@ -1,0 +1,21 @@
+# Test-only properties for this module's Spring contexts (feature 011).
+#
+# The test application component-scans `common` (JwtService / JwtAuthFilter),
+# which need jwt.* to exist. No literal key: the Gradle test task generates one
+# per run (build-logic/src/main/kotlin/DotEnv.kt).
+jwt:
+  secret: ${JWT_SECRET_BASE64}
+  expiration-minutes: 15
+
+# Mirrors app's application.yml: these Hibernate loggers print entity and
+# parameter values by reflection - here, comments and rejection reasons.
+logging:
+  level:
+    org.hibernate.internal.util.EntityPrinter: WARN
+    # Hibernate 7.2 (Spring Boot 4.0.8) prints entities through the
+    # org.hibernate.orm.core category instead: the pin above stopped covering
+    # it, and at DEBUG DNIs, emails and comments reached the logs. INFO keeps
+    # Hibernate's warnings and errors.
+    org.hibernate.orm.core: INFO
+    org.hibernate.orm.jdbc.bind: WARN
+

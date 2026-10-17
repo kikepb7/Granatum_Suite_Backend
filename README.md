@@ -41,6 +41,7 @@ en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - ✅ `absences` (Ausencia, DerechoVacaciones) — implementado. Vacaciones y permisos retribuidos que la persona pide y un `ENCARGADO` o `ADMIN` aprueba o rechaza; bajas médicas que registran ellos, sin ningún dato de salud; sin solapamientos por persona; saldo anual en días naturales (30 por defecto, ajustable por el `ADMIN`); nada se borra. Especificado en [`specs/007-absences/`](specs/007-absences/) (ver [Ausencias](#ausencias-y-vacaciones)).
 - ✅ `notifications` (Notificacion) — implementado. Avisos dentro de la aplicación: salida de fichaje olvidada, fichaje incompleto, correcciones y ausencias pendientes (a quien las resuelve), sus resoluciones (a quien las pidió) y registros pendientes (a los `ADMIN`). Cada persona ve solo los suyos; sin datos personales; los antiguos se borran solos. Especificado en [`specs/008-notifications/`](specs/008-notifications/) (ver [Notificaciones](#notificaciones)).
 - ✅ `invoices` (Factura, desglose de IVA, originales, trimestres) — implementado. Solo el `ADMIN` sube fotos, capturas o PDF de facturas; Claude las lee y propone sus datos; el `ADMIN` las revisa y las confirma; y con las confirmadas salen reportes mensuales, trimestrales y anuales en pantalla, CSV y PDF. Los trimestres se cierran al declararlos y desde entonces no cambian. Sin clave de API funciona en modo manual. Especificado en [`specs/004-invoices/`](specs/004-invoices/) (ver [Facturación](#facturación)).
+- ✅ `events` (Evento, materiales del evento) — implementado. La plantilla (`ADMIN`, `ENCARGADO`, `EMPLEADO`) crea eventos con nombre, descripción y fecha, y les asigna material del inventario: asignarlo lo retira del inventario al momento y quitarlo, finalizar o borrar el evento lo devuelve, con su entrada en el historial del material. Sin stock suficiente no se asigna nada y se dice cuántas unidades hay. Al terminar el día del evento se finaliza solo. `REPRESENTANTE` los consulta. Especificado en [`specs/011-events/`](specs/011-events/) (ver [Eventos](#eventos)).
 
 ## Arranque rápido
 
@@ -548,6 +549,34 @@ Un aviso es un tipo y un identificador; el texto es fijo por tipo, así que
 nunca lleva nombres, motivos ni comentarios. Se crea solo si la operación que lo
 origina se confirma, y si falla no la deshace. Los leídos se borran a los 90
 días y todos a los 180 (`NOTIFICATIONS_DIAS_LEIDAS`, `NOTIFICATIONS_DIAS_TODAS`).
+
+## Eventos
+
+La plantilla prepara eventos (bodas, celebraciones) con material del inventario.
+El contrato está en [`specs/011-events/contracts/README.md`](specs/011-events/contracts/README.md).
+
+| Ruta | Qué hace |
+|------|----------|
+| `GET /api/eventos?estado=PROGRAMADO` | Lista; programados por fecha, finalizados del más reciente |
+| `POST /api/eventos` | Crea (`nombre`, `descripcion`, `fecha` de hoy o futura) |
+| `PUT /api/eventos/{id}/materiales/{materialId}` | Fija cuántas unidades lleva; solo se mueve la diferencia |
+| `DELETE /api/eventos/{id}/materiales/{materialId}` | Lo quita y devuelve sus unidades |
+| `POST /api/eventos/{id}/finalizar` | Finaliza y devuelve todo (idempotente) |
+| `GET /api/eventos/materiales` | Selector: materiales con sus unidades libres |
+
+- **Asignar es retirar del inventario.** La cantidad de un material baja al
+  asignarlo y sube al devolverlo, con una entrada `CANTIDAD` en su historial que
+  nombra el evento. Una sola sentencia condicional (`cantidad >= n`) hace imposible
+  el negativo aunque dos personas asignen a la vez (`StockMaterialesIT`).
+- **Sin stock no se asigna nada**: `409 STOCK_INSUFICIENTE` con `disponible`.
+- **Finalización automática** a las 00:05 de Madrid de todos los eventos de días
+  anteriores (`EVENTS_FINALIZACION_CRON` → `events.finalizacion.cron`); también a
+  mano. La devolución automática queda en el historial a nombre de quien creó el
+  evento, con un motivo que dice que fue automática.
+- **Un material asignado a un evento programado no se puede borrar** del
+  inventario (`409 MATERIAL_EN_USO`).
+- `EMPLEADO` gestiona eventos pero sigue sin acceder a `/api/materiales`
+  (constitución v2.5.0): el selector expone solo lo necesario para elegir.
 
 ## Despliegue
 

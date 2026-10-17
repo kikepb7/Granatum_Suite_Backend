@@ -27,7 +27,7 @@ class EsquemaCompletoRlsIT {
     lateinit var dataSource: DataSource
 
     /**
-     * Every table the twenty-six migrations create (V24 and V26 drop one each), across the six feature
+     * Every table the twenty-seven migrations create (V24 and V26 drop one each), across the seven feature
      * modules. This is the only test that sees them all together: each module's
      * own `RowLevelSecurityIT` only has that module's migrations on its
      * classpath.
@@ -51,7 +51,9 @@ class EsquemaCompletoRlsIT {
         // absences (feature 007): who is off and why, sick leave included
         "ausencias", "derechos_vacaciones",
         // notifications (feature 008): who is told what about whom
-        "notificaciones"
+        "notificaciones",
+        // events (feature 011): events and the material they take
+        "eventos", "evento_materiales"
     )
 
     @Test

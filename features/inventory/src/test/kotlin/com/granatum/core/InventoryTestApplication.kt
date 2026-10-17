@@ -1,6 +1,9 @@
 package com.granatum.core
 
+import com.granatum.core.domain.contract.UsoMateriales
+import com.granatum.core.domain.type.EntityId
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.Bean
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 
 /**
@@ -14,4 +17,19 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing
  */
 @SpringBootApplication
 @EnableJpaAuditing
-class InventoryTestApplication
+class InventoryTestApplication {
+
+    /**
+     * Feature 011: in production `events` implements [UsoMateriales]; this module must not depend
+     * on it even in tests, so here it is a double that tests can switch.
+     */
+    @Bean
+    fun usoMateriales() = UsoMaterialesDoble()
+}
+
+/** No material is in use unless a test says so. */
+class UsoMaterialesDoble : UsoMateriales {
+    val enUso = mutableSetOf<EntityId>()
+
+    override fun enUso(materialId: EntityId): Boolean = materialId in enUso
+}

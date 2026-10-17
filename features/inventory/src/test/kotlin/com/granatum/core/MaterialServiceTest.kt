@@ -17,6 +17,8 @@ import com.granatum.core.infrastructure.database.entities.HistorialMaterialEntit
 import com.granatum.core.infrastructure.database.entities.LocalizacionEmbeddable
 import com.granatum.core.infrastructure.database.entities.MaterialEntity
 import com.granatum.core.infrastructure.database.repositories.CategoriaRepository
+import com.granatum.core.domain.contract.UsoMateriales
+import com.granatum.core.domain.exception.MaterialEnUsoException
 import com.granatum.core.infrastructure.database.repositories.HistorialMaterialRepository
 import com.granatum.core.infrastructure.database.repositories.MaterialRepository
 import com.granatum.core.infrastructure.storage.AlmacenImagenesDeshabilitado
@@ -45,6 +47,7 @@ class MaterialServiceTest {
     private val categoriaRepository = mockk<CategoriaRepository>()
     private val historialMaterialRepository = mockk<HistorialMaterialRepository>()
     private val almacen = mockk<AlmacenImagenes>(relaxed = true)
+    private val usoMateriales = mockk<UsoMateriales> { every { enUso(any()) } returns false }
     private val config = ConfiguracionAlmacenImagenes(
         supabaseUrl = "https://storage.test",
         serviceKey = "clave",
@@ -55,7 +58,7 @@ class MaterialServiceTest {
 
     private fun servicio(almacenImagenes: AlmacenImagenes = almacen) = MaterialService(
         materialRepository, categoriaRepository, historialMaterialRepository,
-        almacenImagenes, config, TransactionOperations.withoutTransaction()
+        almacenImagenes, config, TransactionOperations.withoutTransaction(), usoMateriales
     )
 
     private val service = servicio()
@@ -293,6 +296,17 @@ class MaterialServiceTest {
 
         verify { materialRepository.delete(entity) }
         verify { almacen.borrar(listOf("materiales/vieja.jpg")) }
+    }
+
+    @Test
+    fun `a material out at a scheduled event is not deleted`() {
+        val entity = material()
+        existe(entity)
+        every { usoMateriales.enUso(entity.id) } returns true
+
+        assertFailsWith<MaterialEnUsoException> { service.delete(entity.id) }
+
+        verify(exactly = 0) { materialRepository.delete(any()) }
     }
 
     @Test

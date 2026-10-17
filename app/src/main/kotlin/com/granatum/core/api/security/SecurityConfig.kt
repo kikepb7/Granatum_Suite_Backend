@@ -182,6 +182,15 @@ class SecurityConfig {
                     .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
                     .requestMatchers("/api/materiales/**", "/api/categorias/**")
                     .hasAnyRole("ADMIN", "ENCARGADO")
+                    // Events (feature 011, constitution v2.5.0): the staff prepares
+                    // them - EMPLEADO included - and REPRESENTANTE may read them.
+                    // Assigning material to an event is not access to the
+                    // inventory: /api/eventos/materiales shows only what is needed
+                    // to choose, and EMPLEADO still has no /api/materiales.
+                    .requestMatchers(HttpMethod.GET, "/api/eventos", "/api/eventos/**")
+                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO", "REPRESENTANTE")
+                    .requestMatchers("/api/eventos", "/api/eventos/**")
+                    .hasAnyRole("ADMIN", "ENCARGADO", "EMPLEADO")
                     // Staff management is ADMIN only: ENCARGADO runs inventory
                     // and approves corrections, but does not manage people.
                     .requestMatchers("/api/empleados/**")

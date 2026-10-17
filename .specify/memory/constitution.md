@@ -136,11 +136,14 @@ Cuatro roles, con fronteras cerradas:
 |-----|---------|
 | `ADMIN` | Todo. |
 | `ENCARGADO` | Inventario completo, aprobación de correcciones de fichaje y resolución de ausencias de otras personas (incluido registrar bajas). |
-| `EMPLEADO` | Únicamente lo suyo: sus fichajes (fichar y consultar su historial) y sus ausencias (pedirlas, cancelarlas y consultarlas con su saldo). |
-| `REPRESENTANTE` | **Solo lectura** del registro de jornada de toda la plantilla. Nada más: tampoco ausencias. |
+| `EMPLEADO` | Lo suyo: sus fichajes (fichar y consultar su historial) y sus ausencias (pedirlas, cancelarlas y consultarlas con su saldo). Además, los eventos de la empresa: crearlos, editarlos y asignarles material (feature 011). |
+| `REPRESENTANTE` | **Solo lectura** del registro de jornada de toda la plantilla y de los eventos. Nada más: tampoco ausencias. |
 
 - Un `EMPLEADO` **NO DEBE** poder leer ni modificar los fichajes de otra
-  persona, ni acceder a ninguna ruta de inventario.
+  persona, ni acceder a ninguna ruta de inventario. Asignar material a un
+  evento no es acceder al inventario: el selector de eventos expone solo lo
+  necesario para elegir (categoría, descripción, localización, unidades), y la
+  retirada la hace inventario a través de un contrato (feature 011).
 - `REPRESENTANTE` existe porque el art. 34.9 del Estatuto nombra expresamente a
   la representación legal de los trabajadores como destinataria del registro.
   Su alcance es el mínimo que satisface esa obligación:
@@ -151,6 +154,8 @@ Cuatro roles, con fronteras cerradas:
     sin obligación que lo sostenga.
   - **NO DEBE** aprobar ni rechazar correcciones, ni solicitarlas en nombre de
     nadie, ni dar de alta o baja personal, ni acceder a inventario.
+  - **PUEDE** consultar los eventos y su material (feature 011), que no
+    contienen datos personales.
   - **NO DEBE** poder escribir nada, en ninguna tabla.
 - La propiedad del recurso **DEBE** comprobarse en el servidor contra el
   sujeto del JWT, nunca aceptando un identificador de usuario que venga en el
@@ -412,7 +417,9 @@ Deuda cerrada, conservada aquí como historial:
 constitución junto a `README.md` y `docs/ARCHITECTURE.md`. Si los tres se
 contradicen, manda esta constitución.
 
-**Version**: 2.4.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 2.5.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-17
+
+*v2.5.0 (MINOR): el principio IV amplía el alcance de `EMPLEADO` (crea, edita y asigna material a los eventos) y de `REPRESENTANTE` (los consulta), por decisión del responsable del producto para la feature 011: la plantilla prepara los eventos, y un evento no contiene datos personales. `EMPLEADO` sigue sin acceso a las rutas de inventario. Plan de migración: ninguno; la feature 011 añade las reglas en `SecurityConfig` y `AutorizacionEventosIT`.*
 
 *v2.4.0 (MINOR): el flujo de desarrollo adopta Git Flow (`main` = producción, `develop`, `release/*`, `hotfix/*`, `feature/*`) y prohíbe dependencias `-SNAPSHOT` en lo que llega a `main`. Plan de migración: el proyecto depende hoy de Spring Boot `4.0.0-SNAPSHOT`; pasar a una GA es la primera tarea de `release/1.0.0` (`docs/ROADMAP.md`, R1), y ninguna versión se etiqueta antes.*
 

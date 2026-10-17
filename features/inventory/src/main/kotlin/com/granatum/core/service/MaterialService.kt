@@ -4,7 +4,9 @@ import com.granatum.core.domain.exception.CantidadInvalidaException
 import com.granatum.core.domain.exception.CategoriaNotFoundException
 import com.granatum.core.domain.exception.ImagenDemasiadoGrandeException
 import com.granatum.core.domain.exception.ImagenNoValidaException
+import com.granatum.core.domain.exception.MaterialEnUsoException
 import com.granatum.core.domain.exception.MaterialNotFoundException
+import com.granatum.core.domain.contract.UsoMateriales
 import com.granatum.core.domain.model.DimensionesModel
 import com.granatum.core.domain.model.HistorialMaterialModel
 import com.granatum.core.domain.model.Localizacion
@@ -47,7 +49,9 @@ class MaterialService(
     private val historialMaterialRepository: HistorialMaterialRepository,
     private val almacenImagenes: AlmacenImagenes,
     private val configImagenes: ConfiguracionAlmacenImagenes,
-    private val transacciones: TransactionOperations
+    private val transacciones: TransactionOperations,
+    /** Feature 011: a material whose units are out at an event cannot be deleted (FR-013). */
+    private val usoMateriales: UsoMateriales
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -61,6 +65,10 @@ class MaterialService(
         }
         return conImagenes(entidades.map { it.toModel() })
     }
+
+    /** Those of [ids] that exist, with their images signed in one call (feature 011). */
+    fun findAllById(ids: Collection<EntityId>): List<MaterialModel> =
+        if (ids.isEmpty()) emptyList() else conImagenes(materialRepository.findAllByIdIn(ids).map { it.toModel() })
 
     fun findById(id: EntityId): MaterialModel =
         conImagen(materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }.toModel())
@@ -118,6 +126,7 @@ class MaterialService(
     fun delete(id: EntityId) {
         val ruta = transacciones.execute {
             val entity = materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }
+            if (usoMateriales.enUso(id)) throw MaterialEnUsoException(id)
             materialRepository.delete(entity)
             entity.imagenRuta
         }

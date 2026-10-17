@@ -272,6 +272,17 @@
         "required" : [ "passwordActual", "passwordNueva" ],
         "type" : "object"
       },
+      "CantidadMaterialEventoRequest" : {
+        "properties" : {
+          "cantidad" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "cantidad" ],
+        "type" : "object"
+      },
       "CategoriaDto" : {
         "properties" : {
           "createdAt" : {
@@ -641,6 +652,102 @@
           }
         },
         "required" : [ "cerrado", "eventos", "trimestre" ],
+        "type" : "object"
+      },
+      "EventoDto" : {
+        "properties" : {
+          "creadoPor" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "descripcion" : {
+            "type" : [ "string", "null" ]
+          },
+          "estado" : {
+            "enum" : [ "PROGRAMADO", "FINALIZADO" ],
+            "type" : "string"
+          },
+          "fecha" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "fechaAlta" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "fechaUltimaModificacion" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "finalizadoEn" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "materiales" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EventoMaterialDto"
+            },
+            "type" : "array"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "creadoPor", "estado", "fecha", "fechaAlta", "fechaUltimaModificacion", "id", "materiales", "nombre" ],
+        "type" : "object"
+      },
+      "EventoMaterialDto" : {
+        "properties" : {
+          "cantidad" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "categoria" : {
+            "type" : "string"
+          },
+          "descripcion" : {
+            "type" : "string"
+          },
+          "imagenUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "localizacion" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LocalizacionEventoDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "materialId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "cantidad", "categoria", "descripcion", "materialId" ],
+        "type" : "object"
+      },
+      "EventoRequest" : {
+        "properties" : {
+          "descripcion" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "fecha" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "nombre" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "fecha", "nombre" ],
         "type" : "object"
       },
       "EventoTrimestre" : {
@@ -1068,6 +1175,19 @@
         "required" : [ "almacen", "seccion" ],
         "type" : "object"
       },
+      "LocalizacionEventoDto" : {
+        "properties" : {
+          "almacen" : {
+            "type" : "string"
+          },
+          "seccion" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "almacen", "seccion" ],
+        "type" : "object"
+      },
       "LocalizacionRequest" : {
         "properties" : {
           "almacen" : {
@@ -1110,6 +1230,32 @@
           }
         },
         "required" : [ "refreshToken" ],
+        "type" : "object"
+      },
+      "MaterialDisponibleDto" : {
+        "properties" : {
+          "cantidad" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "categoria" : {
+            "type" : "string"
+          },
+          "descripcion" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "imagenUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "localizacion" : {
+            "$ref" : "#/components/schemas/LocalizacionEventoDto"
+          }
+        },
+        "required" : [ "cantidad", "categoria", "descripcion", "id", "localizacion" ],
         "type" : "object"
       },
       "MaterialDto" : {
@@ -2144,7 +2290,7 @@
     },
     "/api/ausencias/{id}" : {
       "get" : {
-        "operationId" : "obtener",
+        "operationId" : "obtener_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -3626,7 +3772,7 @@
         "tags" : [ "empleado-controller" ]
       },
       "post" : {
-        "operationId" : "crear",
+        "operationId" : "crear_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3909,6 +4055,628 @@
           }
         },
         "tags" : [ "empleado-controller" ]
+      }
+    },
+    "/api/eventos" : {
+      "get" : {
+        "operationId" : "listar_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "PROGRAMADO", "FINALIZADO" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EventoDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      },
+      "post" : {
+        "operationId" : "crear",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EventoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventoDto"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      }
+    },
+    "/api/eventos/materiales" : {
+      "get" : {
+        "operationId" : "materialesDisponibles",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/MaterialDisponibleDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      }
+    },
+    "/api/eventos/{id}" : {
+      "delete" : {
+        "operationId" : "borrar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      },
+      "get" : {
+        "operationId" : "obtener",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventoDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      },
+      "put" : {
+        "operationId" : "editar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EventoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventoDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      }
+    },
+    "/api/eventos/{id}/finalizar" : {
+      "post" : {
+        "operationId" : "finalizar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventoDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      }
+    },
+    "/api/eventos/{id}/materiales/{materialId}" : {
+      "delete" : {
+        "operationId" : "quitarMaterial",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "materialId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventoDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
+      },
+      "put" : {
+        "operationId" : "asignarMaterial",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "materialId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CantidadMaterialEventoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventoDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "evento-controller" ]
       }
     },
     "/api/exportaciones" : {

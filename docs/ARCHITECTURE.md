@@ -38,7 +38,8 @@ Ver [Colaboración entre features](#colaboración-entre-features-contratos-en-co
   `ForbiddenException`, `UnauthorizedException`, `InvalidOperationException`),
   `Role` (`ADMIN` / `ENCARGADO` / `EMPLEADO` / `REPRESENTANTE`), `JwtService`,
   `JwtAuthFilter`, y los **contratos entre features** (`domain/contract/`).
-- **`inventory`**: dominio de inventario de material de trabajo.
+- **`inventory`**: dominio de inventario de material de trabajo. Implementa
+  `StockMateriales` y consume `UsoMateriales` (feature 011).
 - **`timetracking`**: dominio de registro horario. Implementa
   `DirectorioEmpleados`.
 - **`auth`**: inicio de sesión, sesiones, bloqueo por fuerza bruta, alta y
@@ -47,6 +48,9 @@ Ver [Colaboración entre features](#colaboración-entre-features-contratos-en-co
   facturas, saca reportes y cierra trimestres. No necesita nada de las otras
   features; lo que comparte con `timetracking` (el formato CSV y la validación de
   NIF) vive en `common` (`FormatoCsv`, `NifValidator`).
+- **`events`**: eventos y el material que llevan (feature 011). Retira y devuelve
+  unidades del inventario con `StockMateriales` e implementa `UsoMateriales`,
+  sin conocer `inventory`.
 
 Ninguna feature conoce a otra: lo verifica el compilador, porque ningún
 `build.gradle.kts` de feature menciona otro módulo que no sea `common`.
@@ -307,6 +311,19 @@ true)`. Tres reglas:
 
 Para decidir destinatarios por rol hay un segundo contrato de consulta,
 `DirectorioRoles`, que implementa `auth`.
+
+**Contratos en las dos direcciones: eventos e inventario (feature 011).** Asignar
+material a un evento tiene que retirarlo del inventario *en la misma transacción
+y pudiendo fallar* (sin stock), así que no sirve un evento de dominio, que no
+devuelve nada. `StockMateriales` (implementa `inventory`) ofrece retirar, devolver
+y listar; `UsoMateriales` (implementa `events`) dice si un material está en un
+evento programado, para que inventario no deje borrarlo. Son dos contratos y no
+uno porque cada feature depende solo de lo que usa, y las excepciones que cruzan
+el contrato (`StockInsuficienteException`, `MaterialInexistenteException`) viven
+con él en `common`: las lanza una feature y las traduce a HTTP otra. La retirada
+es un `UPDATE … WHERE cantidad >= :n` que no limpia el contexto de persistencia,
+porque la transacción de quien llama tiene abierto el evento que está cambiando
+(specs/011-events research.md D-003).
 
 **Nombres de clase únicos en todo el producto.** Todos los módulos comparten el
 namespace `com.granatum.core` y cada uno va en su propio jar, así que dos clases

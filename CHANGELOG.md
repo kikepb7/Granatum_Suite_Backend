@@ -6,6 +6,17 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 
 ## [Sin publicar] — `develop`
 
+### Añadido
+
+- **Eventos** (spec 011). La plantilla crea eventos y les asigna material del
+  inventario, que se retira al asignarlo y vuelve al quitarlo, al borrar el evento
+  o al finalizarlo (solo, al terminar su día, o a mano). Sin stock suficiente,
+  `409 STOCK_INSUFICIENTE` con las unidades disponibles. `REPRESENTANTE` los
+  consulta. Constitución v2.5.0: `EMPLEADO` gestiona eventos (sigue sin acceso al
+  inventario).
+- `DELETE /api/materiales/{id}` de un material asignado a un evento programado
+  responde `409 MATERIAL_EN_USO`.
+
 ### Cambiado
 
 - **Solo el propietario se registra** (spec 009). `POST /api/auth/registro`

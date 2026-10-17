@@ -19,6 +19,7 @@ dependencies {
     implementation(projects.features.invoices)
     implementation(projects.features.absences)
     implementation(projects.features.notifications)
+    implementation(projects.features.events)
 
     implementation(libs.kotlin.reflect)
     implementation(libs.spring.boot.starter.security)

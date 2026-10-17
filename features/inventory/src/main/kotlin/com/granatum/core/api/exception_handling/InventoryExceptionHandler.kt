@@ -4,6 +4,7 @@ import com.granatum.core.domain.exception.AlmacenImagenesNoDisponibleException
 import com.granatum.core.domain.exception.CategoriaNotFoundException
 import com.granatum.core.domain.exception.ImagenDemasiadoGrandeException
 import com.granatum.core.domain.exception.ImagenNoValidaException
+import com.granatum.core.domain.exception.MaterialEnUsoException
 import com.granatum.core.domain.exception.MaterialNotFoundException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -33,6 +34,13 @@ class InventoryExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun onMaterialNotFound(e: MaterialNotFoundException) = mapOf(
         "code" to "MATERIAL_NOT_FOUND",
+        "message" to e.message
+    )
+
+    @ExceptionHandler(MaterialEnUsoException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    fun onMaterialEnUso(e: MaterialEnUsoException) = mapOf(
+        "code" to "MATERIAL_EN_USO",
         "message" to e.message
     )
 
