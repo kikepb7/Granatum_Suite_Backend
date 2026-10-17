@@ -33,7 +33,7 @@ logging:
 # Mirrors app/src/main/resources/application.yml: the multipart limits are the
 # REQUEST's, and the per-file limit for images is the service's (feature 010),
 # so an oversized image reaches the controller and comes back as
-# IMAGEN_DEMASIADO_GRANDE. Spring's own defaults (1 MB) would refuse it first.
+# IMAGE_TOO_LARGE. Spring's own defaults (1 MB) would refuse it first.
 spring:
   servlet:
     multipart:

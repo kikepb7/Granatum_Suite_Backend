@@ -1,10 +1,10 @@
 package com.granatum.core.api.exception_handling
 
-import com.granatum.core.domain.exception.AlmacenImagenesNoDisponibleException
-import com.granatum.core.domain.exception.CategoriaNotFoundException
-import com.granatum.core.domain.exception.ImagenDemasiadoGrandeException
-import com.granatum.core.domain.exception.ImagenNoValidaException
-import com.granatum.core.domain.exception.MaterialEnUsoException
+import com.granatum.core.domain.exception.CategoryNotFoundException
+import com.granatum.core.domain.exception.ImageStorageUnavailableException
+import com.granatum.core.domain.exception.InvalidMaterialImageException
+import com.granatum.core.domain.exception.MaterialImageTooLargeException
+import com.granatum.core.domain.exception.MaterialInUseException
 import com.granatum.core.domain.exception.MaterialNotFoundException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class InventoryExceptionHandler {
 
-    @ExceptionHandler(CategoriaNotFoundException::class)
+    @ExceptionHandler(CategoryNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun onCategoriaNotFound(e: CategoriaNotFoundException) = mapOf(
-        "code" to "CATEGORIA_NOT_FOUND",
+    fun onCategoryNotFound(e: CategoryNotFoundException) = mapOf(
+        "code" to "CATEGORY_NOT_FOUND",
         "message" to e.message
     )
 
@@ -37,31 +37,31 @@ class InventoryExceptionHandler {
         "message" to e.message
     )
 
-    @ExceptionHandler(MaterialEnUsoException::class)
+    @ExceptionHandler(MaterialInUseException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onMaterialEnUso(e: MaterialEnUsoException) = mapOf(
-        "code" to "MATERIAL_EN_USO",
+    fun onMaterialInUse(e: MaterialInUseException) = mapOf(
+        "code" to "MATERIAL_IN_USE",
         "message" to e.message
     )
 
-    @ExceptionHandler(ImagenNoValidaException::class)
+    @ExceptionHandler(InvalidMaterialImageException::class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-    fun onImagenNoValida(e: ImagenNoValidaException) = mapOf(
-        "code" to "IMAGEN_NO_VALIDA",
+    fun onInvalidImage(e: InvalidMaterialImageException) = mapOf(
+        "code" to "INVALID_IMAGE",
         "message" to e.message
     )
 
-    @ExceptionHandler(ImagenDemasiadoGrandeException::class)
+    @ExceptionHandler(MaterialImageTooLargeException::class)
     @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
-    fun onImagenDemasiadoGrande(e: ImagenDemasiadoGrandeException) = mapOf(
-        "code" to "IMAGEN_DEMASIADO_GRANDE",
+    fun onImageTooLarge(e: MaterialImageTooLargeException) = mapOf(
+        "code" to "IMAGE_TOO_LARGE",
         "message" to e.message
     )
 
-    @ExceptionHandler(AlmacenImagenesNoDisponibleException::class)
+    @ExceptionHandler(ImageStorageUnavailableException::class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    fun onAlmacenNoDisponible(e: AlmacenImagenesNoDisponibleException) = mapOf(
-        "code" to "ALMACEN_IMAGENES_NO_DISPONIBLE",
+    fun onImageStorageUnavailable(e: ImageStorageUnavailableException) = mapOf(
+        "code" to "IMAGE_STORAGE_UNAVAILABLE",
         "message" to e.message
     )
 }

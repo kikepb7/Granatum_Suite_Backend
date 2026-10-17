@@ -1,11 +1,11 @@
 package com.granatum.core
 
-import com.granatum.core.domain.type.Almacen
-import com.granatum.core.infrastructure.database.entities.CategoriaEntity
-import com.granatum.core.infrastructure.database.entities.DimensionesEmbeddable
-import com.granatum.core.infrastructure.database.entities.LocalizacionEmbeddable
+import com.granatum.core.domain.type.Warehouse
+import com.granatum.core.infrastructure.database.entities.CategoryEntity
+import com.granatum.core.infrastructure.database.entities.MaterialDimensionsEmbeddable
 import com.granatum.core.infrastructure.database.entities.MaterialEntity
-import com.granatum.core.infrastructure.database.repositories.CategoriaRepository
+import com.granatum.core.infrastructure.database.entities.MaterialLocationEmbeddable
+import com.granatum.core.infrastructure.database.repositories.CategoryRepository
 import com.granatum.core.infrastructure.database.repositories.MaterialRepository
 import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.Test
@@ -26,7 +26,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Runs the real Flyway migrations - V26 included - against a real Postgres
+ * Runs the real Flyway migrations - V26 and V28 included - against a real Postgres
  * container, then exercises the JPA mapping end to end. Confirms the entities
  * and the SQL migrations agree (Hibernate `ddl-auto: validate` would otherwise
  * only catch this at application boot).
@@ -57,7 +57,7 @@ class MaterialRepositoryIT {
     }
 
     @Autowired
-    lateinit var categoriaRepository: CategoriaRepository
+    lateinit var categoryRepository: CategoryRepository
 
     @Autowired
     lateinit var materialRepository: MaterialRepository
@@ -68,67 +68,77 @@ class MaterialRepositoryIT {
     @Autowired
     lateinit var jdbc: JdbcTemplate
 
-    private fun material(categoria: CategoriaEntity, almacen: Almacen = Almacen.B, seccion: Int = 4) = MaterialEntity(
-        categoria = categoria,
-        descripcion = "Cilindro de cristal de 40 cm",
-        dimensiones = DimensionesEmbeddable(alto = BigDecimal("40.00"), ancho = BigDecimal("15.50")),
-        cantidad = 8,
-        localizacion = LocalizacionEmbeddable(almacen = almacen, seccion = seccion)
+    private fun material(category: CategoryEntity, warehouse: Warehouse = Warehouse.B, section: Int = 4) = MaterialEntity(
+        category = category,
+        description = "Cilindro de cristal de 40 cm",
+        dimensions = MaterialDimensionsEmbeddable(height = BigDecimal("40.00"), width = BigDecimal("15.50")),
+        quantity = 8,
+        location = MaterialLocationEmbeddable(warehouse = warehouse, section = section)
     )
 
     @Test
     fun `persists and reloads a material with every field of the new model`() {
-        val categoria = categoriaRepository.save(CategoriaEntity(nombre = "Cilindros ${UUID.randomUUID()}"))
-        val guardado = materialRepository.save(material(categoria).apply { imagenRuta = "materiales/x/y.jpg" })
+        val category = categoryRepository.save(CategoryEntity(name = "Cilindros ${UUID.randomUUID()}"))
+        val saved = materialRepository.save(material(category).apply { imagePath = "materials/x/y.jpg" })
 
         entityManager.flush()
         entityManager.clear()
 
-        val reloaded = materialRepository.findById(guardado.id).orElseThrow()
+        val reloaded = materialRepository.findById(saved.id).orElseThrow()
 
-        assertEquals(categoria.id, reloaded.categoria.id)
-        assertEquals("Cilindro de cristal de 40 cm", reloaded.descripcion)
-        assertEquals(BigDecimal("40.00"), reloaded.dimensiones.alto)
-        assertEquals(BigDecimal("15.50"), reloaded.dimensiones.ancho)
-        assertEquals(8, reloaded.cantidad)
-        assertEquals(Almacen.B, reloaded.localizacion.almacen)
-        assertEquals(4, reloaded.localizacion.seccion)
-        assertEquals("materiales/x/y.jpg", reloaded.imagenRuta)
+        assertEquals(category.id, reloaded.category.id)
+        assertEquals("Cilindro de cristal de 40 cm", reloaded.description)
+        assertEquals(BigDecimal("40.00"), reloaded.dimensions.height)
+        assertEquals(BigDecimal("15.50"), reloaded.dimensions.width)
+        assertEquals(8, reloaded.quantity)
+        assertEquals(Warehouse.B, reloaded.location.warehouse)
+        assertEquals(4, reloaded.location.section)
+        assertEquals("materials/x/y.jpg", reloaded.imagePath)
     }
 
     @Test
     fun `filters by warehouse and by warehouse and section`() {
-        val categoria = categoriaRepository.save(CategoriaEntity(nombre = "Filtros ${UUID.randomUUID()}"))
-        val a1 = materialRepository.save(material(categoria, Almacen.A, 1))
-        val a3 = materialRepository.save(material(categoria, Almacen.A, 3))
-        val c2 = materialRepository.save(material(categoria, Almacen.C, 2))
+        val category = categoryRepository.save(CategoryEntity(name = "Filtros ${UUID.randomUUID()}"))
+        val a1 = materialRepository.save(material(category, Warehouse.A, 1))
+        val a3 = materialRepository.save(material(category, Warehouse.A, 3))
+        val c2 = materialRepository.save(material(category, Warehouse.C, 2))
         entityManager.flush()
 
-        val enA = materialRepository.findAllByLocalizacionAlmacen(Almacen.A).map { it.id }
-        assertTrue(a1.id in enA && a3.id in enA)
-        assertFalse(c2.id in enA)
+        val inA = materialRepository.findAllByLocationWarehouse(Warehouse.A).map { it.id }
+        assertTrue(a1.id in inA && a3.id in inA)
+        assertFalse(c2.id in inA)
 
         assertEquals(
             listOf(a3.id),
-            materialRepository.findAllByLocalizacionAlmacenAndLocalizacionSeccion(Almacen.A, 3).map { it.id }
+            materialRepository.findAllByLocationWarehouseAndLocationSection(Warehouse.A, 3).map { it.id }
                 .filter { it in setOf(a1.id, a3.id, c2.id) }
         )
     }
 
-    @Test
-    fun `V26 drops material_fotos and every retired column`() {
-        assertNull(jdbc.queryForObject("SELECT to_regclass('public.material_fotos')::text", String::class.java))
+    private fun columnsOf(table: String): Set<String> = jdbc.queryForList(
+        "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = ?",
+        String::class.java,
+        table
+    ).toSet()
 
-        val columnas = jdbc.queryForList(
-            "SELECT column_name FROM information_schema.columns WHERE table_name = 'materiales'",
-            String::class.java
-        ).toSet()
+    @Test
+    fun `V26 dropped material_fotos and V28 left only English tables and columns`() {
+        assertNull(jdbc.queryForObject("SELECT to_regclass('public.material_fotos')::text", String::class.java))
+        for (old in listOf("categorias", "materiales", "historial_material")) {
+            assertNull(jdbc.queryForObject("SELECT to_regclass('public.$old')::text", String::class.java), old)
+        }
+
         assertEquals(
             setOf(
-                "id", "categoria_id", "descripcion", "alto", "ancho", "cantidad", "almacen", "seccion",
-                "imagen_ruta", "fecha_alta", "fecha_ultima_modificacion"
+                "id", "category_id", "description", "height", "width", "quantity", "warehouse", "section",
+                "image_path", "created_at", "updated_at"
             ),
-            columnas
+            columnsOf("materials")
+        )
+        assertEquals(setOf("id", "name", "description", "created_at", "updated_at"), columnsOf("categories"))
+        assertEquals(
+            setOf("id", "material_id", "user_id", "change_type", "previous_value", "new_value", "reason", "date"),
+            columnsOf("material_history")
         )
     }
 
@@ -137,31 +147,49 @@ class MaterialRepositoryIT {
      * validation (research.md D-006), so they are exercised with plain SQL.
      */
     @Test
-    fun `the database rejects an invalid warehouse, section, dimension or quantity`() {
-        val categoria = categoriaRepository.save(CategoriaEntity(nombre = "Checks ${UUID.randomUUID()}"))
+    fun `the database rejects an invalid warehouse, section, dimension, quantity or change type`() {
+        val category = categoryRepository.save(CategoryEntity(name = "Checks ${UUID.randomUUID()}"))
         entityManager.flush()
 
-        fun insertar(almacen: String, seccion: Int, alto: String, cantidad: Int): Result<Int> = runCatching {
-            jdbc.execute("SAVEPOINT intento")
+        fun attempt(statement: () -> Unit): Result<Unit> = runCatching {
+            jdbc.execute("SAVEPOINT attempt")
             try {
-                jdbc.update(
-                    """
-                    INSERT INTO materiales (id, categoria_id, descripcion, alto, ancho, cantidad, almacen, seccion,
-                                            fecha_alta, fecha_ultima_modificacion)
-                    VALUES (?, ?, 'x', CAST(? AS NUMERIC), 10, ?, ?, ?, now(), now())
-                    """.trimIndent(),
-                    UUID.randomUUID(), categoria.id, alto, cantidad, almacen, seccion
-                )
+                statement()
             } finally {
-                jdbc.execute("ROLLBACK TO SAVEPOINT intento")
+                jdbc.execute("ROLLBACK TO SAVEPOINT attempt")
             }
         }
 
-        assertTrue(insertar("A", 1, "1", 0).isSuccess, "a valid row is accepted")
-        assertTrue(insertar("D", 1, "1", 0).isFailure, "warehouse D")
-        assertTrue(insertar("A", 0, "1", 0).isFailure, "section 0")
-        assertTrue(insertar("A", 6, "1", 0).isFailure, "section 6")
-        assertTrue(insertar("A", 1, "0", 0).isFailure, "height 0")
-        assertTrue(insertar("A", 1, "1", -1).isFailure, "quantity -1")
+        fun insert(warehouse: String, section: Int, height: String, quantity: Int): Result<Unit> = attempt {
+            jdbc.update(
+                """
+                INSERT INTO materials (id, category_id, description, height, width, quantity, warehouse, section,
+                                       created_at, updated_at)
+                VALUES (?, ?, 'x', CAST(? AS NUMERIC), 10, ?, ?, ?, now(), now())
+                """.trimIndent(),
+                UUID.randomUUID(), category.id, height, quantity, warehouse, section
+            )
+        }
+
+        assertTrue(insert("A", 1, "1", 0).isSuccess, "a valid row is accepted")
+        assertTrue(insert("D", 1, "1", 0).isFailure, "warehouse D")
+        assertTrue(insert("A", 0, "1", 0).isFailure, "section 0")
+        assertTrue(insert("A", 6, "1", 0).isFailure, "section 6")
+        assertTrue(insert("A", 1, "0", 0).isFailure, "height 0")
+        assertTrue(insert("A", 1, "1", -1).isFailure, "quantity -1")
+
+        val material = materialRepository.save(material(category))
+        entityManager.flush()
+        fun history(changeType: String): Result<Unit> = attempt {
+            jdbc.update(
+                """
+                INSERT INTO material_history (id, material_id, user_id, change_type, reason, date)
+                VALUES (?, ?, ?, ?, 'x', now())
+                """.trimIndent(),
+                UUID.randomUUID(), material.id, UUID.randomUUID(), changeType
+            )
+        }
+        assertTrue(history("QUANTITY").isSuccess, "an English change type is accepted")
+        assertTrue(history("CANTIDAD").isFailure, "the Spanish change type is gone")
     }
 }
