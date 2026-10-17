@@ -34,9 +34,9 @@ logging:
 # app/src/main/resources/application.yml; values chosen so no test queues by
 # accident - tests that exercise the bound override them explicitly.
 timetracking:
-  exportacion:
-    concurrencia: 2
-    espera-ms: 2000
-    timeout-segundos: 60
-    tamano-lote: 500
-    verificacion-max-bytes: 1048576
+  export:
+    concurrency: 2
+    wait-ms: 2000
+    timeout-seconds: 60
+    batch-size: 500
+    verification-max-bytes: 1048576

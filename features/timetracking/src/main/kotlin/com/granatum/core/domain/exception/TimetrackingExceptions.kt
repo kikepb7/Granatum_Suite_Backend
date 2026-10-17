@@ -11,60 +11,60 @@ package com.granatum.core.domain.exception
 
 // --- Not found -------------------------------------------------------------
 
-class FichajeNotFoundException(id: Any) :
+class ShiftNotFoundException(id: Any) :
     NotFoundException("No existe el fichaje $id")
 
-class EmpleadoNotFoundException(id: Any) :
+class EmployeeNotFoundException(id: Any) :
     NotFoundException("No existe el empleado $id")
 
-class SolicitudNotFoundException(id: Any) :
+class CorrectionRequestNotFoundException(id: Any) :
     NotFoundException("No existe la solicitud de correccion $id")
 
 // --- Conflicts with the current state --------------------------------------
 
-class FichajeYaEnCursoException :
+class ShiftAlreadyInProgressException :
     InvalidOperationException("Ya hay una jornada en curso para este empleado")
 
-class PausaYaAbiertaException :
+class BreakAlreadyOpenException :
     InvalidOperationException("Ya hay una pausa sin cerrar en este fichaje")
 
-class PausaNoAbiertaException :
+class BreakNotOpenException :
     InvalidOperationException("No hay ninguna pausa abierta en este fichaje")
 
-class PausaAbiertaAlCerrarException :
+class BreakOpenOnCloseException :
     InvalidOperationException("Hay una pausa sin terminar: ciérrala antes de fichar la salida")
 
-class FichajeNoEnCursoException :
+class ShiftNotInProgressException :
     InvalidOperationException("La operacion requiere un fichaje en curso")
 
-class FichajeNoFinalizadoException :
+class ShiftNotFinishedException :
     InvalidOperationException("Solo se pueden corregir fichajes ya finalizados")
 
-class FichajeInmutableException :
+class ShiftImmutableException :
     InvalidOperationException(
         "Un fichaje finalizado solo se modifica mediante una correccion aprobada"
     )
 
-class SolicitudYaResueltaException :
+class CorrectionRequestAlreadyResolvedException :
     InvalidOperationException("La solicitud ya estaba resuelta")
 
-class EmpleadoInactivoException :
+class EmployeeInactiveException :
     InvalidOperationException("El empleado esta inactivo y no puede fichar")
 
-class DocumentoDuplicadoException :
+class DuplicateDocumentException :
     InvalidOperationException("Ya existe un empleado con ese documento de identidad")
 
-class ClientEventIdReutilizadoException :
+class ClientEventIdReusedException :
     InvalidOperationException(
         "El clientEventId ya se uso para otra operacion distinta"
     )
 
 // --- Semantically invalid input --------------------------------------------
 
-class ValoresIncoherentesException(detalle: String) :
-    InvalidOperationException("Valores incoherentes: $detalle")
+class InconsistentValuesException(detail: String) :
+    InvalidOperationException("Valores incoherentes: $detail")
 
-class UbicacionNoCorregibleException :
+class LocationNotCorrectableException :
     InvalidOperationException("La ubicacion de un fichaje no es corregible")
 
 /**
@@ -72,8 +72,8 @@ class UbicacionNoCorregibleException :
  * app needs to tell the difference so it can explain that the device clock is
  * off, instead of showing a generic rejection the person cannot act on.
  */
-class DesviacionRelojException(detalle: String) :
-    InvalidOperationException("Desviacion de reloj: $detalle")
+class ClockSkewException(detail: String) :
+    InvalidOperationException("Desviacion de reloj: $detail")
 
 // --- Export (feature 003) --------------------------------------------------
 
@@ -82,9 +82,9 @@ class DesviacionRelojException(detalle: String) :
  * temporary limit, so it maps to 503 with `Retry-After` rather than to a 4xx:
  * the same request will succeed a moment later.
  */
-class ExportacionSaturadaException :
+class ExportBusyException :
     RuntimeException("Hay demasiadas exportaciones en curso; vuelve a intentarlo en unos segundos")
 
 /** The file sent for verification exceeds the configured limit (D-007). */
-class FicheroDemasiadoGrandeException(maxBytes: Long) :
+class VerificationFileTooLargeException(maxBytes: Long) :
     RuntimeException("El fichero supera el tamaño máximo de $maxBytes bytes")

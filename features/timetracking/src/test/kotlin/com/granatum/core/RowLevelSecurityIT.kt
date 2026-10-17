@@ -57,20 +57,20 @@ class RowLevelSecurityIT {
      * failed to run - the failure mode this module has already been bitten by
      * once, when Flyway was not wired up at all.
      */
-    private val tablasEsperadas = setOf(
-        "empleados",
-        "fichajes",
-        "pausas",
-        "solicitudes_correccion_fichaje",
-        "fichaje_eventos",
-        "depuraciones_retencion",
+    private val expectedTables = setOf(
+        "employees",
+        "shifts",
+        "shift_breaks",
+        "shift_correction_requests",
+        "shift_events",
+        "retention_purges",
         // feature 003
-        "exportaciones"
+        "exports"
     )
 
     @Test
     fun `the module's migrations ran and created every expected table`() {
-        val presentes = mutableSetOf<String>()
+        val present = mutableSetOf<String>()
 
         dataSource.connection.use { connection ->
             connection.createStatement().use { statement ->
@@ -82,13 +82,13 @@ class RowLevelSecurityIT {
                      WHERE n.nspname = 'public' AND c.relkind = 'r'
                     """.trimIndent()
                 )
-                while (rs.next()) presentes += rs.getString("relname")
+                while (rs.next()) present += rs.getString("relname")
             }
         }
 
         assertEquals(
             emptySet(),
-            tablasEsperadas - presentes,
+            expectedTables - present,
             "Missing tables: the migrations did not run, so the RLS assertion below " +
                 "would pass over an empty schema and prove nothing"
         )
@@ -147,11 +147,11 @@ class RowLevelSecurityIT {
                 val id = UUID.randomUUID()
                 statement.execute(
                     """
-                    INSERT INTO empleados
-                        (id, nombre, documento_identidad, puesto, tipo_contrato,
-                         fecha_alta, activo, created_at, updated_at)
+                    INSERT INTO employees
+                        (id, name, identity_document, position, contract_type,
+                         hire_date, active, created_at, updated_at)
                     VALUES ('$id', 'RLS probe', 'X0000000T', 'Prueba',
-                            'JORNADA_COMPLETA', CURRENT_DATE, TRUE, now(), now())
+                            'FULL_TIME', CURRENT_DATE, TRUE, now(), now())
                     """.trimIndent()
                 )
 
@@ -159,12 +159,12 @@ class RowLevelSecurityIT {
                     // Control: as the owner, RLS is bypassed and the row is
                     // visible. Without this the next assertion could pass
                     // simply because the insert never happened.
-                    assertEquals(1, contarEmpleados(statement, id), "owner should see its own row")
+                    assertEquals(1, countEmployees(statement, id), "owner should see its own row")
 
                     statement.execute("SET ROLE rls_probe_tt")
                     assertEquals(
                         0,
-                        contarEmpleados(statement, id),
+                        countEmployees(statement, id),
                         "rls_probe_tt is not the owner and no policy grants it access, so RLS " +
                             "must hide every row - this is exactly what stops PostgREST from " +
                             "serving staff records with the public anon key"
@@ -179,8 +179,8 @@ class RowLevelSecurityIT {
         }
     }
 
-    private fun contarEmpleados(statement: java.sql.Statement, id: UUID): Int =
-        statement.executeQuery("SELECT count(*) FROM empleados WHERE id = '$id'").use { rs ->
+    private fun countEmployees(statement: java.sql.Statement, id: UUID): Int =
+        statement.executeQuery("SELECT count(*) FROM employees WHERE id = '$id'").use { rs ->
             rs.next()
             rs.getInt(1)
         }
