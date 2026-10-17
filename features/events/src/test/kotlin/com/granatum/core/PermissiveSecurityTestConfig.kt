@@ -18,10 +18,10 @@ import org.springframework.security.web.SecurityFilterChain
  * chain. This is not evidence that the event routes are open.
  */
 @TestConfiguration
-class SeguridadPermisivaTestConfig {
+class PermissiveSecurityTestConfig {
 
     @Bean
-    fun cadenaPermisiva(httpSecurity: HttpSecurity): SecurityFilterChain =
+    fun permissiveChain(httpSecurity: HttpSecurity): SecurityFilterChain =
         httpSecurity
             .csrf { it.disable() }
             .authorizeHttpRequests { it.anyRequest().permitAll() }

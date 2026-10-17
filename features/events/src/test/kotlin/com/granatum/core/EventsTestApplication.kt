@@ -1,9 +1,9 @@
 package com.granatum.core
 
-import com.granatum.core.domain.contract.MaterialInexistenteException
+import com.granatum.core.domain.contract.InsufficientStockException
+import com.granatum.core.domain.contract.MaterialInventory
+import com.granatum.core.domain.contract.MaterialMissingException
 import com.granatum.core.domain.contract.MaterialStock
-import com.granatum.core.domain.contract.StockInsuficienteException
-import com.granatum.core.domain.contract.StockMateriales
 import com.granatum.core.domain.type.EntityId
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.test.context.TestConfiguration
@@ -17,48 +17,48 @@ import java.util.UUID
 class EventsTestApplication
 
 /**
- * This module's stand-in for `StockMateriales`. In production `inventory` implements it; here the
- * inventory is a map, because this module must not depend on `inventory` even in tests.
+ * This module's stand-in for `MaterialInventory`. In production `inventory` implements it; here
+ * the inventory is a map, because this module must not depend on `inventory` even in tests.
  */
-class StockMaterialesDoble : StockMateriales {
+class MaterialInventoryFake : MaterialInventory {
 
-    data class Movimiento(val materialId: EntityId, val cantidad: Int, val usuarioId: EntityId, val motivo: String)
+    data class Movement(val materialId: EntityId, val quantity: Int, val userId: EntityId, val reason: String)
 
-    private val materiales = mutableMapOf<EntityId, MaterialStock>()
-    val retiradas = mutableListOf<Movimiento>()
-    val devoluciones = mutableListOf<Movimiento>()
+    private val materials = mutableMapOf<EntityId, MaterialStock>()
+    val withdrawals = mutableListOf<Movement>()
+    val returns = mutableListOf<Movement>()
 
-    fun material(cantidad: Int, descripcion: String = "Jarrón cilíndrico", categoria: String = "Jarrones"): EntityId =
-        UUID.randomUUID().also { materiales[it] = MaterialStock(it, categoria, descripcion, cantidad, "A", 2, null) }
+    fun material(quantity: Int, description: String = "Jarrón cilíndrico", category: String = "Jarrones"): EntityId =
+        UUID.randomUUID().also { materials[it] = MaterialStock(it, category, description, quantity, "A", 2, null) }
 
-    fun borrar(id: EntityId) {
-        materiales -= id
+    fun delete(id: EntityId) {
+        materials -= id
     }
 
-    fun cantidad(id: EntityId): Int? = materiales[id]?.cantidad
+    fun quantity(id: EntityId): Int? = materials[id]?.quantity
 
-    override fun disponibles(): List<MaterialStock> = materiales.values.toList()
+    override fun available(): List<MaterialStock> = materials.values.toList()
 
-    override fun resumen(materialIds: Collection<EntityId>): Map<EntityId, MaterialStock> =
-        materiales.filterKeys { it in materialIds }
+    override fun summarize(materialIds: Collection<EntityId>): Map<EntityId, MaterialStock> =
+        materials.filterKeys { it in materialIds }
 
-    override fun retirar(materialId: EntityId, cantidad: Int, usuarioId: EntityId, motivo: String): MaterialStock {
-        val material = materiales[materialId] ?: throw MaterialInexistenteException(materialId)
-        if (material.cantidad < cantidad) throw StockInsuficienteException(materialId, material.cantidad)
-        retiradas += Movimiento(materialId, cantidad, usuarioId, motivo)
-        return material.copy(cantidad = material.cantidad - cantidad).also { materiales[materialId] = it }
+    override fun withdraw(materialId: EntityId, quantity: Int, userId: EntityId, reason: String): MaterialStock {
+        val material = materials[materialId] ?: throw MaterialMissingException(materialId)
+        if (material.quantity < quantity) throw InsufficientStockException(materialId, material.quantity)
+        withdrawals += Movement(materialId, quantity, userId, reason)
+        return material.copy(quantity = material.quantity - quantity).also { materials[materialId] = it }
     }
 
-    override fun devolver(materialId: EntityId, cantidad: Int, usuarioId: EntityId, motivo: String): Boolean {
-        val material = materiales[materialId] ?: return false
-        devoluciones += Movimiento(materialId, cantidad, usuarioId, motivo)
-        materiales[materialId] = material.copy(cantidad = material.cantidad + cantidad)
+    override fun putBack(materialId: EntityId, quantity: Int, userId: EntityId, reason: String): Boolean {
+        val material = materials[materialId] ?: return false
+        returns += Movement(materialId, quantity, userId, reason)
+        materials[materialId] = material.copy(quantity = material.quantity + quantity)
         return true
     }
 }
 
 @TestConfiguration
-class StockMaterialesDobleConfig {
+class MaterialInventoryFakeConfig {
     @Bean
-    fun stockMateriales() = StockMaterialesDoble()
+    fun materialInventory() = MaterialInventoryFake()
 }

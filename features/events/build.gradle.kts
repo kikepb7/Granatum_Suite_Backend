@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     // The only project dependency, by constitution principle I: the materials an event takes
-    // come out of the inventory through the StockMateriales contract in common, never from
+    // come out of the inventory through the MaterialInventory contract in common, never from
     // `inventory` itself (feature 011).
     implementation(projects.common)
 
