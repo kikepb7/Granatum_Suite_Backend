@@ -1,24 +1,24 @@
 package com.granatum.core.api.exception_handling
 
-import com.granatum.core.domain.exception.ClientEventIdReutilizadoException
-import com.granatum.core.domain.exception.DesviacionRelojException
-import com.granatum.core.domain.exception.DocumentoDuplicadoException
-import com.granatum.core.domain.exception.EmpleadoInactivoException
-import com.granatum.core.domain.exception.EmpleadoNotFoundException
-import com.granatum.core.domain.exception.ExportacionSaturadaException
-import com.granatum.core.domain.exception.FichajeInmutableException
-import com.granatum.core.domain.exception.FichajeNoEnCursoException
-import com.granatum.core.domain.exception.FichajeNoFinalizadoException
-import com.granatum.core.domain.exception.FichajeNotFoundException
-import com.granatum.core.domain.exception.FichajeYaEnCursoException
-import com.granatum.core.domain.exception.FicheroDemasiadoGrandeException
-import com.granatum.core.domain.exception.PausaAbiertaAlCerrarException
-import com.granatum.core.domain.exception.PausaNoAbiertaException
-import com.granatum.core.domain.exception.PausaYaAbiertaException
-import com.granatum.core.domain.exception.SolicitudNotFoundException
-import com.granatum.core.domain.exception.SolicitudYaResueltaException
-import com.granatum.core.domain.exception.UbicacionNoCorregibleException
-import com.granatum.core.domain.exception.ValoresIncoherentesException
+import com.granatum.core.domain.exception.ClientEventIdReusedException
+import com.granatum.core.domain.exception.ClockSkewException
+import com.granatum.core.domain.exception.DuplicateDocumentException
+import com.granatum.core.domain.exception.EmployeeInactiveException
+import com.granatum.core.domain.exception.EmployeeNotFoundException
+import com.granatum.core.domain.exception.ExportBusyException
+import com.granatum.core.domain.exception.ShiftImmutableException
+import com.granatum.core.domain.exception.ShiftNotInProgressException
+import com.granatum.core.domain.exception.ShiftNotFinishedException
+import com.granatum.core.domain.exception.ShiftNotFoundException
+import com.granatum.core.domain.exception.ShiftAlreadyInProgressException
+import com.granatum.core.domain.exception.VerificationFileTooLargeException
+import com.granatum.core.domain.exception.BreakOpenOnCloseException
+import com.granatum.core.domain.exception.BreakNotOpenException
+import com.granatum.core.domain.exception.BreakAlreadyOpenException
+import com.granatum.core.domain.exception.CorrectionRequestNotFoundException
+import com.granatum.core.domain.exception.CorrectionRequestAlreadyResolvedException
+import com.granatum.core.domain.exception.LocationNotCorrectableException
+import com.granatum.core.domain.exception.InconsistentValuesException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
@@ -57,98 +57,98 @@ class TimetrackingExceptionHandler {
 
     // --- 404 ---------------------------------------------------------------
 
-    @ExceptionHandler(FichajeNotFoundException::class)
+    @ExceptionHandler(ShiftNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun onFichajeNotFound(e: FichajeNotFoundException) = error("FICHAJE_NOT_FOUND", e.message)
+    fun onShiftNotFound(e: ShiftNotFoundException) = error("SHIFT_NOT_FOUND", e.message)
 
-    @ExceptionHandler(EmpleadoNotFoundException::class)
+    @ExceptionHandler(EmployeeNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun onEmpleadoNotFound(e: EmpleadoNotFoundException) = error("EMPLEADO_NOT_FOUND", e.message)
+    fun onEmployeeNotFound(e: EmployeeNotFoundException) = error("EMPLOYEE_NOT_FOUND", e.message)
 
-    @ExceptionHandler(SolicitudNotFoundException::class)
+    @ExceptionHandler(CorrectionRequestNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun onSolicitudNotFound(e: SolicitudNotFoundException) = error("SOLICITUD_NOT_FOUND", e.message)
+    fun onCorrectionRequestNotFound(e: CorrectionRequestNotFoundException) = error("REQUEST_NOT_FOUND", e.message)
 
     // --- 409: conflicts with the current state -----------------------------
 
-    @ExceptionHandler(FichajeYaEnCursoException::class)
+    @ExceptionHandler(ShiftAlreadyInProgressException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onFichajeYaEnCurso(e: FichajeYaEnCursoException) = error("FICHAJE_YA_EN_CURSO", e.message)
+    fun onShiftAlreadyInProgress(e: ShiftAlreadyInProgressException) = error("SHIFT_ALREADY_IN_PROGRESS", e.message)
 
-    @ExceptionHandler(PausaYaAbiertaException::class)
+    @ExceptionHandler(BreakAlreadyOpenException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onPausaYaAbierta(e: PausaYaAbiertaException) = error("PAUSA_YA_ABIERTA", e.message)
+    fun onBreakAlreadyOpen(e: BreakAlreadyOpenException) = error("BREAK_ALREADY_OPEN", e.message)
 
-    @ExceptionHandler(PausaNoAbiertaException::class)
+    @ExceptionHandler(BreakNotOpenException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onPausaNoAbierta(e: PausaNoAbiertaException) = error("PAUSA_NO_ABIERTA", e.message)
+    fun onBreakNotOpen(e: BreakNotOpenException) = error("BREAK_NOT_OPEN", e.message)
 
-    @ExceptionHandler(PausaAbiertaAlCerrarException::class)
+    @ExceptionHandler(BreakOpenOnCloseException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onPausaAbiertaAlCerrar(e: PausaAbiertaAlCerrarException) =
-        error("PAUSA_ABIERTA_AL_CERRAR", e.message)
+    fun onBreakOpenOnClose(e: BreakOpenOnCloseException) =
+        error("BREAK_OPEN_ON_CLOSE", e.message)
 
-    @ExceptionHandler(FichajeNoEnCursoException::class)
+    @ExceptionHandler(ShiftNotInProgressException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onFichajeNoEnCurso(e: FichajeNoEnCursoException) = error("FICHAJE_NO_EN_CURSO", e.message)
+    fun onShiftNotInProgress(e: ShiftNotInProgressException) = error("SHIFT_NOT_IN_PROGRESS", e.message)
 
-    @ExceptionHandler(FichajeNoFinalizadoException::class)
+    @ExceptionHandler(ShiftNotFinishedException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onFichajeNoFinalizado(e: FichajeNoFinalizadoException) =
-        error("FICHAJE_NO_FINALIZADO", e.message)
+    fun onShiftNotFinished(e: ShiftNotFinishedException) =
+        error("SHIFT_NOT_FINISHED", e.message)
 
-    @ExceptionHandler(FichajeInmutableException::class)
+    @ExceptionHandler(ShiftImmutableException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onFichajeInmutable(e: FichajeInmutableException) = error("FICHAJE_INMUTABLE", e.message)
+    fun onShiftImmutable(e: ShiftImmutableException) = error("SHIFT_IMMUTABLE", e.message)
 
-    @ExceptionHandler(SolicitudYaResueltaException::class)
+    @ExceptionHandler(CorrectionRequestAlreadyResolvedException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onSolicitudYaResuelta(e: SolicitudYaResueltaException) =
-        error("SOLICITUD_YA_RESUELTA", e.message)
+    fun onCorrectionRequestAlreadyResolved(e: CorrectionRequestAlreadyResolvedException) =
+        error("REQUEST_ALREADY_RESOLVED", e.message)
 
-    @ExceptionHandler(EmpleadoInactivoException::class)
+    @ExceptionHandler(EmployeeInactiveException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onEmpleadoInactivo(e: EmpleadoInactivoException) = error("EMPLEADO_INACTIVO", e.message)
+    fun onEmployeeInactive(e: EmployeeInactiveException) = error("EMPLOYEE_INACTIVE", e.message)
 
-    @ExceptionHandler(DocumentoDuplicadoException::class)
+    @ExceptionHandler(DuplicateDocumentException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onDocumentoDuplicado(e: DocumentoDuplicadoException) =
-        error("DOCUMENTO_DUPLICADO", e.message)
+    fun onDuplicateDocument(e: DuplicateDocumentException) =
+        error("DUPLICATE_DOCUMENT", e.message)
 
-    @ExceptionHandler(ClientEventIdReutilizadoException::class)
+    @ExceptionHandler(ClientEventIdReusedException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onClientEventIdReutilizado(e: ClientEventIdReutilizadoException) =
-        error("CLIENT_EVENT_ID_REUTILIZADO", e.message)
+    fun onClientEventIdReused(e: ClientEventIdReusedException) =
+        error("CLIENT_EVENT_ID_REUSED", e.message)
 
     // --- 422: semantically invalid ----------------------------------------
 
-    @ExceptionHandler(ValoresIncoherentesException::class)
+    @ExceptionHandler(InconsistentValuesException::class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    fun onValoresIncoherentes(e: ValoresIncoherentesException) =
-        error("VALORES_INCOHERENTES", e.message)
+    fun onInconsistentValues(e: InconsistentValuesException) =
+        error("INCONSISTENT_VALUES", e.message)
 
-    @ExceptionHandler(UbicacionNoCorregibleException::class)
+    @ExceptionHandler(LocationNotCorrectableException::class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    fun onUbicacionNoCorregible(e: UbicacionNoCorregibleException) =
-        error("UBICACION_NO_CORREGIBLE", e.message)
+    fun onLocationNotCorrectable(e: LocationNotCorrectableException) =
+        error("LOCATION_NOT_CORRECTABLE", e.message)
 
-    @ExceptionHandler(DesviacionRelojException::class)
+    @ExceptionHandler(ClockSkewException::class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    fun onDesviacionReloj(e: DesviacionRelojException) = error("DESVIACION_RELOJ", e.message)
+    fun onClockSkew(e: ClockSkewException) = error("CLOCK_SKEW", e.message)
 
     // --- Export (feature 003) ---------------------------------------------
 
     /** `Retry-After` tells a well-behaved client when to come back (D-002). */
-    @ExceptionHandler(ExportacionSaturadaException::class)
-    fun onExportacionSaturada(e: ExportacionSaturadaException): ResponseEntity<Map<String, String>> =
+    @ExceptionHandler(ExportBusyException::class)
+    fun onExportBusy(e: ExportBusyException): ResponseEntity<Map<String, String>> =
         ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
             .header(HttpHeaders.RETRY_AFTER, "1")
-            .body(error("EXPORTACION_SATURADA", e.message!!))
+            .body(error("EXPORT_BUSY", e.message!!))
 
-    @ExceptionHandler(FicheroDemasiadoGrandeException::class)
+    @ExceptionHandler(VerificationFileTooLargeException::class)
     @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
-    fun onFicheroDemasiadoGrande(e: FicheroDemasiadoGrandeException) =
-        error("FICHERO_DEMASIADO_GRANDE", e.message!!)
+    fun onVerificationFileTooLarge(e: VerificationFileTooLargeException) =
+        error("FILE_TOO_LARGE", e.message!!)
 
     private fun error(code: String, message: String) = mapOf(
         "code" to code,

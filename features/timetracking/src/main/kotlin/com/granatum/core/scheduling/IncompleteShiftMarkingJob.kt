@@ -1,0 +1,76 @@
+package com.granatum.core.scheduling
+
+import com.granatum.core.api.util.CivilDateRange
+import com.granatum.core.domain.type.ShiftStatus
+import com.granatum.core.infrastructure.database.repositories.ShiftRepository
+import com.granatum.core.domain.event.DomainNotice
+import com.granatum.core.domain.event.NoticeType
+import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
+import java.time.LocalDate
+
+/**
+ * Marks shifts left open from a previous day as `INCOMPLETE` (FR-012).
+ *
+ * Runs daily rather than waiting for the person's next clock-in. The lazy
+ * alternative looks cheaper but leaves the register lying for as long as
+ * someone is away - a fichaje still IN_PROGRESS three weeks into their holiday
+ * claims they are at work - and that is a legal problem, not a usability one.
+ *
+ * Idempotent by construction: it only moves IN_PROGRESS to INCOMPLETE, so running
+ * it twice, or on several application instances at once, changes nothing the
+ * first run did not already do. That is what makes it safe without a lock.
+ *
+ * `wasIncomplete` is set and never cleared, so a day completed later through an
+ * approved correction stays distinguishable from one closed at the time
+ * (SC-010).
+ */
+@Component
+class IncompleteShiftMarkingJob(
+    private val shiftRepository: ShiftRepository,
+    // Feature 008: each shift marked incomplete becomes a notice to its owner.
+    private val notices: ApplicationEventPublisher,
+    private val clock: Clock = Clock.systemUTC()
+) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * Default 04:00 Europe/Madrid: after any plausible night shift has ended,
+     * and before the working day starts, so nobody finds their shift marked
+     * mid-jornada.
+     */
+    @Scheduled(
+        cron = "\${timetracking.incomplete.cron:0 0 4 * * *}",
+        zone = "Europe/Madrid"
+    )
+    @Transactional
+    fun markIncomplete() {
+        // Cut-off is the start of today in Madrid, so "a previous day" means the
+        // previous *civil* day. Using a UTC day boundary would mis-classify
+        // shifts started between midnight and 02:00 Spanish summer time, which
+        // are still the day before in UTC.
+        val cutoff = CivilDateRange.startOfDay(LocalDate.now(clock.withZone(CivilDateRange.ZONE)))
+
+        val openShifts = shiftRepository.findAllByStatusAndClockInBefore(
+            ShiftStatus.IN_PROGRESS,
+            cutoff
+        )
+
+        openShifts.forEach { shift ->
+            shift.status = ShiftStatus.INCOMPLETE
+            shift.wasIncomplete = true
+            shiftRepository.save(shift)
+            notices.publishEvent(DomainNotice(NoticeType.SHIFT_INCOMPLETE, shift.id, ownerId = shift.employee.id))
+        }
+
+        // Counts only: an identifier here would put a person's working pattern
+        // into the logs (principle VI).
+        if (openShifts.isNotEmpty()) {
+            log.info("Marcados {} fichajes como INCOMPLETO (corte {})", openShifts.size, cutoff)
+        }
+    }
+}
