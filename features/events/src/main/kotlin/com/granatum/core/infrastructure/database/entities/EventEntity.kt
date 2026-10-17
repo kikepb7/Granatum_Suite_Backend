@@ -1,6 +1,6 @@
 package com.granatum.core.infrastructure.database.entities
 
-import com.granatum.core.domain.type.EstadoEvento
+import com.granatum.core.domain.type.EventStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
@@ -16,30 +16,30 @@ import java.time.LocalDate
 import java.util.UUID
 
 @Entity
-@Table(name = "eventos")
+@Table(name = "events")
 @EntityListeners(AuditingEntityListener::class)
-class EventoEntity(
+class EventEntity(
     @Id
     val id: UUID = UUID.randomUUID(),
 
     @Column(nullable = false, length = 100)
-    var nombre: String,
+    var name: String,
 
     @Column(length = 500)
-    var descripcion: String?,
+    var description: String?,
 
     @Column(nullable = false)
-    var fecha: LocalDate,
+    var date: LocalDate,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    var estado: EstadoEvento = EstadoEvento.PROGRAMADO,
+    var status: EventStatus = EventStatus.SCHEDULED,
 
     @Column(nullable = false, updatable = false)
-    val creadoPor: UUID,
+    val createdBy: UUID,
 
     @Column
-    var finalizadoEn: Instant? = null,
+    var finishedAt: Instant? = null,
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

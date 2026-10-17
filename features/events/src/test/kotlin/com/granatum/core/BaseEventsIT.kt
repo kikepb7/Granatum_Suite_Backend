@@ -7,8 +7,8 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 
 /** One Postgres for all of this module's integration tests (feature 011). */
-@Import(StockMaterialesDobleConfig::class)
-abstract class BaseEventosIT {
+@Import(MaterialInventoryFakeConfig::class)
+abstract class BaseEventsIT {
 
     companion object {
         @JvmStatic
@@ -25,5 +25,5 @@ abstract class BaseEventosIT {
         }
     }
 
-    @Autowired lateinit var stock: StockMaterialesDoble
+    @Autowired lateinit var inventory: MaterialInventoryFake
 }

@@ -11,23 +11,23 @@ import java.util.UUID
  * read in batches for several events, and changed one at a time, never through the event.
  */
 @Entity
-@Table(name = "evento_materiales")
-class EventoMaterialEntity(
+@Table(name = "event_materials")
+class EventMaterialEntity(
     @Id
     val id: UUID = UUID.randomUUID(),
 
     @Column(nullable = false, updatable = false)
-    val eventoId: UUID,
+    val eventId: UUID,
 
     @Column(nullable = false, updatable = false)
     val materialId: UUID,
 
     @Column(nullable = false)
-    var cantidad: Int,
+    var quantity: Int,
 
     @Column(nullable = false, length = 500)
-    val descripcion: String,
+    val description: String,
 
     @Column(nullable = false, length = 100)
-    val categoria: String
+    val category: String
 )
