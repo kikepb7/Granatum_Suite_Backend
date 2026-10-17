@@ -1,15 +1,15 @@
 package com.granatum.core.api.controllers
 
-import com.granatum.core.api.dto.CambioPasswordRequest
+import com.granatum.core.api.dto.ChangePasswordRequest
 import com.granatum.core.api.dto.LoginRequest
 import com.granatum.core.api.dto.LogoutRequest
-import com.granatum.core.api.dto.ParTokensResponse
+import com.granatum.core.api.dto.TokenPairResponse
 import com.granatum.core.api.dto.RefreshRequest
-import com.granatum.core.domain.model.ParTokens
+import com.granatum.core.domain.model.TokenPair
 import com.granatum.core.api.util.requestUserId
-import com.granatum.core.service.AutenticacionService
-import com.granatum.core.service.CuentaAccesoService
-import com.granatum.core.service.SesionService
+import com.granatum.core.service.AuthenticationService
+import com.granatum.core.service.AccountService
+import com.granatum.core.service.SessionService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping
@@ -27,9 +27,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
-    private val autenticacionService: AutenticacionService,
-    private val sesionService: SesionService,
-    private val cuentaAccesoService: CuentaAccesoService
+    private val authenticationService: AuthenticationService,
+    private val sessionService: SessionService,
+    private val accountService: AccountService
 ) {
 
     /**
@@ -37,8 +37,8 @@ class AuthController(
      * `Authorization` header - there is nothing to authenticate with yet.
      */
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ParTokensResponse =
-        autenticacionService.iniciarSesion(
+    fun login(@Valid @RequestBody request: LoginRequest): TokenPairResponse =
+        authenticationService.signIn(
             email = request.email,
             password = request.password
         ).toResponse()
@@ -48,8 +48,8 @@ class AuthController(
      * credential, and it travels in the body.
      */
     @PostMapping("/refresh")
-    fun refresh(@Valid @RequestBody request: RefreshRequest): ParTokensResponse =
-        sesionService.rotar(request.refreshToken).toResponse()
+    fun refresh(@Valid @RequestBody request: RefreshRequest): TokenPairResponse =
+        sessionService.rotate(request.refreshToken).toResponse()
 
     /**
      * `204` with no body, and public: the normal moment to log out is after the
@@ -59,7 +59,7 @@ class AuthController(
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun logout(@Valid @RequestBody request: LogoutRequest) {
-        sesionService.cerrar(request.refreshToken)
+        sessionService.close(request.refreshToken)
     }
 
     /**
@@ -70,21 +70,21 @@ class AuthController(
      * principle IV forbids accepting a user identifier in the request. The
      * subject is the empleado id, so the account is found through it.
      *
-     * Answers with a fresh pair carrying `requiereCambioPassword: false`, so the
+     * Answers with a fresh pair carrying `passwordChangeRequired: false`, so the
      * client can carry on without signing in again.
      */
     @PostMapping("/change-password")
-    fun cambiarPassword(@Valid @RequestBody request: CambioPasswordRequest): ParTokensResponse =
-        cuentaAccesoService.cambiarPasswordDeEmpleado(
-            empleadoId = requestUserId,
-            actual = request.passwordActual,
-            nueva = request.passwordNueva
+    fun changePassword(@Valid @RequestBody request: ChangePasswordRequest): TokenPairResponse =
+        accountService.changeEmployeePassword(
+            employeeId = requestUserId,
+            currentPassword = request.currentPassword,
+            newPassword = request.newPassword
         ).toResponse()
 }
 
-internal fun ParTokens.toResponse() = ParTokensResponse(
+internal fun TokenPair.toResponse() = TokenPairResponse(
     accessToken = accessToken,
     refreshToken = refreshToken,
-    expiresIn = expiresInSegundos,
-    requiereCambioPassword = requiereCambioPassword
+    expiresIn = expiresInSeconds,
+    passwordChangeRequired = passwordChangeRequired
 )

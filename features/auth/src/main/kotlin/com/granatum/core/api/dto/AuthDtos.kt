@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size
  * reach the persistence layer.
  *
  * Validated at the edge with `@Valid` in the controller, so a malformed body is
- * a `400 VALIDACION` and never reaches the service.
+ * a `400 VALIDATION` and never reaches the service.
  */
 
 data class LoginRequest(
@@ -20,7 +20,7 @@ data class LoginRequest(
     val email: String = "",
 
     /**
-     * Capped at 128 to match `PoliticaPassword.LONGITUD_MAXIMA`. The cap is not
+     * Capped at 128 to match `PasswordPolicy.MAX_LENGTH`. The cap is not
      * cosmetic: without it a multi-megabyte body would become Argon2 work, which
      * costs memory and not just CPU on a public endpoint.
      *
@@ -38,7 +38,7 @@ data class LoginRequest(
      * Never prints the secret fields. At DEBUG, Spring MVC logs every request
      * and response body through `toString()` ("Read application/json to [...]"),
      * and a `data class` prints every field by default - which put passwords in
-     * clear into the log until `SinDatosPersonalesEnLogsIT` caught it.
+     * clear into the log until `AuthNoPersonalDataInLogsIT` caught it.
      */
     override fun toString(): String =
         "LoginRequest(email=***, password=***)"
@@ -46,26 +46,26 @@ data class LoginRequest(
 
 /**
  * [expiresIn] is seconds, so a client can schedule its renewal without parsing
- * the JWT. [requiereCambioPassword] is here because US4 scenario 2 requires the
+ * the JWT. [passwordChangeRequired] is here because US4 scenario 2 requires the
  * response to say so: a client that had to discover it by being refused
  * everywhere could not show the right screen.
  *
  * [refreshToken] is the opaque value, and this response is the only place it
  * ever exists in clear - what gets stored is its SHA-256 (FR-011).
  */
-data class ParTokensResponse(
+data class TokenPairResponse(
     val accessToken: String,
     val refreshToken: String,
     val expiresIn: Long,
-    val requiereCambioPassword: Boolean
+    val passwordChangeRequired: Boolean
 ) {
     /**
      * Never prints the secret fields. At DEBUG, Spring MVC logs every request
      * and response body through `toString()` ("Read application/json to [...]"),
      * and a `data class` prints every field by default - which put passwords in
-     * clear into the log until `SinDatosPersonalesEnLogsIT` caught it.
+     * clear into the log until `AuthNoPersonalDataInLogsIT` caught it.
      */
     override fun toString(): String =
-        "ParTokensResponse(accessToken=***, refreshToken=***, expiresIn=$expiresIn, " +
-            "requiereCambioPassword=$requiereCambioPassword)"
+        "TokenPairResponse(accessToken=***, refreshToken=***, expiresIn=$expiresIn, " +
+            "passwordChangeRequired=$passwordChangeRequired)"
 }

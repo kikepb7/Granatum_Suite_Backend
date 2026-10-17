@@ -1,9 +1,9 @@
 package com.granatum.core
 
 import com.granatum.core.domain.type.Role
-import com.granatum.core.infrastructure.crypto.VerificadorAcotado
-import com.granatum.core.infrastructure.database.entities.CuentaAccesoEntity
-import com.granatum.core.infrastructure.database.repositories.CuentaAccesoRepository
+import com.granatum.core.infrastructure.crypto.BoundedVerifier
+import com.granatum.core.infrastructure.database.entities.AccountEntity
+import com.granatum.core.infrastructure.database.repositories.AccountRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -33,10 +33,10 @@ import java.util.UUID
  *
  * One database for every class in the module, so these tests commit into the
  * same schema. Rather than cleaning between tests, every helper generates
- * unique values ([correoUnico], a random `empleadoId`), which is both faster and
+ * unique values ([uniqueEmail], a random `employeeId`), which is both faster and
  * closer to how the application actually behaves.
  */
-@Import(DirectorioEmpleadosDobleConfig::class)
+@Import(AuthEmployeeDirectoryFakeConfig::class)
 abstract class BaseAuthIT {
 
     companion object {
@@ -57,31 +57,31 @@ abstract class BaseAuthIT {
         }
     }
 
-    @Autowired lateinit var cuentas: CuentaAccesoRepository
-    @Autowired lateinit var verificador: VerificadorAcotado
-    @Autowired lateinit var directorio: DirectorioEmpleadosDoble
+    @Autowired lateinit var accounts: AccountRepository
+    @Autowired lateinit var verifier: BoundedVerifier
+    @Autowired lateinit var directory: AuthEmployeeDirectoryFake
 
-    protected fun correoUnico(): String = "p-${UUID.randomUUID()}@granatum.es"
+    protected fun uniqueEmail(): String = "p-${UUID.randomUUID()}@granatum.es"
 
     /**
      * Creates an account whose person the directory reports as active, which is
      * the normal starting point for almost every test here.
      */
-    protected fun cuentaActiva(
+    protected fun activeAccount(
         password: String = "Granatum-2026!",
-        email: String = correoUnico(),
-        rol: Role = Role.EMPLEADO,
-        requiereCambio: Boolean = false,
-        empleadoId: UUID = UUID.randomUUID()
-    ): CuentaAccesoEntity {
-        directorio.registrarActivo(empleadoId)
-        return cuentas.save(
-            CuentaAccesoEntity(
-                empleadoId = empleadoId,
+        email: String = uniqueEmail(),
+        role: Role = Role.EMPLOYEE,
+        changeRequired: Boolean = false,
+        employeeId: UUID = UUID.randomUUID()
+    ): AccountEntity {
+        directory.registerActive(employeeId)
+        return accounts.save(
+            AccountEntity(
+                employeeId = employeeId,
                 email = email,
-                rol = rol,
-                passwordHash = verificador.codificar(password),
-                requiereCambioPassword = requiereCambio
+                role = role,
+                passwordHash = verifier.encode(password),
+                passwordChangeRequired = changeRequired
             )
         )
     }

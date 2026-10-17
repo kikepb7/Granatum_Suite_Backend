@@ -33,7 +33,7 @@ auth:
     # pool under 20 concurrent failed sign-ins: every thread held one
     # connection for the lockout transaction and waited for a second one for
     # the security event. The bound itself is tested directly in
-    # VerificadorAcotadoTest with a semaphore of 1.
+    # BoundedVerifierTest with a semaphore of 1.
     concurrencia: 4
     espera-ms: 2000
 
@@ -57,7 +57,7 @@ spring:
 # print entity and parameter values by reflection, bypassing each entity's
 # `toString()`, so they would leak the email address and the password hash.
 # Pinned here too, because this module's test context does not read app's
-# configuration - and SinDatosPersonalesEnLogsIT raises the root logger to
+# configuration - and AuthNoPersonalDataInLogsIT raises the root logger to
 # DEBUG on purpose to prove they survive it.
 logging:
   level:

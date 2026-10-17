@@ -1,16 +1,16 @@
 package com.granatum.core.api.exception_handling
 
-import com.granatum.core.domain.exception.CredencialesInvalidasException
-import com.granatum.core.domain.exception.CuentaDeEmpleadoInactivoException
-import com.granatum.core.domain.exception.CuentaNoEncontradaException
-import com.granatum.core.domain.exception.CuentaYaExisteException
-import com.granatum.core.domain.exception.EmailYaRegistradoException
-import com.granatum.core.domain.exception.EmpleadoNoEncontradoEnDirectorioException
-import com.granatum.core.domain.exception.PasswordDebilException
-import com.granatum.core.domain.exception.TokenRenovacionInvalidoException
-import com.granatum.core.domain.exception.VerificacionSaturadaException
-import com.granatum.core.domain.exception.CodigoArranqueInvalidoException
-import com.granatum.core.domain.exception.DocumentoInvalidoException
+import com.granatum.core.domain.exception.InvalidCredentialsException
+import com.granatum.core.domain.exception.InactiveEmployeeAccountException
+import com.granatum.core.domain.exception.AccountNotFoundException
+import com.granatum.core.domain.exception.AccountAlreadyExistsException
+import com.granatum.core.domain.exception.EmailAlreadyRegisteredException
+import com.granatum.core.domain.exception.EmployeeNotInDirectoryException
+import com.granatum.core.domain.exception.WeakPasswordException
+import com.granatum.core.domain.exception.InvalidRefreshTokenException
+import com.granatum.core.domain.exception.VerificationBusyException
+import com.granatum.core.domain.exception.InvalidBootstrapCodeException
+import com.granatum.core.domain.exception.InvalidDocumentException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  * has a handler for `InvalidOperationException` that matches several of them.
  * Spring consults `@RestControllerAdvice` beans in order and takes the first
  * with a matching method, so without an explicit precedence the generic handler
- * could win and turn `CUENTA_YA_EXISTE` and `PASSWORD_DEBIL` into
+ * could win and turn `ACCOUNT_ALREADY_EXISTS` and `WEAK_PASSWORD` into
  * `400 INVALID_OPERATION` - silently violating the contract, which requires 409
  * and 422 with specific codes. This already happened once, in feature 001.
  *
@@ -56,32 +56,32 @@ class AuthExceptionHandler {
      * FR-003: anything else turns sign-in into an oracle for which addresses
      * exist.
      */
-    @ExceptionHandler(CredencialesInvalidasException::class)
+    @ExceptionHandler(InvalidCredentialsException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun onCredencialesInvalidas(e: CredencialesInvalidasException) =
-        error("CREDENCIALES_INVALIDAS", e.message)
+    fun onInvalidCredentials(e: InvalidCredentialsException) =
+        error("INVALID_CREDENTIALS", e.message)
 
-    @ExceptionHandler(TokenRenovacionInvalidoException::class)
+    @ExceptionHandler(InvalidRefreshTokenException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun onTokenRenovacionInvalido(e: TokenRenovacionInvalidoException) =
-        error("TOKEN_RENOVACION_INVALIDO", e.message)
+    fun onInvalidRefreshToken(e: InvalidRefreshTokenException) =
+        error("INVALID_REFRESH_TOKEN", e.message)
 
-    @ExceptionHandler(CuentaDeEmpleadoInactivoException::class)
+    @ExceptionHandler(InactiveEmployeeAccountException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun onEmpleadoInactivo(e: CuentaDeEmpleadoInactivoException) =
-        error("EMPLEADO_INACTIVO", e.message)
+    fun onEmployeeInactive(e: InactiveEmployeeAccountException) =
+        error("EMPLOYEE_INACTIVE", e.message)
 
     // --- 404 ---------------------------------------------------------------
 
-    @ExceptionHandler(EmpleadoNoEncontradoEnDirectorioException::class)
+    @ExceptionHandler(EmployeeNotInDirectoryException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun onEmpleadoNoEncontrado(e: EmpleadoNoEncontradoEnDirectorioException) =
-        error("EMPLEADO_NO_ENCONTRADO", e.message)
+    fun onEmployeeNotFound(e: EmployeeNotInDirectoryException) =
+        error("EMPLOYEE_NOT_FOUND", e.message)
 
-    @ExceptionHandler(CuentaNoEncontradaException::class)
+    @ExceptionHandler(AccountNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun onCuentaNoEncontrada(e: CuentaNoEncontradaException) =
-        error("CUENTA_NO_ENCONTRADA", e.message)
+    fun onAccountNotFound(e: AccountNotFoundException) =
+        error("ACCOUNT_NOT_FOUND", e.message)
 
     // --- 409 ---------------------------------------------------------------
 
@@ -91,15 +91,15 @@ class AuthExceptionHandler {
      * `ADMIN`'s way out differs - reset in one case, use another address in the
      * other.
      */
-    @ExceptionHandler(CuentaYaExisteException::class)
+    @ExceptionHandler(AccountAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onCuentaYaExiste(e: CuentaYaExisteException) =
-        error("CUENTA_YA_EXISTE", e.message)
+    fun onAccountAlreadyExists(e: AccountAlreadyExistsException) =
+        error("ACCOUNT_ALREADY_EXISTS", e.message)
 
-    @ExceptionHandler(EmailYaRegistradoException::class)
+    @ExceptionHandler(EmailAlreadyRegisteredException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    fun onEmailYaRegistrado(e: EmailYaRegistradoException) =
-        error("EMAIL_YA_REGISTRADO", e.message)
+    fun onEmailAlreadyRegistered(e: EmailAlreadyRegisteredException) =
+        error("EMAIL_ALREADY_REGISTERED", e.message)
 
     // --- 422 ---------------------------------------------------------------
 
@@ -114,42 +114,42 @@ class AuthExceptionHandler {
      * contract and in `README.md` instead of passing in silence, which is what
      * the constitution asks of an accepted departure.
      *
-     * `requisitos` holds enum names only - never a fragment of the password.
+     * `requirements` holds enum names only - never a fragment of the password.
      */
-    @ExceptionHandler(PasswordDebilException::class)
+    @ExceptionHandler(WeakPasswordException::class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    fun onPasswordDebil(e: PasswordDebilException): Map<String, Any?> = mapOf(
-        "code" to "PASSWORD_DEBIL",
+    fun onWeakPassword(e: WeakPasswordException): Map<String, Any?> = mapOf(
+        "code" to "WEAK_PASSWORD",
         "message" to e.message,
-        "requisitos" to e.requisitos.map { it.name }
+        "requirements" to e.requirements.map { it.name }
     )
 
     // --- 503 ---------------------------------------------------------------
 
     /**
      * Returned with `Retry-After` because the condition is transient by
-     * definition: the semaphore in `VerificadorAcotado` is full. A client that
+     * definition: the semaphore in `BoundedVerifier` is full. A client that
      * retries in a second will almost certainly get through, and telling it so
      * is cheaper than having it fall back to asking for the password again.
      */
-    @ExceptionHandler(VerificacionSaturadaException::class)
-    fun onVerificacionSaturada(e: VerificacionSaturadaException): ResponseEntity<Map<String, String?>> =
+    @ExceptionHandler(VerificationBusyException::class)
+    fun onVerificationBusy(e: VerificationBusyException): ResponseEntity<Map<String, String?>> =
         ResponseEntity
             .status(HttpStatus.SERVICE_UNAVAILABLE)
             .header(HttpHeaders.RETRY_AFTER, "1")
-            .body(error("SERVICIO_SATURADO", e.message))
+            .body(error("SERVICE_BUSY", e.message))
 
     // --- Sign-up of the owner (feature 005, US1) and onboarding (feature 009) ---
 
-    @ExceptionHandler(CodigoArranqueInvalidoException::class)
+    @ExceptionHandler(InvalidBootstrapCodeException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    fun onCodigoArranqueInvalido(e: CodigoArranqueInvalidoException) =
-        error("CODIGO_ARRANQUE_INVALIDO", e.message)
+    fun onInvalidBootstrapCode(e: InvalidBootstrapCodeException) =
+        error("INVALID_BOOTSTRAP_CODE", e.message)
 
-    @ExceptionHandler(DocumentoInvalidoException::class)
+    @ExceptionHandler(InvalidDocumentException::class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    fun onDocumentoInvalido(e: DocumentoInvalidoException) =
-        error("DOCUMENTO_INVALIDO", e.message)
+    fun onInvalidDocument(e: InvalidDocumentException) =
+        error("INVALID_DOCUMENT", e.message)
 
     private fun error(code: String, message: String?): Map<String, String?> =
         mapOf("code" to code, "message" to message)
