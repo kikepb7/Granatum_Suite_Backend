@@ -1,7 +1,7 @@
 package com.granatum.core.service
 
-import com.granatum.core.domain.event.AvisoDominio
-import com.granatum.core.infrastructure.database.repositories.NotificacionRepository
+import com.granatum.core.domain.event.DomainNotice
+import com.granatum.core.infrastructure.database.repositories.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
@@ -31,20 +31,20 @@ import java.util.UUID
  * If this method were itself `@Transactional`, a failing statement would mark
  * the transaction rollback-only, and the `catch` below would not be the end of
  * it: committing on the way out would throw `UnexpectedRollbackException`
- * anyway. With the transaction in [EscritorAvisos], it is opened and closed -
+ * anyway. With the transaction in [NotificationWriter], it is opened and closed -
  * or rolled back - inside the `try`.
  */
 @Component
-class OyenteAvisos(private val escritor: EscritorAvisos) {
+class NotificationNoticeListener(private val writer: NotificationWriter) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    fun alOcurrir(aviso: AvisoDominio) {
+    fun onNotice(notice: DomainNotice) {
         try {
-            escritor.guardar(aviso)
+            writer.save(notice)
         } catch (e: Exception) {
-            log.warn("No se pudo crear la notificación de tipo {}: {}", aviso.tipo, e.javaClass.simpleName)
+            log.warn("No se pudo crear la notificación de tipo {}: {}", notice.type, e.javaClass.simpleName)
         }
     }
 }
@@ -54,16 +54,16 @@ class OyenteAvisos(private val escritor: EscritorAvisos) {
  * original transaction is finished but still bound to the thread.
  */
 @Component
-class EscritorAvisos(
-    private val destinatarios: Destinatarios,
-    private val notificaciones: NotificacionRepository,
+class NotificationWriter(
+    private val recipients: NotificationRecipients,
+    private val notifications: NotificationRepository,
     private val clock: Clock = Clock.systemUTC()
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun guardar(aviso: AvisoDominio) {
-        val ahora = clock.instant()
-        destinatarios.de(aviso).forEach { destinatario ->
-            notificaciones.insertarSiNoExiste(UUID.randomUUID(), destinatario, aviso.tipo.name, aviso.referenciaId, ahora)
+    fun save(notice: DomainNotice) {
+        val now = clock.instant()
+        recipients.of(notice).forEach { recipient ->
+            notifications.insertIfAbsent(UUID.randomUUID(), recipient, notice.type.name, notice.referenceId, now)
         }
     }
 }

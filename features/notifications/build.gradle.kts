@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     // The only project dependency, by constitution principle I: the events it
-    // listens to (AvisoDominio) and who holds which role (DirectorioRoles) are
+    // listens to (DomainNotice) and who holds which role (RoleDirectory) are
     // contracts in common; it imports no feature (feature 008).
     implementation(projects.common)
 

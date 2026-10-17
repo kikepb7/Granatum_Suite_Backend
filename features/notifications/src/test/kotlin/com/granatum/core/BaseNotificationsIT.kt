@@ -7,8 +7,8 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 
 /** One Postgres for all of this module's integration tests (feature 008). */
-@Import(DirectorioRolesDobleConfig::class)
-abstract class BaseNotificacionesIT {
+@Import(NotificationRoleDirectoryDoubleConfig::class)
+abstract class BaseNotificationsIT {
 
     companion object {
         @JvmStatic
@@ -25,5 +25,5 @@ abstract class BaseNotificacionesIT {
         }
     }
 
-    @Autowired lateinit var directorioRoles: DirectorioRolesDoble
+    @Autowired lateinit var roleDirectory: NotificationRoleDirectoryDouble
 }

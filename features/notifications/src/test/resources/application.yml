@@ -16,8 +16,8 @@ logging:
     org.hibernate.orm.jdbc.bind: WARN
 
 notifications:
-  limpieza:
-    dias-leidas: 90
-    dias-todas: 180
-    # Never fires during a test run; LimpiezaNotificacionesIT calls the job.
+  cleanup:
+    read-days: 90
+    all-days: 180
+    # Never fires during a test run; NotificationCleanupIT calls the job.
     cron: "0 0 4 1 1 *"
