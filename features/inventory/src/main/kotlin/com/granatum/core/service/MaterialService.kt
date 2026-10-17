@@ -1,31 +1,31 @@
 package com.granatum.core.service
 
-import com.granatum.core.domain.exception.CantidadInvalidaException
-import com.granatum.core.domain.exception.CategoriaNotFoundException
-import com.granatum.core.domain.exception.ImagenDemasiadoGrandeException
-import com.granatum.core.domain.exception.ImagenNoValidaException
-import com.granatum.core.domain.exception.MaterialEnUsoException
+import com.granatum.core.domain.contract.MaterialUsage
+import com.granatum.core.domain.exception.CategoryNotFoundException
+import com.granatum.core.domain.exception.InvalidMaterialImageException
+import com.granatum.core.domain.exception.InvalidMaterialQuantityException
+import com.granatum.core.domain.exception.MaterialImageTooLargeException
+import com.granatum.core.domain.exception.MaterialInUseException
 import com.granatum.core.domain.exception.MaterialNotFoundException
-import com.granatum.core.domain.contract.UsoMateriales
-import com.granatum.core.domain.model.DimensionesModel
-import com.granatum.core.domain.model.HistorialMaterialModel
-import com.granatum.core.domain.model.Localizacion
+import com.granatum.core.domain.model.MaterialDimensionsModel
+import com.granatum.core.domain.model.MaterialHistoryModel
+import com.granatum.core.domain.model.MaterialLocation
 import com.granatum.core.domain.model.MaterialModel
-import com.granatum.core.domain.port.AlmacenImagenes
-import com.granatum.core.domain.type.Almacen
+import com.granatum.core.domain.port.MaterialImageStorage
 import com.granatum.core.domain.type.EntityId
-import com.granatum.core.domain.type.TipoCambioHistorial
-import com.granatum.core.ficheros.DetectorTipoFichero
-import com.granatum.core.ficheros.TipoDocumento
-import com.granatum.core.infrastructure.database.entities.DimensionesEmbeddable
-import com.granatum.core.infrastructure.database.entities.HistorialMaterialEntity
-import com.granatum.core.infrastructure.database.entities.LocalizacionEmbeddable
+import com.granatum.core.domain.type.MaterialChangeType
+import com.granatum.core.domain.type.Warehouse
+import com.granatum.core.files.DocumentType
+import com.granatum.core.files.FileTypeDetector
+import com.granatum.core.infrastructure.database.entities.MaterialDimensionsEmbeddable
 import com.granatum.core.infrastructure.database.entities.MaterialEntity
+import com.granatum.core.infrastructure.database.entities.MaterialHistoryEntity
+import com.granatum.core.infrastructure.database.entities.MaterialLocationEmbeddable
 import com.granatum.core.infrastructure.database.mappers.toModel
-import com.granatum.core.infrastructure.database.repositories.CategoriaRepository
-import com.granatum.core.infrastructure.database.repositories.HistorialMaterialRepository
+import com.granatum.core.infrastructure.database.repositories.CategoryRepository
+import com.granatum.core.infrastructure.database.repositories.MaterialHistoryRepository
 import com.granatum.core.infrastructure.database.repositories.MaterialRepository
-import com.granatum.core.infrastructure.storage.ConfiguracionAlmacenImagenes
+import com.granatum.core.infrastructure.storage.MaterialImageStorageProperties
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -37,7 +37,7 @@ import java.util.UUID
  *
  * Storage and Postgres share no transaction (research.md D-003), so every
  * operation that can touch Storage - including signing the image of what it
- * returns - runs its database part in [transacciones] and talks to Storage
+ * returns - runs its database part in [transactions] and talks to Storage
  * outside it: an upload of up to 10 MB never holds a pooled
  * connection, and a failure leaves at most an orphaned object - never a
  * material pointing at an object that does not exist.
@@ -45,76 +45,76 @@ import java.util.UUID
 @Service
 class MaterialService(
     private val materialRepository: MaterialRepository,
-    private val categoriaRepository: CategoriaRepository,
-    private val historialMaterialRepository: HistorialMaterialRepository,
-    private val almacenImagenes: AlmacenImagenes,
-    private val configImagenes: ConfiguracionAlmacenImagenes,
-    private val transacciones: TransactionOperations,
+    private val categoryRepository: CategoryRepository,
+    private val materialHistoryRepository: MaterialHistoryRepository,
+    private val imageStorage: MaterialImageStorage,
+    private val imageProperties: MaterialImageStorageProperties,
+    private val transactions: TransactionOperations,
     /** Feature 011: a material whose units are out at an event cannot be deleted (FR-013). */
-    private val usoMateriales: UsoMateriales
+    private val materialUsage: MaterialUsage
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     /** FR-010: by warehouse, or by warehouse and section. A section alone is rejected at the edge. */
-    fun findAll(almacen: Almacen? = null, seccion: Int? = null): List<MaterialModel> {
-        val entidades = when {
-            almacen == null -> materialRepository.findAll()
-            seccion == null -> materialRepository.findAllByLocalizacionAlmacen(almacen)
-            else -> materialRepository.findAllByLocalizacionAlmacenAndLocalizacionSeccion(almacen, seccion)
+    fun findAll(warehouse: Warehouse? = null, section: Int? = null): List<MaterialModel> {
+        val entities = when {
+            warehouse == null -> materialRepository.findAll()
+            section == null -> materialRepository.findAllByLocationWarehouse(warehouse)
+            else -> materialRepository.findAllByLocationWarehouseAndLocationSection(warehouse, section)
         }
-        return conImagenes(entidades.map { it.toModel() })
+        return withImages(entities.map { it.toModel() })
     }
 
     /** Those of [ids] that exist, with their images signed in one call (feature 011). */
     fun findAllById(ids: Collection<EntityId>): List<MaterialModel> =
-        if (ids.isEmpty()) emptyList() else conImagenes(materialRepository.findAllByIdIn(ids).map { it.toModel() })
+        if (ids.isEmpty()) emptyList() else withImages(materialRepository.findAllByIdIn(ids).map { it.toModel() })
 
     fun findById(id: EntityId): MaterialModel =
-        conImagen(materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }.toModel())
+        withImage(materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }.toModel())
 
     @Transactional
     fun create(
-        categoriaId: EntityId,
-        descripcion: String,
-        dimensiones: DimensionesModel,
-        cantidad: Int,
-        localizacion: Localizacion
+        categoryId: EntityId,
+        description: String,
+        dimensions: MaterialDimensionsModel,
+        quantity: Int,
+        location: MaterialLocation
     ): MaterialModel {
-        val categoria = categoriaRepository.findById(categoriaId).orElseThrow { CategoriaNotFoundException(categoriaId) }
+        val category = categoryRepository.findById(categoryId).orElseThrow { CategoryNotFoundException(categoryId) }
 
         val entity = MaterialEntity(
-            categoria = categoria,
-            descripcion = descripcion,
-            dimensiones = DimensionesEmbeddable(alto = dimensiones.alto, ancho = dimensiones.ancho),
-            cantidad = cantidad,
-            localizacion = LocalizacionEmbeddable(almacen = localizacion.almacen, seccion = localizacion.seccion)
+            category = category,
+            description = description,
+            dimensions = MaterialDimensionsEmbeddable(height = dimensions.height, width = dimensions.width),
+            quantity = quantity,
+            location = MaterialLocationEmbeddable(warehouse = location.warehouse, section = location.section)
         )
-        if (cantidad < 0) throw CantidadInvalidaException(entity.id, cantidad)
+        if (quantity < 0) throw InvalidMaterialQuantityException(entity.id, quantity)
 
         return materialRepository.save(entity).toModel()
     }
 
     /**
-     * Everything but the quantity, which only changes through [updateCantidad]
+     * Everything but the quantity, which only changes through [updateQuantity]
      * with a reason (research.md D-008), and the image, which has its own
      * operations.
      */
     fun update(
         id: EntityId,
-        categoriaId: EntityId,
-        descripcion: String,
-        dimensiones: DimensionesModel,
-        localizacion: Localizacion
-    ): MaterialModel = conImagen(
-        transacciones.execute {
+        categoryId: EntityId,
+        description: String,
+        dimensions: MaterialDimensionsModel,
+        location: MaterialLocation
+    ): MaterialModel = withImage(
+        transactions.execute {
             val entity = materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }
-            val categoria = categoriaRepository.findById(categoriaId).orElseThrow { CategoriaNotFoundException(categoriaId) }
+            val category = categoryRepository.findById(categoryId).orElseThrow { CategoryNotFoundException(categoryId) }
 
-            entity.categoria = categoria
-            entity.descripcion = descripcion
-            entity.dimensiones = DimensionesEmbeddable(alto = dimensiones.alto, ancho = dimensiones.ancho)
-            entity.localizacion = LocalizacionEmbeddable(almacen = localizacion.almacen, seccion = localizacion.seccion)
+            entity.category = category
+            entity.description = description
+            entity.dimensions = MaterialDimensionsEmbeddable(height = dimensions.height, width = dimensions.width)
+            entity.location = MaterialLocationEmbeddable(warehouse = location.warehouse, section = location.section)
 
             // Flushed so that @LastModifiedDate has run before the model is
             // built: otherwise the response would carry the previous date.
@@ -124,38 +124,38 @@ class MaterialService(
 
     /** FR-017: the image goes too, once the row is gone. */
     fun delete(id: EntityId) {
-        val ruta = transacciones.execute {
+        val path = transactions.execute {
             val entity = materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }
-            if (usoMateriales.enUso(id)) throw MaterialEnUsoException(id)
+            if (materialUsage.isInUse(id)) throw MaterialInUseException(id)
             materialRepository.delete(entity)
-            entity.imagenRuta
+            entity.imagePath
         }
-        ruta?.let(::borrarSinFallar)
+        path?.let(::deleteQuietly)
     }
 
-    fun findHistorial(materialId: EntityId): List<HistorialMaterialModel> {
+    fun findHistory(materialId: EntityId): List<MaterialHistoryModel> {
         if (!materialRepository.existsById(materialId)) throw MaterialNotFoundException(materialId)
-        return historialMaterialRepository.findAllByMaterialIdOrderByFechaDesc(materialId).map { it.toModel() }
+        return materialHistoryRepository.findAllByMaterialIdOrderByDateDesc(materialId).map { it.toModel() }
     }
 
     /** FR-011, FR-012: the only way the quantity changes after creation, always with a reason on record. */
-    fun updateCantidad(id: EntityId, usuarioId: EntityId, cantidad: Int, motivo: String): MaterialModel = conImagen(
-        transacciones.execute {
+    fun updateQuantity(id: EntityId, userId: EntityId, quantity: Int, reason: String): MaterialModel = withImage(
+        transactions.execute {
             val entity = materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }
-            if (cantidad < 0) throw CantidadInvalidaException(id, cantidad)
+            if (quantity < 0) throw InvalidMaterialQuantityException(id, quantity)
 
-            val valorAnterior = entity.cantidad
-            entity.cantidad = cantidad
+            val previousValue = entity.quantity
+            entity.quantity = quantity
             val saved = materialRepository.saveAndFlush(entity)
 
-            historialMaterialRepository.save(
-                HistorialMaterialEntity(
+            materialHistoryRepository.save(
+                MaterialHistoryEntity(
                     materialId = id,
-                    usuarioId = usuarioId,
-                    tipoCambio = TipoCambioHistorial.CANTIDAD,
-                    valorAnterior = valorAnterior.toString(),
-                    valorNuevo = cantidad.toString(),
-                    motivo = motivo
+                    userId = userId,
+                    changeType = MaterialChangeType.QUANTITY,
+                    previousValue = previousValue.toString(),
+                    newValue = quantity.toString(),
+                    reason = reason
                 )
             )
             saved.toModel()
@@ -166,65 +166,65 @@ class MaterialService(
      * FR-013 to FR-015, in the order of research.md D-003: check the file,
      * upload it to a new path, point the material at it, then drop the old one.
      */
-    fun subirImagen(id: EntityId, contenido: ByteArray): MaterialModel {
-        if (contenido.size > configImagenes.maxBytes) throw ImagenDemasiadoGrandeException(configImagenes.maxBytes)
-        val tipo = DetectorTipoFichero.detectar(contenido)?.takeIf { it in IMAGENES } ?: throw ImagenNoValidaException()
+    fun uploadImage(id: EntityId, content: ByteArray): MaterialModel {
+        if (content.size > imageProperties.maxBytes) throw MaterialImageTooLargeException(imageProperties.maxBytes)
+        val type = FileTypeDetector.detect(content)?.takeIf { it in IMAGE_TYPES } ?: throw InvalidMaterialImageException()
         if (!materialRepository.existsById(id)) throw MaterialNotFoundException(id)
 
-        val nueva = "materiales/$id/${UUID.randomUUID()}.${tipo.extension}"
-        almacenImagenes.guardar(nueva, contenido, tipo.mediaType)
+        val newPath = "$PATH_PREFIX/$id/${UUID.randomUUID()}.${type.extension}"
+        imageStorage.store(newPath, content, type.mediaType)
 
-        val (material, anterior) = try {
-            transacciones.execute {
+        val (material, previous) = try {
+            transactions.execute {
                 val entity = materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }
-                val anterior = entity.imagenRuta
-                entity.imagenRuta = nueva
-                materialRepository.saveAndFlush(entity).toModel() to anterior
+                val previous = entity.imagePath
+                entity.imagePath = newPath
+                materialRepository.saveAndFlush(entity).toModel() to previous
             }!!
         } catch (e: RuntimeException) {
-            borrarSinFallar(nueva)
+            deleteQuietly(newPath)
             throw e
         }
 
-        anterior?.let(::borrarSinFallar)
-        return conImagen(material)
+        previous?.let(::deleteQuietly)
+        return withImage(material)
     }
 
     /** FR-016. Idempotent: a material without an image stays without one. */
-    fun quitarImagen(id: EntityId): MaterialModel {
-        val (material, anterior) = transacciones.execute {
+    fun removeImage(id: EntityId): MaterialModel {
+        val (material, previous) = transactions.execute {
             val entity = materialRepository.findById(id).orElseThrow { MaterialNotFoundException(id) }
-            val anterior = entity.imagenRuta
-            if (anterior == null) {
+            val previous = entity.imagePath
+            if (previous == null) {
                 entity.toModel() to null
             } else {
-                entity.imagenRuta = null
-                materialRepository.saveAndFlush(entity).toModel() to anterior
+                entity.imagePath = null
+                materialRepository.saveAndFlush(entity).toModel() to previous
             }
         }!!
 
-        anterior?.let(::borrarSinFallar)
+        previous?.let(::deleteQuietly)
         return material
     }
 
-    private fun conImagen(material: MaterialModel): MaterialModel = conImagenes(listOf(material)).single()
+    private fun withImage(material: MaterialModel): MaterialModel = withImages(listOf(material)).single()
 
     /**
      * Signs every image in one call (research.md D-005). Any failure leaves
      * the URLs out instead of failing the read (FR-020): what is being read is
      * the inventory, and the image is the one part of it that can be missing.
      */
-    private fun conImagenes(materiales: List<MaterialModel>): List<MaterialModel> {
-        val rutas = materiales.mapNotNull { it.imagenRuta }
-        if (rutas.isEmpty()) return materiales
+    private fun withImages(materials: List<MaterialModel>): List<MaterialModel> {
+        val paths = materials.mapNotNull { it.imagePath }
+        if (paths.isEmpty()) return materials
 
         val urls = try {
-            almacenImagenes.firmar(rutas)
+            imageStorage.sign(paths)
         } catch (e: RuntimeException) {
-            log.warn("No se pudieron firmar {} imagenes de materiales: {}", rutas.size, e.javaClass.simpleName)
+            log.warn("No se pudieron firmar {} imagenes de materiales: {}", paths.size, e.javaClass.simpleName)
             emptyMap()
         }
-        return materiales.map { m -> m.imagenRuta?.let { m.copy(imagenUrl = urls[it]) } ?: m }
+        return materials.map { m -> m.imagePath?.let { m.copy(imageUrl = urls[it]) } ?: m }
     }
 
     /**
@@ -232,9 +232,9 @@ class MaterialService(
      * an orphaned object holds no personal data. Logs neither the path nor the
      * cause's message, which can carry the bucket's address.
      */
-    private fun borrarSinFallar(ruta: String) {
+    private fun deleteQuietly(path: String) {
         try {
-            almacenImagenes.borrar(listOf(ruta))
+            imageStorage.delete(listOf(path))
         } catch (e: RuntimeException) {
             log.warn("No se pudo borrar una imagen de material del almacenamiento: {}", e.javaClass.simpleName)
         }
@@ -242,6 +242,12 @@ class MaterialService(
 
     private companion object {
         /** FR-014: of the formats `common` recognises, the three images. */
-        val IMAGENES = setOf(TipoDocumento.JPEG, TipoDocumento.PNG, TipoDocumento.WEBP)
+        val IMAGE_TYPES = setOf(DocumentType.JPEG, DocumentType.PNG, DocumentType.WEBP)
+
+        /**
+         * Folder of new uploads inside the bucket. Images stored before V28 keep their
+         * `materiales/...` paths, which are still valid: a path is opaque once saved.
+         */
+        const val PATH_PREFIX = "materials"
     }
 }

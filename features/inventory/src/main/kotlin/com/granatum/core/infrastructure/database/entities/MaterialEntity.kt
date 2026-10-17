@@ -16,37 +16,37 @@ import java.time.Instant
 import java.util.UUID
 
 @Entity
-@Table(name = "materiales")
+@Table(name = "materials")
 @EntityListeners(AuditingEntityListener::class)
 class MaterialEntity(
     @Id
     val id: UUID = UUID.randomUUID(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    var categoria: CategoriaEntity,
+    @JoinColumn(name = "category_id", nullable = false)
+    var category: CategoryEntity,
 
     @Column(nullable = false, length = 500)
-    var descripcion: String,
+    var description: String,
 
     @Embedded
-    var dimensiones: DimensionesEmbeddable,
+    var dimensions: MaterialDimensionsEmbeddable,
 
     @Column(nullable = false)
-    var cantidad: Int,
+    var quantity: Int,
 
     @Embedded
-    var localizacion: LocalizacionEmbeddable,
+    var location: MaterialLocationEmbeddable,
 
     /** Path of the object in the private bucket (research.md D-009). */
     @Column(length = 300)
-    var imagenRuta: String? = null,
+    var imagePath: String? = null,
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    var fechaAlta: Instant = Instant.now(),
+    var createdAt: Instant = Instant.now(),
 
     @LastModifiedDate
     @Column(nullable = false)
-    var fechaUltimaModificacion: Instant = Instant.now()
+    var updatedAt: Instant = Instant.now()
 )

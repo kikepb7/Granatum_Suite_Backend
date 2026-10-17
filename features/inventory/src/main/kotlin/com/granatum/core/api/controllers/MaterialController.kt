@@ -1,14 +1,14 @@
 package com.granatum.core.api.controllers
 
 import com.granatum.core.api.dto.CreateMaterialRequest
-import com.granatum.core.api.dto.HistorialMaterialDto
 import com.granatum.core.api.dto.MaterialDto
-import com.granatum.core.api.dto.UpdateCantidadRequest
+import com.granatum.core.api.dto.MaterialHistoryDto
+import com.granatum.core.api.dto.UpdateMaterialQuantityRequest
 import com.granatum.core.api.dto.UpdateMaterialRequest
 import com.granatum.core.api.mappers.toDto
 import com.granatum.core.api.mappers.toModel
 import com.granatum.core.api.util.requestUserId
-import com.granatum.core.domain.type.Almacen
+import com.granatum.core.domain.type.Warehouse
 import com.granatum.core.service.MaterialService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -33,7 +33,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/materiales")
+@RequestMapping("/api/materials")
 class MaterialController(
     private val materialService: MaterialService
 ) {
@@ -41,11 +41,11 @@ class MaterialController(
     /** FR-010. A section only means something inside a warehouse, so it requires one. */
     @GetMapping
     fun findAll(
-        @RequestParam(required = false) @Pattern(regexp = "[ABC]") almacen: String?,
-        @RequestParam(required = false) @Min(1) @Max(5) seccion: Int?
+        @RequestParam(required = false) @Pattern(regexp = "[ABC]") warehouse: String?,
+        @RequestParam(required = false) @Min(1) @Max(5) section: Int?
     ): List<MaterialDto> {
-        if (seccion != null && almacen == null) throw MissingServletRequestParameterException("almacen", "String")
-        return materialService.findAll(almacen?.let(Almacen::valueOf), seccion).map { it.toDto() }
+        if (section != null && warehouse == null) throw MissingServletRequestParameterException("warehouse", "String")
+        return materialService.findAll(warehouse?.let(Warehouse::valueOf), section).map { it.toDto() }
     }
 
     @GetMapping("/{id}")
@@ -58,21 +58,21 @@ class MaterialController(
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@Valid @RequestBody request: CreateMaterialRequest): MaterialDto =
         materialService.create(
-            categoriaId = request.categoriaId!!,
-            descripcion = request.descripcion!!,
-            dimensiones = request.dimensiones!!.toModel(),
-            cantidad = request.cantidad!!,
-            localizacion = request.localizacion!!.toModel()
+            categoryId = request.categoryId!!,
+            description = request.description!!,
+            dimensions = request.dimensions!!.toModel(),
+            quantity = request.quantity!!,
+            location = request.location!!.toModel()
         ).toDto()
 
     @PutMapping("/{id}")
     fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateMaterialRequest): MaterialDto =
         materialService.update(
             id = id,
-            categoriaId = request.categoriaId!!,
-            descripcion = request.descripcion!!,
-            dimensiones = request.dimensiones!!.toModel(),
-            localizacion = request.localizacion!!.toModel()
+            categoryId = request.categoryId!!,
+            description = request.description!!,
+            dimensions = request.dimensions!!.toModel(),
+            location = request.location!!.toModel()
         ).toDto()
 
     @DeleteMapping("/{id}")
@@ -81,29 +81,29 @@ class MaterialController(
         materialService.delete(id)
     }
 
-    @GetMapping("/{id}/historial")
-    fun findHistorial(@PathVariable id: UUID): List<HistorialMaterialDto> =
-        materialService.findHistorial(id).map { it.toDto() }
+    @GetMapping("/{id}/history")
+    fun findHistory(@PathVariable id: UUID): List<MaterialHistoryDto> =
+        materialService.findHistory(id).map { it.toDto() }
 
-    @PatchMapping("/{id}/cantidad")
-    fun updateCantidad(@PathVariable id: UUID, @Valid @RequestBody request: UpdateCantidadRequest): MaterialDto =
-        materialService.updateCantidad(
+    @PatchMapping("/{id}/quantity")
+    fun updateQuantity(@PathVariable id: UUID, @Valid @RequestBody request: UpdateMaterialQuantityRequest): MaterialDto =
+        materialService.updateQuantity(
             id = id,
-            usuarioId = requestUserId,
-            cantidad = request.cantidad!!,
-            motivo = request.motivo!!
+            userId = requestUserId,
+            quantity = request.quantity!!,
+            reason = request.reason!!
         ).toDto()
 
     /**
-     * FR-013: one file in the `imagen` part. Its type is decided by its bytes
+     * FR-013: one file in the `image` part. Its type is decided by its bytes
      * in the service, never by its name or the part's Content-Type.
      */
-    @PutMapping("/{id}/imagen", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun subirImagen(@PathVariable id: UUID, @RequestPart("imagen") imagen: MultipartFile): MaterialDto =
-        materialService.subirImagen(id, imagen.bytes).toDto()
+    @PutMapping("/{id}/image", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadImage(@PathVariable id: UUID, @RequestPart("image") image: MultipartFile): MaterialDto =
+        materialService.uploadImage(id, image.bytes).toDto()
 
     /** FR-016. Idempotent. */
-    @DeleteMapping("/{id}/imagen")
-    fun quitarImagen(@PathVariable id: UUID): MaterialDto =
-        materialService.quitarImagen(id).toDto()
+    @DeleteMapping("/{id}/image")
+    fun removeImage(@PathVariable id: UUID): MaterialDto =
+        materialService.removeImage(id).toDto()
 }

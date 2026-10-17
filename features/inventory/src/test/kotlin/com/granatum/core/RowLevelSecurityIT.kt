@@ -105,7 +105,7 @@ class RowLevelSecurityIT {
                 val id = UUID.randomUUID()
                 statement.execute(
                     """
-                    INSERT INTO categorias (id, nombre, descripcion, created_at, updated_at)
+                    INSERT INTO categories (id, name, description, created_at, updated_at)
                     VALUES ('$id', 'RLS probe', 'fila de prueba', now(), now())
                     """.trimIndent()
                 )
@@ -114,12 +114,12 @@ class RowLevelSecurityIT {
                     // Control: as the owner, RLS is bypassed and the row is visible.
                     // Without this the next assertion could pass simply because
                     // the insert never happened.
-                    assertEquals(1, countCategorias(statement, id), "owner should see its own row")
+                    assertEquals(1, countCategories(statement, id), "owner should see its own row")
 
                     statement.execute("SET ROLE rls_probe")
                     assertEquals(
                         0,
-                        countCategorias(statement, id),
+                        countCategories(statement, id),
                         "rls_probe is not the owner and there is no policy granting it access, " +
                             "so RLS must hide every row - this is exactly what stops PostgREST " +
                             "from serving the table with the public anon key"
@@ -134,8 +134,8 @@ class RowLevelSecurityIT {
         }
     }
 
-    private fun countCategorias(statement: java.sql.Statement, id: UUID): Int =
-        statement.executeQuery("SELECT count(*) FROM categorias WHERE id = '$id'").use { rs ->
+    private fun countCategories(statement: java.sql.Statement, id: UUID): Int =
+        statement.executeQuery("SELECT count(*) FROM categories WHERE id = '$id'").use { rs ->
             rs.next()
             rs.getInt(1)
         }

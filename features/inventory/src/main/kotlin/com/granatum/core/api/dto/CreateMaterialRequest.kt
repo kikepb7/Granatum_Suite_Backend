@@ -9,21 +9,21 @@ import java.util.UUID
 
 data class CreateMaterialRequest(
     @field:NotNull
-    val categoriaId: UUID?,
+    val categoryId: UUID?,
 
     @field:NotBlank
     @field:Size(max = 500)
-    val descripcion: String?,
+    val description: String?,
 
     @field:Valid
     @field:NotNull
-    val dimensiones: DimensionesRequest?,
+    val dimensions: MaterialDimensionsRequest?,
 
     @field:NotNull
     @field:Min(0)
-    val cantidad: Int?,
+    val quantity: Int?,
 
     @field:Valid
     @field:NotNull
-    val localizacion: LocalizacionRequest?
+    val location: MaterialLocationRequest?
 )
