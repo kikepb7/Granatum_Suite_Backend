@@ -1,6 +1,6 @@
 package com.granatum.core
 
-import com.granatum.core.infrastructure.crypto.HashSenuelo
+import com.granatum.core.infrastructure.crypto.DecoyHash
 import com.granatum.core.infrastructure.crypto.PasswordEncoderConfig
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +42,7 @@ import kotlin.test.assertTrue
 class PasswordEncoderTest {
 
     @Autowired lateinit var passwordEncoder: PasswordEncoder
-    @Autowired lateinit var hashSenuelo: HashSenuelo
+    @Autowired lateinit var decoyHash: DecoyHash
 
     private val password = "Granatum-2026!"
 
@@ -51,12 +51,12 @@ class PasswordEncoderTest {
      * the non-null check is an assertion in its own right: a null would mean an
      * account nobody can ever sign in to.
      */
-    private fun cifrar(valor: CharSequence): String =
-        assertNotNull(passwordEncoder.encode(valor), "el encoder devolvio null")
+    private fun encode(value: CharSequence): String =
+        assertNotNull(passwordEncoder.encode(value), "el encoder devolvio null")
 
     @Test
     fun `the stored hash declares argon2id and its parameters`() {
-        val hash = cifrar(password)
+        val hash = encode(password)
 
         assertTrue(
             hash.startsWith("{argon2}\$argon2id\$"),
@@ -80,22 +80,22 @@ class PasswordEncoderTest {
      */
     @Test
     fun `hashing the same password twice gives different results`() {
-        val primero = cifrar(password)
-        val segundo = cifrar(password)
+        val first = encode(password)
+        val second = encode(password)
 
         assertNotEquals(
-            primero,
-            segundo,
+            first,
+            second,
             "identical hashes mean there is no per-row salt, so two people with the " +
                 "same password would be visibly identical in the database"
         )
-        assertTrue(passwordEncoder.matches(password, primero))
-        assertTrue(passwordEncoder.matches(password, segundo), "both must still verify")
+        assertTrue(passwordEncoder.matches(password, first))
+        assertTrue(passwordEncoder.matches(password, second), "both must still verify")
     }
 
     @Test
     fun `matches accepts the original and rejects anything else`() {
-        val hash = cifrar(password)
+        val hash = encode(password)
 
         assertTrue(passwordEncoder.matches(password, hash))
         assertFalse(passwordEncoder.matches("Granatum-2027!", hash))
@@ -110,7 +110,7 @@ class PasswordEncoderTest {
      */
     @Test
     fun `the stored value contains no part of the password`() {
-        val hash = cifrar(password)
+        val hash = encode(password)
 
         assertFalse(hash.contains("Granatum", ignoreCase = true))
         assertFalse(hash.contains("2026"))
@@ -124,13 +124,13 @@ class PasswordEncoderTest {
      */
     @Test
     fun `a long accented passphrase hashes without truncation`() {
-        val frase = "Á".repeat(30) + "á".repeat(32) + "1!"
+        val passphrase = "Á".repeat(30) + "á".repeat(32) + "1!"
 
-        val hash = cifrar(frase)
+        val hash = encode(passphrase)
 
-        assertTrue(passwordEncoder.matches(frase, hash))
+        assertTrue(passwordEncoder.matches(passphrase, hash))
         assertFalse(
-            passwordEncoder.matches(frase.substring(0, 36), hash),
+            passwordEncoder.matches(passphrase.substring(0, 36), hash),
             "a 36-character prefix is 72 bytes: if it matched, the encoder would be " +
                 "silently truncating and the tail of the passphrase would be decoration"
         )
@@ -146,12 +146,12 @@ class PasswordEncoderTest {
      */
     @Test
     fun `the decoy hash carries the same parameters as a real one`() {
-        val real = cifrar(password)
+        val real = encode(password)
 
-        val parametros = Regex("""\$(m=\d+,t=\d+,p=\d+)\$""")
+        val parameters = Regex("""\$(m=\d+,t=\d+,p=\d+)\$""")
         assertEquals(
-            parametros.find(real)?.groupValues?.get(1),
-            parametros.find(hashSenuelo.valor)?.groupValues?.get(1),
+            parameters.find(real)?.groupValues?.get(1),
+            parameters.find(decoyHash.value)?.groupValues?.get(1),
             "decoy and real hashes must cost the same, or the 'no such account' path is " +
                 "measurably faster and sign-in enumerates registered addresses"
         )
@@ -159,12 +159,12 @@ class PasswordEncoderTest {
 
     @Test
     fun `nothing verifies against the decoy`() {
-        assertFalse(passwordEncoder.matches(password, hashSenuelo.valor))
-        assertFalse(passwordEncoder.matches("", hashSenuelo.valor))
+        assertFalse(passwordEncoder.matches(password, decoyHash.value))
+        assertFalse(passwordEncoder.matches("", decoyHash.value))
     }
 
-    private fun assertEquals(esperado: String?, real: String?, mensaje: String) =
-        kotlin.test.assertEquals(esperado, real, mensaje)
+    private fun assertEquals(expected: String?, real: String?, message: String) =
+        kotlin.test.assertEquals(expected, real, message)
 
     /**
      * Feature 009, recovery of the only ADMIN: without sign-up requests the
@@ -176,9 +176,9 @@ class PasswordEncoderTest {
      */
     @Test
     fun `a hash from the argon2 command-line tool is accepted`() {
-        val deLaHerramienta = "{argon2}\$argon2i\$v=19\$m=65536,t=2,p=4\$c29tZXNhbHQ\$RdescudvJCsgt3ub+b+dWRWJTmaaJObG"
+        val fromTool = "{argon2}\$argon2i\$v=19\$m=65536,t=2,p=4\$c29tZXNhbHQ\$RdescudvJCsgt3ub+b+dWRWJTmaaJObG"
 
-        assertTrue(passwordEncoder.matches("password", deLaHerramienta))
-        assertFalse(passwordEncoder.matches("otra", deLaHerramienta))
+        assertTrue(passwordEncoder.matches("password", fromTool))
+        assertFalse(passwordEncoder.matches("otra", fromTool))
     }
 }

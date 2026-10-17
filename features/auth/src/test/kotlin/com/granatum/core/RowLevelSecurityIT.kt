@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
  * Enforces constitution principle VII for this module's tables, and doubles as
  * the proof that the V12-V14 migrations actually run against a real Postgres.
  *
- * RLS matters more here than for any other table in the system: `cuentas_acceso`
+ * RLS matters more here than for any other table in the system: `accounts`
  * holds email addresses and password hashes, and Supabase publishes a REST API
  * over the `public` schema automatically - a table without RLS there is readable
  * from the internet with the anon key, which is public by design.
@@ -24,8 +24,8 @@ import kotlin.test.assertTrue
  * additionally carries `EsquemaCompletoRlsIT`.
  *
  * Extends [BaseAuthIT] for the container wiring **and** for the
- * `DirectorioEmpleados` double. The double is not incidental here: the moment
- * `AutenticacionService` existed, this test stopped starting without it, which
+ * `EmployeeDirectory` double. The double is not incidental here: the moment
+ * `AuthenticationService` existed, this test stopped starting without it, which
  * is the fail-fast D-009 specified on purpose - a module that cannot check
  * whether a person exists would accept orphan accounts in silence.
  */
@@ -43,15 +43,15 @@ class RowLevelSecurityIT : BaseAuthIT() {
      * this project has already been bitten by once, when Flyway was not wired up
      * at all and `ddl-auto: validate` was the only thing that noticed.
      */
-    private val tablasEsperadas = setOf(
-        "cuentas_acceso",
-        "sesiones_renovacion",
-        "eventos_seguridad"
+    private val expectedTables = setOf(
+        "accounts",
+        "refresh_sessions",
+        "security_events"
     )
 
     @Test
     fun `the module's migrations ran and created every expected table`() {
-        val presentes = mutableSetOf<String>()
+        val present = mutableSetOf<String>()
 
         dataSource.connection.use { connection ->
             connection.createStatement().use { statement ->
@@ -63,13 +63,13 @@ class RowLevelSecurityIT : BaseAuthIT() {
                      WHERE n.nspname = 'public' AND c.relkind = 'r'
                     """.trimIndent()
                 )
-                while (rs.next()) presentes += rs.getString("relname")
+                while (rs.next()) present += rs.getString("relname")
             }
         }
 
         assertEquals(
             emptySet(),
-            tablasEsperadas - presentes,
+            expectedTables - present,
             "Missing tables: the migrations did not run, so the RLS assertion below " +
                 "would pass over an empty schema and prove nothing"
         )
@@ -81,17 +81,17 @@ class RowLevelSecurityIT : BaseAuthIT() {
      */
     @Test
     fun `the sign-up requests table no longer exists`() {
-        val existe = dataSource.connection.use { c ->
+        val exists = dataSource.connection.use { c ->
             c.createStatement().use { s ->
                 s.executeQuery("SELECT to_regclass('public.solicitudes_registro') IS NOT NULL").use { it.next(); it.getBoolean(1) }
             }
         }
-        assertEquals(false, existe)
+        assertEquals(false, exists)
     }
 
     @Test
     fun `every table in the public schema has row level security enabled`() {
-        val sinRls = mutableListOf<String>()
+        val withoutRls = mutableListOf<String>()
 
         dataSource.connection.use { connection ->
             connection.createStatement().use { statement ->
@@ -113,13 +113,13 @@ class RowLevelSecurityIT : BaseAuthIT() {
                      ORDER BY c.relname
                     """.trimIndent()
                 )
-                while (rs.next()) sinRls += rs.getString("relname")
+                while (rs.next()) withoutRls += rs.getString("relname")
             }
         }
 
         assertTrue(
-            sinRls.isEmpty(),
-            "These tables have no RLS, so Supabase's data API would expose them: $sinRls. " +
+            withoutRls.isEmpty(),
+            "These tables have no RLS, so Supabase's data API would expose them: $withoutRls. " +
                 "Enable it in the same migration that creates the table."
         )
     }
@@ -147,12 +147,12 @@ class RowLevelSecurityIT : BaseAuthIT() {
 
                     statement.execute(
                         """
-                        INSERT INTO cuentas_acceso
-                            (id, empleado_id, email, rol, password_hash,
-                             requiere_cambio_password, intentos_fallidos, nivel_bloqueo,
+                        INSERT INTO accounts
+                            (id, employee_id, email, role, password_hash,
+                             password_change_required, failed_attempts, lockout_level,
                              created_at, updated_at)
                         VALUES ('$id', '${UUID.randomUUID()}', 'rls-probe-$id@granatum.es',
-                                'EMPLEADO', '{argon2}no-es-un-hash-real', TRUE, 0, 0,
+                                'EMPLOYEE', '{argon2}no-es-un-hash-real', TRUE, 0, 0,
                                 now(), now())
                         """.trimIndent()
                     )
@@ -160,12 +160,12 @@ class RowLevelSecurityIT : BaseAuthIT() {
                     // Control: as the owner, RLS is bypassed and the row is
                     // visible. Without this the next assertion could pass simply
                     // because the insert never happened.
-                    assertEquals(1, contarCuentas(statement, id), "owner should see its own row")
+                    assertEquals(1, countAccounts(statement, id), "owner should see its own row")
 
                     statement.execute("SET ROLE rls_probe_auth")
                     assertEquals(
                         0,
-                        contarCuentas(statement, id),
+                        countAccounts(statement, id),
                         "rls_probe_auth is not the owner and no policy grants it access, so " +
                             "RLS must hide every row - this is what stops PostgREST from " +
                             "serving email addresses and password hashes with the public anon key"
@@ -180,8 +180,8 @@ class RowLevelSecurityIT : BaseAuthIT() {
         }
     }
 
-    private fun contarCuentas(statement: java.sql.Statement, id: UUID): Int =
-        statement.executeQuery("SELECT count(*) FROM cuentas_acceso WHERE id = '$id'").use { rs ->
+    private fun countAccounts(statement: java.sql.Statement, id: UUID): Int =
+        statement.executeQuery("SELECT count(*) FROM accounts WHERE id = '$id'").use { rs ->
             rs.next()
             rs.getInt(1)
         }

@@ -64,19 +64,19 @@ import java.util.Base64
  */
 @Configuration
 class PasswordEncoderConfig(
-    @param:Value("\${auth.password.argon2.memory-kb}") private val memoriaKb: Int,
-    @param:Value("\${auth.password.argon2.iterations}") private val iteraciones: Int,
-    @param:Value("\${auth.password.argon2.parallelism}") private val paralelismo: Int
+    @param:Value("\${auth.password.argon2.memory-kb}") private val memoryKb: Int,
+    @param:Value("\${auth.password.argon2.iterations}") private val iterations: Int,
+    @param:Value("\${auth.password.argon2.parallelism}") private val parallelism: Int
 ) {
 
     @Bean
     fun passwordEncoder(): PasswordEncoder {
         val argon2 = Argon2PasswordEncoder(
-            LONGITUD_SAL,
-            LONGITUD_HASH,
-            paralelismo,
-            memoriaKb,
-            iteraciones
+            SALT_LENGTH,
+            HASH_LENGTH,
+            parallelism,
+            memoryKb,
+            iterations
         )
         return DelegatingPasswordEncoder(ID_ARGON2, mapOf(ID_ARGON2 to argon2))
     }
@@ -100,15 +100,15 @@ class PasswordEncoderConfig(
      * must be able to present it.
      */
     @Bean
-    fun hashSenuelo(passwordEncoder: PasswordEncoder): HashSenuelo {
-        val aleatoria = ByteArray(32).also { SecureRandom().nextBytes(it) }
-        val hash = passwordEncoder.encode(Base64.getEncoder().encodeToString(aleatoria))
+    fun decoyHash(passwordEncoder: PasswordEncoder): DecoyHash {
+        val randomBytes = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        val hash = passwordEncoder.encode(Base64.getEncoder().encodeToString(randomBytes))
         // `PasswordEncoder.encode` is declared @Nullable in Spring Security 7.
         // A null here would mean the decoy does not exist, and the "no such
         // account" path would then skip the hash entirely and re-open the timing
         // oracle FR-003 closes. Failing at startup is the only safe answer:
         // silently carrying on would leave a side channel nobody would notice.
-        return HashSenuelo(
+        return DecoyHash(
             requireNotNull(hash) { "el encoder no produjo hash para el senuelo" }
         )
     }
@@ -117,8 +117,8 @@ class PasswordEncoderConfig(
         const val ID_ARGON2 = "argon2"
 
         /** Not reduced in tests: it is part of the format `PasswordEncoderTest` checks. */
-        const val LONGITUD_SAL = 16
-        const val LONGITUD_HASH = 32
+        const val SALT_LENGTH = 16
+        const val HASH_LENGTH = 32
     }
 }
 
@@ -128,4 +128,4 @@ class PasswordEncoderConfig(
  * A bare `String` bean would be ambiguous with any other string bean and would
  * read, at the injection site, as though it were somebody's actual password.
  */
-data class HashSenuelo(val valor: String)
+data class DecoyHash(val value: String)

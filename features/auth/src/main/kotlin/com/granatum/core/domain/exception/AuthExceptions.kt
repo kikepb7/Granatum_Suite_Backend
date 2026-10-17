@@ -1,6 +1,6 @@
 package com.granatum.core.domain.exception
 
-import com.granatum.core.domain.type.RequisitoIncumplido
+import com.granatum.core.domain.type.PasswordRequirement
 
 /**
  * This feature's business exceptions, mapped to stable error codes in
@@ -8,8 +8,8 @@ import com.granatum.core.domain.type.RequisitoIncumplido
  *
  * ## Why two of these names are so long
  *
- * `CuentaDeEmpleadoInactivoException` and
- * `EmpleadoNoEncontradoEnDirectorioException` are named that way to avoid
+ * `InactiveEmployeeAccountException` and
+ * `EmployeeNotInDirectoryException` are named that way to avoid
  * colliding with `EmpleadoInactivoException` and `EmpleadoNotFoundException`,
  * which **already exist** in `timetracking` inside this very package.
  *
@@ -24,7 +24,7 @@ import com.granatum.core.domain.type.RequisitoIncumplido
  *
  * `auth` would compile against its own and the build would pass, but at runtime
  * `timetracking`'s would be resolved and a rejection for dismissal would answer
- * `400 INVALID_OPERATION` instead of `401 EMPLEADO_INACTIVO` - or blow up with
+ * `400 INVALID_OPERATION` instead of `401 EMPLOYEE_INACTIVE` - or blow up with
  * `NoSuchMethodError` if the constructors differ. **No module-level test can see
  * this**, because only its own class is on its own classpath. It is the same
  * shape of failure as the Jackson 3 outage in feature 001: suite green,
@@ -46,11 +46,11 @@ import com.granatum.core.domain.type.RequisitoIncumplido
  * own decision, with a cost accepted openly - someone who mistypes five times
  * does not learn they must wait a minute.
  */
-class CredencialesInvalidasException :
+class InvalidCredentialsException :
     UnauthorizedException("Credenciales invalidas")
 
 /** Unknown, expired, already used or revoked - all four look the same (FR-008). */
-class TokenRenovacionInvalidoException :
+class InvalidRefreshTokenException :
     UnauthorizedException("El token de renovacion no es valido")
 
 /**
@@ -61,34 +61,34 @@ class TokenRenovacionInvalidoException :
  * to hide from them - and knowing the rejection is a dismissal rather than an
  * expired session saves them retyping their password over and over.
  */
-class CuentaDeEmpleadoInactivoException :
+class InactiveEmployeeAccountException :
     UnauthorizedException("La persona empleada esta inactiva")
 
 /** FR-029c: no person is registered under that id. */
-class EmpleadoNoEncontradoEnDirectorioException(empleadoId: Any) :
-    NotFoundException("No existe ninguna persona empleada con el id $empleadoId")
+class EmployeeNotInDirectoryException(employeeId: Any) :
+    NotFoundException("No existe ninguna persona empleada con el id $employeeId")
 
-class CuentaNoEncontradaException :
+class AccountNotFoundException :
     NotFoundException("Esa persona no tiene cuenta de acceso")
 
 /** FR-027, FR-029d: the way out of this situation is to reset, not to recreate. */
-class CuentaYaExisteException :
+class AccountAlreadyExistsException :
     InvalidOperationException("Esa persona ya tiene cuenta de acceso")
 
-class EmailYaRegistradoException :
+class EmailAlreadyRegisteredException :
     InvalidOperationException("Ese correo ya pertenece a otra cuenta")
 
 /**
  * FR-023. Carries the list of failed requirements and **never the password**,
  * not even a fragment of it.
  */
-class PasswordDebilException(val requisitos: List<RequisitoIncumplido>) :
+class WeakPasswordException(val requirements: List<PasswordRequirement>) :
     InvalidOperationException("La contrasena no cumple la politica")
 
 /**
- * The hash semaphore is full. See `VerificadorAcotado`: it is the price of
+ * The hash semaphore is full. See `BoundedVerifier`: it is the price of
  * bounding memory on a public endpoint, and it answers 503 with `Retry-After`
  * because the condition is transient by definition.
  */
-class VerificacionSaturadaException :
+class VerificationBusyException :
     InvalidOperationException("Servicio saturado, reintentelo en unos segundos")
