@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     // The only project dependency, by constitution principle I: whether the
-    // person exists and is active comes through the DirectorioEmpleados contract
+    // person exists and is active comes through the EmployeeDirectory contract
     // in common, never from timetracking (feature 007).
     implementation(projects.common)
 

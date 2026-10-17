@@ -15,19 +15,19 @@ import kotlin.test.assertTrue
  */
 @Testcontainers
 @SpringBootTest(classes = [AbsencesTestApplication::class])
-class RowLevelSecurityIT : BaseAusenciasIT() {
+class RowLevelSecurityIT : BaseAbsencesIT() {
 
     @Autowired lateinit var dataSource: DataSource
 
-    private val tablasEsperadas = setOf("ausencias", "derechos_vacaciones")
+    private val expectedTables = setOf("absences", "vacation_entitlements")
 
-    private fun tablas(condicion: String): Set<String> =
+    private fun tables(condition: String): Set<String> =
         dataSource.connection.use { c ->
             c.createStatement().use { s ->
                 val rs = s.executeQuery(
                     """
                     SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-                     WHERE n.nspname = 'public' AND c.relkind = 'r' AND $condicion
+                     WHERE n.nspname = 'public' AND c.relkind = 'r' AND $condition
                     """.trimIndent()
                 )
                 buildSet { while (rs.next()) add(rs.getString(1)) }
@@ -36,12 +36,17 @@ class RowLevelSecurityIT : BaseAusenciasIT() {
 
     @Test
     fun `the module's migrations created every expected table`() {
-        assertEquals(emptySet(), tablasEsperadas - tablas("true"))
+        assertEquals(emptySet(), expectedTables - tables("true"))
+    }
+
+    @Test
+    fun `no table keeps its Spanish name`() {
+        assertEquals(emptySet(), setOf("ausencias", "derechos_vacaciones") intersect tables("true"))
     }
 
     @Test
     fun `every table has row level security enabled`() {
-        val sinRls = tablas("NOT c.relrowsecurity AND c.relname <> 'flyway_schema_history'")
-        assertTrue(sinRls.isEmpty(), "Tables without RLS, which Supabase's data API would expose: $sinRls")
+        val withoutRls = tables("NOT c.relrowsecurity AND c.relname <> 'flyway_schema_history'")
+        assertTrue(withoutRls.isEmpty(), "Tables without RLS, which Supabase's data API would expose: $withoutRls")
     }
 }

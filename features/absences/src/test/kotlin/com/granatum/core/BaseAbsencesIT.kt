@@ -7,8 +7,8 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 
 /** One Postgres for all of this module's integration tests (feature 007). */
-@Import(DirectorioPersonasDobleConfig::class)
-abstract class BaseAusenciasIT {
+@Import(EmployeeDirectoryFakeConfig::class)
+abstract class BaseAbsencesIT {
 
     companion object {
         @JvmStatic
@@ -25,5 +25,5 @@ abstract class BaseAusenciasIT {
         }
     }
 
-    @Autowired lateinit var directorio: DirectorioPersonasDoble
+    @Autowired lateinit var directory: EmployeeDirectoryFake
 }

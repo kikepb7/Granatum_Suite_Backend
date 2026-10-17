@@ -20,5 +20,5 @@ logging:
     org.hibernate.orm.jdbc.bind: WARN
 
 absences:
-  vacaciones:
-    dias-anuales: 30
+  vacation:
+    annual-days: 30
