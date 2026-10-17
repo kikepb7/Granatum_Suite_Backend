@@ -14,7 +14,7 @@ import com.granatum.core.infrastructure.database.entities.FacturaReconocimientoE
 import com.granatum.core.infrastructure.database.repositories.FacturaReconocimientoRepository
 import com.granatum.core.infrastructure.database.repositories.FacturaRepository
 import com.granatum.core.infrastructure.documentos.PreparadorDocumento
-import com.granatum.core.infrastructure.documentos.TipoDocumento
+import com.granatum.core.ficheros.TipoDocumento
 import com.granatum.core.validation.NifValidator
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory

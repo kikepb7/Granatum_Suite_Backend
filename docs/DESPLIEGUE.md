@@ -47,7 +47,16 @@ La imagen arranca con el perfil `prod`, como usuario sin privilegios (uid
 | `DB_POOL_MAX_SIZE` | Al menos el doble de `AUTH_HASH_CONCURRENCIA` (la app se niega a arrancar si no). Con el *transaction pooler* de Supabase, ver README → Supabase. |
 | `AUTH_ARGON2_MEMORY_KB`, `AUTH_ARGON2_ITERATIONS` | Recalibrados en la máquina de destino (apartado 5). |
 | `ANTHROPIC_API_KEY` | **Secreto.** Solo si se usa el reconocimiento de facturas, y tras el contrato de encargado del tratamiento con Anthropic. Sin ella, la facturación funciona en modo manual. |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Para las imágenes de los materiales. La clave `service_role` es un **secreto** con acceso total al proyecto Supabase. Antes, crear el bucket (ver abajo). Sin ellas, el inventario funciona y solo se rechaza la subida de imágenes. |
+| `INVENTORY_IMAGENES_BUCKET` | Si el bucket no se llama `materiales`. |
 | `OPENAPI_ENABLED=true` | Solo si se quiere exponer `/v3/api-docs` y Swagger UI en ese entorno. |
+
+**Bucket de imágenes.** Una vez por entorno, en el panel de Supabase → Storage →
+*New bucket*: nombre `materiales` (o el de `INVENTORY_IMAGENES_BUCKET`) y
+**sin** marcar *Public bucket*. No hace falta ninguna política: el backend usa la
+clave `service_role`, que no pasa por las políticas de `storage.objects`, y sin
+políticas nadie más puede leer ni escribir (specs/010 research.md D-002). Las
+imágenes solo se ven con los enlaces firmados que devuelve la API.
 
 **Nunca** `SPRING_PROFILES_ACTIVE=dev` en un despliegue: serviría
 `POST /api/dev/token`, que emite tokens de cualquier rol sin credencial. Por eso
@@ -155,3 +164,4 @@ no es opcional.
 - [ ] Propietario registrado como primer `ADMIN`, `AUTH_CODIGO_ARRANQUE` retirado, segundo `ADMIN` dado de alta.
 - [ ] Copias diarias activas y una restauración probada.
 - [ ] Decidido si se activa la depuración a los 4 años (`TIMETRACKING_RETENCION_HABILITADA`; ver README).
+- [ ] Bucket de imágenes **privado** creado y `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` como secretos (o asumido que no se suben imágenes).

@@ -1,14 +1,12 @@
-package com.granatum.core
+package com.granatum.core.ficheros
 
-import com.granatum.core.infrastructure.documentos.DetectorTipoFichero
-import com.granatum.core.infrastructure.documentos.TipoDocumento
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
  * The type of an uploaded file comes from its first bytes, never from its name
- * or the Content-Type the client sends (research.md D-007).
+ * or the Content-Type the client sends (specs/004-invoices research.md D-007).
  */
 class DetectorTipoFicheroTest {
 

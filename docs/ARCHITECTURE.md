@@ -86,21 +86,37 @@ controller nunca toca entidades JPA; el service nunca devuelve DTOs.
 ## Dominio de inventario
 
 - **`Categoria`**: catálogo editable, tabla propia (no enum fijo).
-- **`Material`**: cantidad disponible/total, tamaño embebido
-  (`TamanoEmbeddable`: alto, ancho, diámetro, unidad de medida), estado
-  (enum `EstadoMaterial`), fotos como colección de URLs
-  (`@ElementCollection`, tabla `material_fotos`).
+- **`Material`** (modelo de la feature 010): categoría, descripción,
+  dimensiones embebidas (`DimensionesEmbeddable`: alto y ancho, siempre en cm),
+  una sola `cantidad`, localización embebida (`LocalizacionEmbeddable`: enum
+  `Almacen` `A`/`B`/`C` y sección `1`–`5`, con `CHECK` en base de datos) y la
+  ruta de su imagen (`imagen_ruta`). V26 retiró nombre, color, estado, precio,
+  proveedor, diámetro, unidad, la cantidad total y la tabla `material_fotos`.
+- **Imagen del material**: un objeto en un bucket privado de Supabase Storage,
+  detrás del puerto `AlmacenImagenes` (`domain/port`), con dos
+  implementaciones en `infrastructure/storage`: `AlmacenImagenesSupabase`
+  (API REST con `RestClient`) y `AlmacenImagenesDeshabilitado` (sin
+  configuración: la app arranca y solo se rechazan las subidas). Storage y
+  Postgres no comparten transacción, así que el servicio sube a una ruta nueva
+  **fuera** de la transacción, apunta el material dentro y borra la anterior
+  después: un fallo deja como mucho un fichero huérfano, nunca un material
+  apuntando a nada (specs/010 research.md D-003). Las lecturas firman todas las
+  rutas en una llamada y, si Storage falla, devuelven el material sin
+  `imagenUrl`.
 - **`HistorialMaterial`**: tabla de auditoría **inmutable** — la aplicación
   nunca hace `UPDATE`/`DELETE` sobre ella. Hoy solo se escribe desde
   `PATCH /api/materiales/{id}/cantidad`, que exige un `motivo` y registra
   `valorAnterior`/`valorNuevo`. Si se necesita auditar otros cambios
-  (`estado`, `ubicacion`, `precioUnitario`...) se puede extender
-  `MaterialService.update` para escribir entradas adicionales del mismo modo.
+  (la localización, por ejemplo) se puede extender `MaterialService.update`
+  para escribir entradas adicionales del mismo modo.
 
-`cantidadDisponible` solo puede modificarse a través de ese PATCH: el PUT
-general (`/api/materiales/{id}`) actualiza los atributos descriptivos del
-material pero no la cantidad disponible, precisamente para forzar que todo
-cambio de stock quede auditado.
+`cantidad` solo puede modificarse a través de ese PATCH: el PUT general
+(`/api/materiales/{id}`) actualiza los demás atributos del material pero no la
+cantidad, precisamente para forzar que todo cambio de stock quede auditado.
+
+El detector de tipo de fichero por firma de bytes (`DetectorTipoFichero`) vive
+en `common` (`com.granatum.core.ficheros`) desde la feature 010: lo usan
+facturas e inventario, y lo compartido sube a `common` en lugar de copiarse.
 
 ## Migraciones
 
@@ -410,7 +426,8 @@ módulos, así que la numeración es global: `inventory` ocupa `V1`–`V5`,
 `timetracking` `V6`–`V11`, `auth` `V12`–`V14`, la exportación de
 `timetracking` `V15`–`V16`, `invoices` `V17`–`V19` y el registro de `auth`
 `V20`–`V21`, `absences` `V22`, `notifications` `V23`, y la retirada del
-registro con solicitud (feature 009): `auth` `V24` y `notifications` `V25`. Es un acoplamiento real entre módulos — al añadir una
+registro con solicitud (feature 009): `auth` `V24` y `notifications` `V25`, y el
+refactor de materiales (feature 010): `inventory` `V26`. Es un acoplamiento real entre módulos — al añadir una
 migración hay que mirar qué número ocupa el otro — y se acepta porque la
 alternativa (esquemas o históricos separados) complica el despliegue mucho más
 de lo que ahorra.

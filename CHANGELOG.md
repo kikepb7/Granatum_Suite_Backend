@@ -14,8 +14,29 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
   ficha y la cuenta y devuelve una contraseña provisional, que la persona cambia
   al entrar por primera vez.
 
+- **Materiales del inventario rehechos** (spec 010). Cada material es categoría,
+  descripción, dimensiones (alto y ancho, en cm), cantidad, localización
+  (almacén `A`, `B` o `C` y sección `1`–`5`), una imagen opcional y sus fechas
+  de alta y modificación. **Incompatible** con los clientes anteriores de
+  `/api/materiales`: cambian los cuerpos de petición y respuesta, y
+  `PATCH …/cantidad` pasa a recibir `cantidad`. La migración V26 descarta los
+  materiales existentes (eran datos de prueba) y su historial.
+
+### Añadido
+
+- **Imagen de cada material en Supabase Storage** (spec 010):
+  `PUT /api/materiales/{id}/imagen` (multipart, parte `imagen`) y
+  `DELETE /api/materiales/{id}/imagen`; las lecturas devuelven `imagenUrl`
+  firmada y temporal. Variables nuevas: `SUPABASE_URL`,
+  `SUPABASE_SERVICE_ROLE_KEY` (secreto), `INVENTORY_IMAGENES_*`.
+- Filtro del listado de materiales por almacén y sección
+  (`GET /api/materiales?almacen=A&seccion=3`).
+
 ### Eliminado
 
+- De los materiales: nombre, cantidad total, color, material físico, estado,
+  precio unitario, proveedor, diámetro, unidad de medida y las fotos por URL
+  (tabla `material_fotos`).
 - El registro con solicitud de la 1.0.0 (spec 005, US2 a US5): solicitudes,
   códigos de verificación, aprobación y rechazo (`/api/auth/registros`),
   caducidad y el aviso `REGISTRO_PENDIENTE`. Las migraciones V24 y V25 borran

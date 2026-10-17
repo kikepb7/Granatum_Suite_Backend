@@ -29,3 +29,16 @@ logging:
     # Hibernate's warnings and errors.
     org.hibernate.orm.core: INFO
     org.hibernate.orm.jdbc.bind: WARN
+
+# Mirrors app/src/main/resources/application.yml: the multipart limits are the
+# REQUEST's, and the per-file limit for images is the service's (feature 010),
+# so an oversized image reaches the controller and comes back as
+# IMAGEN_DEMASIADO_GRANDE. Spring's own defaults (1 MB) would refuse it first.
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+server:
+  tomcat:
+    max-swallow-size: 50MB

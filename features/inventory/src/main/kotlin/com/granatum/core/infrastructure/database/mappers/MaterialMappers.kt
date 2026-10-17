@@ -1,31 +1,24 @@
 package com.granatum.core.infrastructure.database.mappers
 
+import com.granatum.core.domain.model.DimensionesModel
+import com.granatum.core.domain.model.Localizacion
 import com.granatum.core.domain.model.MaterialModel
-import com.granatum.core.domain.model.TamanoModel
+import com.granatum.core.infrastructure.database.entities.DimensionesEmbeddable
+import com.granatum.core.infrastructure.database.entities.LocalizacionEmbeddable
 import com.granatum.core.infrastructure.database.entities.MaterialEntity
-import com.granatum.core.infrastructure.database.entities.TamanoEmbeddable
 
-fun TamanoEmbeddable.toModel(): TamanoModel = TamanoModel(
-    alto = alto,
-    ancho = ancho,
-    diametro = diametro,
-    unidadMedida = unidadMedida
-)
+fun DimensionesEmbeddable.toModel(): DimensionesModel = DimensionesModel(alto = alto, ancho = ancho)
+
+fun LocalizacionEmbeddable.toModel(): Localizacion = Localizacion(almacen = almacen, seccion = seccion)
 
 fun MaterialEntity.toModel(): MaterialModel = MaterialModel(
     id = id,
-    nombre = nombre,
     categoria = categoria.toModel(),
-    cantidadDisponible = cantidadDisponible,
-    cantidadTotal = cantidadTotal,
-    tamano = tamano.toModel(),
-    color = color,
-    materialFisico = materialFisico,
-    estado = estado,
-    ubicacion = ubicacion,
-    precioUnitario = precioUnitario,
-    proveedor = proveedor,
-    fotos = fotos.toList(),
+    descripcion = descripcion,
+    dimensiones = dimensiones.toModel(),
+    cantidad = cantidad,
+    localizacion = localizacion.toModel(),
+    imagenRuta = imagenRuta,
     fechaAlta = fechaAlta,
     fechaUltimaModificacion = fechaUltimaModificacion
 )

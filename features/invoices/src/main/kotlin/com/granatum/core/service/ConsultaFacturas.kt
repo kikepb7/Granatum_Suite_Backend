@@ -10,7 +10,7 @@ import com.granatum.core.infrastructure.database.aDominio
 import com.granatum.core.infrastructure.database.repositories.FacturaCambioRepository
 import com.granatum.core.infrastructure.database.repositories.FacturaReconocimientoRepository
 import com.granatum.core.infrastructure.database.repositories.FacturaRepository
-import com.granatum.core.infrastructure.documentos.TipoDocumento
+import com.granatum.core.ficheros.TipoDocumento
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal

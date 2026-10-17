@@ -1,6 +1,7 @@
 package com.granatum.core.infrastructure.documentos
 
 import com.granatum.core.domain.port.DocumentoParaEnviar
+import com.granatum.core.ficheros.TipoDocumento
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException
 import org.springframework.beans.factory.annotation.Value

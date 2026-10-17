@@ -8,7 +8,7 @@ import com.granatum.core.domain.port.AlmacenDocumentos
 import com.granatum.core.domain.port.ReconocedorFacturas
 import com.granatum.core.infrastructure.database.entities.FacturaEntity
 import com.granatum.core.infrastructure.database.repositories.FacturaRepository
-import com.granatum.core.infrastructure.documentos.DetectorTipoFichero
+import com.granatum.core.ficheros.DetectorTipoFichero
 import com.granatum.core.infrastructure.documentos.DocumentoNoAdmitido
 import com.granatum.core.infrastructure.documentos.PreparadorDocumento
 import org.springframework.beans.factory.annotation.Value

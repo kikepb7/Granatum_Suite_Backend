@@ -1,6 +1,10 @@
-package com.granatum.core.infrastructure.documentos
+package com.granatum.core.ficheros
 
-/** The four formats an invoice can come in (FR-001, research.md D-007). */
+/**
+ * The uploadable formats: what an invoice can come in (specs/004-invoices
+ * FR-001, research.md D-007), of which a material's image accepts the three
+ * image types (specs/010-inventory-materials-refactor).
+ */
 enum class TipoDocumento(val mediaType: String, val extension: String) {
     JPEG("image/jpeg", "jpg"),
     PNG("image/png", "png"),
@@ -17,7 +21,11 @@ enum class TipoDocumento(val mediaType: String, val extension: String) {
  * Content-Type the client sends: both are whatever the client says.
  *
  * HEIC (iPhone photos) is deliberately not recognised: the recognition service
- * does not read it, and converting it needs a native library (D-007).
+ * does not read it, and converting it needs a native library (004, D-007).
+ *
+ * In `common` because invoices and inventory both need it, and two features
+ * share code through `common`, never by copying it (constitution principle I;
+ * specs/010-inventory-materials-refactor research.md D-004).
  */
 object DetectorTipoFichero {
 

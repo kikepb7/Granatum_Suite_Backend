@@ -32,7 +32,7 @@ en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Estado del proyecto
 
-- ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway.
+- ✅ `inventory` (Material, Categoria, HistorialMaterial) — implementado y con migraciones Flyway. Desde la feature 010 cada material es categoría, descripción, alto y ancho (cm), cantidad, localización (almacén `A`/`B`/`C` y sección `1`–`5`), una imagen opcional en Supabase Storage y sus fechas de alta y modificación. Especificado en [`specs/010-inventory-materials-refactor/`](specs/010-inventory-materials-refactor/).
 - ✅ `timetracking` (Empleado, Fichaje, Pausa, SolicitudCorreccionFichaje) — implementado. Registro de jornada conforme al RD-ley 8/2019: entrada, pausas, salida, correcciones con aprobación, consulta por rango, resumen mensual, modo sin conexión idempotente y depuración a los 4 años. Especificado en [`specs/001-timetracking/`](specs/001-timetracking/).
 - ✅ `auth` (CuentaAcceso, SesionRenovacion, EventoSeguridad) — implementado. Inicio de sesión real con correo y contraseña, renovación de un solo uso, cierre de sesión, bloqueo creciente por fuerza bruta, alta con contraseña temporal y cambio obligatorio, y restablecimiento por un `ADMIN`. Especificado en [`specs/002-auth/`](specs/002-auth/). `POST /api/dev/token` sigue existiendo en el perfil `dev`, pero ya no es necesario para usar la aplicación.
 - ✅ Alta del personal — implementado. Solo el propietario se registra, una vez, con un código de arranque fijado al desplegar, y entra como `ADMIN`. A cualquier otra persona la da de alta un `ADMIN` en un solo paso (ficha y acceso) y le entrega una contraseña provisional, que tiene que cambiar al entrar por primera vez. Especificado en [`specs/005-staff-registration/`](specs/005-staff-registration/) (US1) y [`specs/009-owner-onboarding/`](specs/009-owner-onboarding/) (ver [El primer administrador](#el-primer-administrador) y [Alta del personal](#alta-del-personal)).
@@ -88,24 +88,45 @@ CATEGORIA_ID=$(curl -s -X POST http://localhost:8080/api/categorias \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"nombre": "Cilindros", "descripcion": "Cilindros de cristal"}' | jq -r .id)
 
-# Crea un material
-curl -X POST http://localhost:8080/api/materiales \
+# Crea un material en el almacén B, sección 4 (dimensiones en cm)
+MATERIAL_ID=$(curl -s -X POST http://localhost:8080/api/materiales \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d "{
-    \"nombre\": \"Cilindro alto 40cm\",
     \"categoriaId\": \"$CATEGORIA_ID\",
-    \"cantidadDisponible\": 10,
-    \"cantidadTotal\": 10,
-    \"tamano\": {\"alto\": 40, \"ancho\": 15, \"diametro\": 15, \"unidadMedida\": \"CM\"},
-    \"color\": \"Transparente\",
-    \"materialFisico\": \"Cristal\",
-    \"estado\": \"NUEVO\",
-    \"ubicacion\": \"Almacen A\",
-    \"precioUnitario\": 12.5,
-    \"proveedor\": \"Cristaleria Sur\",
-    \"fotos\": []
-  }"
+    \"descripcion\": \"Cilindro de cristal de 40 cm\",
+    \"dimensiones\": {\"alto\": 40, \"ancho\": 15},
+    \"cantidad\": 10,
+    \"localizacion\": {\"almacen\": \"B\", \"seccion\": 4}
+  }" | jq -r .id)
+
+# Sube su imagen (JPEG, PNG o WebP, hasta 10 MB; necesita Supabase Storage)
+curl -X PUT http://localhost:8080/api/materiales/$MATERIAL_ID/imagen \
+  -H "Authorization: Bearer $TOKEN" -F imagen=@foto.jpg
+
+# Lo que hay en el almacén B, sección 4
+curl "http://localhost:8080/api/materiales?almacen=B&seccion=4" -H "Authorization: Bearer $TOKEN"
 ```
+
+La cantidad solo cambia con `PATCH /api/materiales/{id}/cantidad`
+(`{"cantidad": 7, "motivo": "..."}`), que la anota en el historial; el `PUT`
+del material no la toca. Rutas y errores en
+[`specs/010-inventory-materials-refactor/contracts/README.md`](specs/010-inventory-materials-refactor/contracts/README.md).
+
+#### Imágenes de los materiales
+
+Cada material tiene como mucho una imagen, guardada en un bucket **privado** de
+Supabase Storage. El backend la valida (tipo por sus primeros bytes, tamaño) y la
+sube con la clave `service_role`; el material guarda solo la ruta y las lecturas
+devuelven `imagenUrl`, un enlace firmado que caduca (1 h por defecto). Sustituir
+la imagen, quitarla (`DELETE …/imagen`) o borrar el material elimina el fichero.
+
+Se configura con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` (secreto), más
+`INVENTORY_IMAGENES_BUCKET` (por defecto `materiales`) y
+`INVENTORY_IMAGENES_URL_SEGUNDOS`. **Sin ellas el inventario funciona** y solo
+la subida responde `503 ALMACEN_IMAGENES_NO_DISPONIBLE`; si Storage falla al
+consultar, el material sale sin `imagenUrl` en lugar de fallar. Por qué Storage
+y no la base de datos, y por qué la subida pasa por el backend:
+[research.md D-001 y D-002](specs/010-inventory-materials-refactor/research.md).
 
 ## Autenticación
 

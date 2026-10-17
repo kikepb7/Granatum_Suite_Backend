@@ -406,60 +406,36 @@
       },
       "CreateMaterialRequest" : {
         "properties" : {
-          "cantidadDisponible" : {
+          "cantidad" : {
             "format" : "int32",
             "minimum" : 0,
-            "type" : "integer"
-          },
-          "cantidadTotal" : {
-            "format" : "int32",
-            "minimum" : 0,
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "categoriaId" : {
             "format" : "uuid",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
-          "color" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "estado" : {
-            "enum" : [ "NUEVO", "USADO", "DANADO", "ROTO", "EN_REPARACION" ],
-            "type" : "string"
-          },
-          "fotos" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "materialFisico" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "nombre" : {
-            "maxLength" : 140,
+          "descripcion" : {
+            "maxLength" : 500,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
-          "precioUnitario" : {
-            "minimum" : 0.0,
-            "type" : "number"
+          "dimensiones" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DimensionesRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
-          "proveedor" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "tamano" : {
-            "$ref" : "#/components/schemas/TamanoRequest"
-          },
-          "ubicacion" : {
-            "minLength" : 1,
-            "type" : "string"
+          "localizacion" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LocalizacionRequest"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "cantidadDisponible", "cantidadTotal", "categoriaId", "color", "estado", "fotos", "materialFisico", "nombre", "precioUnitario", "proveedor", "tamano", "ubicacion" ],
+        "required" : [ "cantidad", "categoriaId", "descripcion", "dimensiones", "localizacion" ],
         "type" : "object"
       },
       "CuentaHuerfana" : {
@@ -522,6 +498,32 @@
           }
         },
         "required" : [ "corregido", "entrada", "fecha", "minutosPausa", "reconstruido" ],
+        "type" : "object"
+      },
+      "DimensionesDto" : {
+        "properties" : {
+          "alto" : {
+            "type" : "number"
+          },
+          "ancho" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "alto", "ancho" ],
+        "type" : "object"
+      },
+      "DimensionesRequest" : {
+        "properties" : {
+          "alto" : {
+            "minimum" : 0.0,
+            "type" : [ "number", "null" ]
+          },
+          "ancho" : {
+            "minimum" : 0.0,
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "alto", "ancho" ],
         "type" : "object"
       },
       "EmpleadoDto" : {
@@ -1052,6 +1054,36 @@
         "required" : [ "base", "cuota", "recargo", "tipoIva" ],
         "type" : "object"
       },
+      "LocalizacionDto" : {
+        "properties" : {
+          "almacen" : {
+            "enum" : [ "A", "B", "C" ],
+            "type" : "string"
+          },
+          "seccion" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "almacen", "seccion" ],
+        "type" : "object"
+      },
+      "LocalizacionRequest" : {
+        "properties" : {
+          "almacen" : {
+            "pattern" : "[ABC]",
+            "type" : [ "string", "null" ]
+          },
+          "seccion" : {
+            "format" : "int32",
+            "maximum" : 5,
+            "minimum" : 1,
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "almacen", "seccion" ],
+        "type" : "object"
+      },
       "LoginRequest" : {
         "properties" : {
           "email" : {
@@ -1082,23 +1114,18 @@
       },
       "MaterialDto" : {
         "properties" : {
-          "cantidadDisponible" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "cantidadTotal" : {
+          "cantidad" : {
             "format" : "int32",
             "type" : "integer"
           },
           "categoria" : {
             "$ref" : "#/components/schemas/CategoriaDto"
           },
-          "color" : {
+          "descripcion" : {
             "type" : "string"
           },
-          "estado" : {
-            "enum" : [ "NUEVO", "USADO", "DANADO", "ROTO", "EN_REPARACION" ],
-            "type" : "string"
+          "dimensiones" : {
+            "$ref" : "#/components/schemas/DimensionesDto"
           },
           "fechaAlta" : {
             "format" : "date-time",
@@ -1108,36 +1135,18 @@
             "format" : "date-time",
             "type" : "string"
           },
-          "fotos" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
           "id" : {
             "format" : "uuid",
             "type" : "string"
           },
-          "materialFisico" : {
-            "type" : "string"
+          "imagenUrl" : {
+            "type" : [ "string", "null" ]
           },
-          "nombre" : {
-            "type" : "string"
-          },
-          "precioUnitario" : {
-            "type" : "number"
-          },
-          "proveedor" : {
-            "type" : "string"
-          },
-          "tamano" : {
-            "$ref" : "#/components/schemas/TamanoDto"
-          },
-          "ubicacion" : {
-            "type" : "string"
+          "localizacion" : {
+            "$ref" : "#/components/schemas/LocalizacionDto"
           }
         },
-        "required" : [ "cantidadDisponible", "cantidadTotal", "categoria", "color", "estado", "fechaAlta", "fechaUltimaModificacion", "fotos", "id", "materialFisico", "nombre", "precioUnitario", "proveedor", "tamano", "ubicacion" ],
+        "required" : [ "cantidad", "categoria", "descripcion", "dimensiones", "fechaAlta", "fechaUltimaModificacion", "id", "localizacion" ],
         "type" : "object"
       },
       "NotificacionResponse" : {
@@ -1577,47 +1586,6 @@
         "type" : "object"
       },
       "StreamingResponseBody" : { },
-      "TamanoDto" : {
-        "properties" : {
-          "alto" : {
-            "type" : "number"
-          },
-          "ancho" : {
-            "type" : "number"
-          },
-          "diametro" : {
-            "type" : [ "number", "null" ]
-          },
-          "unidadMedida" : {
-            "enum" : [ "MM", "CM", "M", "IN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "alto", "ancho", "unidadMedida" ],
-        "type" : "object"
-      },
-      "TamanoRequest" : {
-        "properties" : {
-          "alto" : {
-            "minimum" : 0.0,
-            "type" : "number"
-          },
-          "ancho" : {
-            "minimum" : 0.0,
-            "type" : "number"
-          },
-          "diametro" : {
-            "minimum" : 0.0,
-            "type" : [ "number", "null" ]
-          },
-          "unidadMedida" : {
-            "enum" : [ "MM", "CM", "M", "IN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "alto", "ancho", "unidadMedida" ],
-        "type" : "object"
-      },
       "TotalNoLeidasResponse" : {
         "properties" : {
           "total" : {
@@ -1646,17 +1614,17 @@
       },
       "UpdateCantidadRequest" : {
         "properties" : {
-          "cantidadDisponible" : {
+          "cantidad" : {
             "format" : "int32",
             "minimum" : 0,
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "motivo" : {
             "minLength" : 1,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "cantidadDisponible", "motivo" ],
+        "required" : [ "cantidad", "motivo" ],
         "type" : "object"
       },
       "UpdateCategoriaRequest" : {
@@ -1677,55 +1645,31 @@
       },
       "UpdateMaterialRequest" : {
         "properties" : {
-          "cantidadTotal" : {
-            "format" : "int32",
-            "minimum" : 0,
-            "type" : "integer"
-          },
           "categoriaId" : {
             "format" : "uuid",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
-          "color" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "estado" : {
-            "enum" : [ "NUEVO", "USADO", "DANADO", "ROTO", "EN_REPARACION" ],
-            "type" : "string"
-          },
-          "fotos" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "materialFisico" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "nombre" : {
-            "maxLength" : 140,
+          "descripcion" : {
+            "maxLength" : 500,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
-          "precioUnitario" : {
-            "minimum" : 0.0,
-            "type" : "number"
+          "dimensiones" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DimensionesRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
-          "proveedor" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "tamano" : {
-            "$ref" : "#/components/schemas/TamanoRequest"
-          },
-          "ubicacion" : {
-            "minLength" : 1,
-            "type" : "string"
+          "localizacion" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LocalizacionRequest"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "cantidadTotal", "categoriaId", "color", "estado", "fotos", "materialFisico", "nombre", "precioUnitario", "proveedor", "tamano", "ubicacion" ],
+        "required" : [ "categoriaId", "descripcion", "dimensiones", "localizacion" ],
         "type" : "object"
       },
       "ValoresFichajeDto" : {
@@ -6132,6 +6076,25 @@
     "/api/materiales" : {
       "get" : {
         "operationId" : "findAll",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "almacen",
+          "required" : false,
+          "schema" : {
+            "pattern" : "[ABC]",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "seccion",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "maximum" : 5,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -6554,6 +6517,154 @@
                     "$ref" : "#/components/schemas/HistorialMaterialDto"
                   },
                   "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "material-controller" ]
+      }
+    },
+    "/api/materiales/{id}/imagen" : {
+      "delete" : {
+        "operationId" : "quitarImagen",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MaterialDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDACION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NO_AUTENTICADO, TOKEN_ACCESO_EXPIRADO)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (DEMASIADAS_PETICIONES); ver Retry-After"
+          }
+        },
+        "tags" : [ "material-controller" ]
+      },
+      "put" : {
+        "operationId" : "subirImagen",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "imagen" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "imagen" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MaterialDto"
                 }
               }
             },

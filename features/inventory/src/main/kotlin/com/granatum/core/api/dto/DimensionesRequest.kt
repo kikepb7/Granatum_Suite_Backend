@@ -1,22 +1,19 @@
 package com.granatum.core.api.dto
 
-import com.granatum.core.domain.type.UnidadMedida
 import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.Digits
 import jakarta.validation.constraints.NotNull
 import java.math.BigDecimal
 
-data class TamanoRequest(
+/** Centimetres, up to two decimals (FR-005). */
+data class DimensionesRequest(
     @field:NotNull
     @field:DecimalMin(value = "0.0", inclusive = false)
-    val alto: BigDecimal,
+    @field:Digits(integer = 8, fraction = 2)
+    val alto: BigDecimal?,
 
     @field:NotNull
     @field:DecimalMin(value = "0.0", inclusive = false)
-    val ancho: BigDecimal,
-
-    @field:DecimalMin(value = "0.0", inclusive = false)
-    val diametro: BigDecimal? = null,
-
-    @field:NotNull
-    val unidadMedida: UnidadMedida
+    @field:Digits(integer = 8, fraction = 2)
+    val ancho: BigDecimal?
 )

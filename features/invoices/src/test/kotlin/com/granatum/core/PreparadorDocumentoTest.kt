@@ -2,7 +2,7 @@ package com.granatum.core
 
 import com.granatum.core.infrastructure.documentos.DocumentoNoAdmitido
 import com.granatum.core.infrastructure.documentos.PreparadorDocumento
-import com.granatum.core.infrastructure.documentos.TipoDocumento
+import com.granatum.core.ficheros.TipoDocumento
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission

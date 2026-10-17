@@ -5,7 +5,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.granatum.core.domain.port.ResultadoReconocimiento
 import com.granatum.core.infrastructure.claude.ConfiguracionClaude
 import com.granatum.core.infrastructure.claude.ReconocedorClaude
-import com.granatum.core.infrastructure.documentos.DetectorTipoFichero
+import com.granatum.core.ficheros.DetectorTipoFichero
 import com.granatum.core.infrastructure.documentos.PreparadorDocumento
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag

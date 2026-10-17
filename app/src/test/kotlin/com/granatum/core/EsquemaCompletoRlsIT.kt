@@ -27,14 +27,14 @@ class EsquemaCompletoRlsIT {
     lateinit var dataSource: DataSource
 
     /**
-     * Every table the twenty-five migrations create (V24 drops one), across the six feature
+     * Every table the twenty-six migrations create (V24 and V26 drop one each), across the six feature
      * modules. This is the only test that sees them all together: each module's
      * own `RowLevelSecurityIT` only has that module's migrations on its
      * classpath.
      */
     private val tablasEsperadas = setOf(
-        // inventory
-        "categorias", "materiales", "material_fotos", "historial_material",
+        // inventory (material_fotos went in V26, feature 010)
+        "categorias", "materiales", "historial_material",
         // timetracking
         "empleados", "fichajes", "pausas", "solicitudes_correccion_fichaje",
         "fichaje_eventos", "depuraciones_retencion",
