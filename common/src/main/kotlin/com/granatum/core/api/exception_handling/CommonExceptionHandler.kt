@@ -52,7 +52,7 @@ class CommonExceptionHandler {
         "message" to e.message
     )
 
-    // --- 400 VALIDACION ----------------------------------------------------
+    // --- 400 VALIDATION ----------------------------------------------------
     //
     // The framework's own validation and binding errors, which until feature
     // 003 nothing in the product handled: they came out with Spring's default
@@ -73,14 +73,14 @@ class CommonExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun onCuerpoNoValido(e: MethodArgumentNotValidException) = validacion(
+    fun onInvalidBody(e: MethodArgumentNotValidException) = validation(
         "Campos no validos: " +
             e.bindingResult.fieldErrors.map { it.field }.distinct().sorted().joinToString(", ")
     )
 
     @ExceptionHandler(HandlerMethodValidationException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun onParametrosNoValidos(e: HandlerMethodValidationException) = validacion(
+    fun onInvalidParameters(e: HandlerMethodValidationException) = validation(
         "Parametros no validos: " +
             e.parameterValidationResults
                 .mapNotNull { it.methodParameter.parameterName }
@@ -89,13 +89,13 @@ class CommonExceptionHandler {
 
     @ExceptionHandler(MissingServletRequestParameterException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun onParametroAusente(e: MissingServletRequestParameterException) =
-        validacion("Falta el parametro obligatorio '${e.parameterName}'")
+    fun onMissingParameter(e: MissingServletRequestParameterException) =
+        validation("Falta el parametro obligatorio '${e.parameterName}'")
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun onTipoIncorrecto(e: MethodArgumentTypeMismatchException) =
-        validacion("El parametro '${e.name}' no tiene un formato valido")
+    fun onTypeMismatch(e: MethodArgumentTypeMismatchException) =
+        validation("El parametro '${e.name}' no tiene un formato valido")
 
     /**
      * Deliberately ignores `e.message`: for a malformed JSON body Jackson's
@@ -104,14 +104,14 @@ class CommonExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun onCuerpoIlegible(e: HttpMessageNotReadableException) =
-        validacion("El cuerpo de la peticion no es legible o no es un JSON valido")
+    fun onUnreadableBody(e: HttpMessageNotReadableException) =
+        validation("El cuerpo de la peticion no es legible o no es un JSON valido")
 
     /** A multipart upload without the expected part (feature 004: no files at all). */
     @ExceptionHandler(MissingServletRequestPartException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun onParteAusente(e: MissingServletRequestPartException) =
-        validacion("Falta la parte obligatoria '${e.requestPartName}'")
+    fun onMissingPart(e: MissingServletRequestPartException) =
+        validation("Falta la parte obligatoria '${e.requestPartName}'")
 
     /**
      * An upload over the configured request size (feature 004). Without this it
@@ -121,10 +121,10 @@ class CommonExceptionHandler {
      */
     @ExceptionHandler(MaxUploadSizeExceededException::class)
     @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
-    fun onPeticionDemasiadoGrande(e: MaxUploadSizeExceededException) = mapOf(
-        "code" to "PETICION_DEMASIADO_GRANDE",
+    fun onRequestTooLarge(e: MaxUploadSizeExceededException) = mapOf(
+        "code" to "REQUEST_TOO_LARGE",
         "message" to "La peticion supera el tamano maximo permitido"
     )
 
-    private fun validacion(message: String) = mapOf("code" to "VALIDACION", "message" to message)
+    private fun validation(message: String) = mapOf("code" to "VALIDATION", "message" to message)
 }

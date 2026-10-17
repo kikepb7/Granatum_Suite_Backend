@@ -10,12 +10,12 @@ package com.granatum.core.domain.type
  * from the inside the two cases were already the same thing long before the HTTP
  * layer had a chance to tell them apart.
  */
-enum class EstadoToken {
-    VALIDO,
+enum class TokenStatus {
+    VALID,
 
     /** Signature checks out, but the token's lifetime has elapsed. */
-    CADUCADO,
+    EXPIRED,
 
     /** Unreadable, tampered with, or signed with another key. */
-    INVALIDO
+    INVALID
 }

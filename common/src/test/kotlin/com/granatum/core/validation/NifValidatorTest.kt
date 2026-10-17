@@ -17,10 +17,10 @@ class NifValidatorTest {
     @Test
     fun `DNI and NIE behave exactly as in timetracking`() {
         listOf("12345678Z", "00000000T", "99999999R", "X1234567L", "Y1234567X", "Z1234567R").forEach {
-            assertTrue(NifValidator.esDniONieValido(it), it)
+            assertTrue(NifValidator.isValidDniOrNie(it), it)
         }
         listOf("12345678A", "00000000A", "X1234567A", "Y1234567L", "", "1234567Z", "123456789Z", "12345678", "ABCDEFGHZ", "A1234567L").forEach {
-            assertFalse(NifValidator.esDniONieValido(it), it)
+            assertFalse(NifValidator.isValidDniOrNie(it), it)
         }
     }
 
@@ -31,45 +31,45 @@ class NifValidatorTest {
      */
     @Test
     fun `a CIF with the right control is valid`() {
-        assertTrue(NifValidator.esCifValido("B12345674"), "B takes a digit control")
-        assertTrue(NifValidator.esCifValido("A58818501"))
-        assertTrue(NifValidator.esCifValido("Q1234567D"), "Q takes a letter control: 4 -> D")
-        assertTrue(NifValidator.esCifValido("G12345674"), "G accepts the digit...")
-        assertTrue(NifValidator.esCifValido("G1234567D"), "...and the letter")
+        assertTrue(NifValidator.isValidCif("B12345674"), "B takes a digit control")
+        assertTrue(NifValidator.isValidCif("A58818501"))
+        assertTrue(NifValidator.isValidCif("Q1234567D"), "Q takes a letter control: 4 -> D")
+        assertTrue(NifValidator.isValidCif("G12345674"), "G accepts the digit...")
+        assertTrue(NifValidator.isValidCif("G1234567D"), "...and the letter")
     }
 
     @Test
     fun `a CIF with the wrong control, or the wrong kind of control, is invalid`() {
-        assertFalse(NifValidator.esCifValido("B12345675"), "wrong digit")
-        assertFalse(NifValidator.esCifValido("B1234567D"), "B must end in a digit")
-        assertFalse(NifValidator.esCifValido("Q12345674"), "Q must end in a letter")
-        assertFalse(NifValidator.esCifValido("I12345674"), "I is not an entity letter")
-        assertFalse(NifValidator.esCifValido("B1234567"), "too short")
-        assertFalse(NifValidator.esCifValido("12345678Z"), "a DNI is not a CIF")
+        assertFalse(NifValidator.isValidCif("B12345675"), "wrong digit")
+        assertFalse(NifValidator.isValidCif("B1234567D"), "B must end in a digit")
+        assertFalse(NifValidator.isValidCif("Q12345674"), "Q must end in a letter")
+        assertFalse(NifValidator.isValidCif("I12345674"), "I is not an entity letter")
+        assertFalse(NifValidator.isValidCif("B1234567"), "too short")
+        assertFalse(NifValidator.isValidCif("12345678Z"), "a DNI is not a CIF")
     }
 
     @Test
     fun `any of the three is a valid NIF`() {
-        assertTrue(NifValidator.esValido("12345678Z"))
-        assertTrue(NifValidator.esValido("X1234567L"))
-        assertTrue(NifValidator.esValido("B12345674"))
-        assertFalse(NifValidator.esValido("B12345675"))
+        assertTrue(NifValidator.isValid("12345678Z"))
+        assertTrue(NifValidator.isValid("X1234567L"))
+        assertTrue(NifValidator.isValid("B12345674"))
+        assertFalse(NifValidator.isValid("B12345675"))
     }
 
     /** The document normalisation must not change: timetracking's uniqueness depends on it. */
     @Test
     fun `document normalisation upper-cases and drops spaces and hyphens, nothing else`() {
-        assertEquals("12345678Z", NifValidator.normalizar("12345678 - z"))
-        assertEquals("ES12345678Z", NifValidator.normalizar("es 12345678-z"), "no ES stripping here")
+        assertEquals("12345678Z", NifValidator.normalize("12345678 - z"))
+        assertEquals("ES12345678Z", NifValidator.normalize("es 12345678-z"), "no ES stripping here")
     }
 
     /** On invoices the same company appears as `B12345674`, `B-12345674` or `ESB12345674` (VAT number). */
     @Test
     fun `tax normalisation also drops the ES country prefix`() {
         listOf("B12345674", "b-12345674", " B 1234 5674 ", "ESB12345674", "es-B12345674").forEach {
-            assertEquals("B12345674", NifValidator.normalizarFiscal(it), it)
+            assertEquals("B12345674", NifValidator.normalizeTaxId(it), it)
         }
-        assertEquals("X1234567L", NifValidator.normalizarFiscal("ESX1234567L"))
-        assertTrue(NifValidator.esValido(NifValidator.normalizarFiscal("ESB12345674")))
+        assertEquals("X1234567L", NifValidator.normalizeTaxId("ESX1234567L"))
+        assertTrue(NifValidator.isValid(NifValidator.normalizeTaxId("ESB12345674")))
     }
 }

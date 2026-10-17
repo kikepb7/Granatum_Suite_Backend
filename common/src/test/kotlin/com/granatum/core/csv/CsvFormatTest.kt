@@ -14,49 +14,49 @@ import kotlin.test.assertFailsWith
  * unchanged against the export: that is the proof that moving them here changed
  * nothing. The numeric cell is new with feature 004 (finding I2).
  */
-class FormatoCsvTest {
+class CsvFormatTest {
 
-    private fun linea(vararg celdas: FormatoCsv.Celda): String {
+    private fun line(vararg cells: CsvFormat.Cell): String {
         val out = ByteArrayOutputStream()
-        FormatoCsv.escribirLinea(out, celdas.toList())
+        CsvFormat.writeLine(out, cells.toList())
         return out.toString(Charsets.UTF_8)
     }
 
-    private fun texto(v: String) = linea(FormatoCsv.texto(v)).removeSuffix("\r\n")
+    private fun text(v: String) = line(CsvFormat.text(v)).removeSuffix("\r\n")
 
     @Test
     fun `the BOM is the three UTF-8 bytes`() {
         val out = ByteArrayOutputStream()
-        FormatoCsv.escribirBom(out)
+        CsvFormat.writeBom(out)
         assertContentEquals(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()), out.toByteArray())
     }
 
     @Test
     fun `cells are separated by semicolons and lines end in CRLF`() {
-        assertEquals("a;b;c\r\n", linea(FormatoCsv.texto("a"), FormatoCsv.texto("b"), FormatoCsv.texto("c")))
-        val vacia = ByteArrayOutputStream().also { FormatoCsv.escribirLineaVacia(it) }
-        assertEquals("\r\n", vacia.toString(Charsets.UTF_8))
+        assertEquals("a;b;c\r\n", line(CsvFormat.text("a"), CsvFormat.text("b"), CsvFormat.text("c")))
+        val empty = ByteArrayOutputStream().also { CsvFormat.writeEmptyLine(it) }
+        assertEquals("\r\n", empty.toString(Charsets.UTF_8))
     }
 
     @Test
     fun `values with separators, quotes or line breaks are quoted with inner quotes doubled`() {
-        assertEquals("\"Pérez; Ana\"", texto("Pérez; Ana"))
-        assertEquals("\"Florista \"\"senior\"\"\"", texto("Florista \"senior\""))
-        assertEquals("\"uno\r\ndos\"", texto("uno\r\ndos"))
-        assertEquals("\"solo\nLF\"", texto("solo\nLF"))
+        assertEquals("\"Pérez; Ana\"", text("Pérez; Ana"))
+        assertEquals("\"Florista \"\"senior\"\"\"", text("Florista \"senior\""))
+        assertEquals("\"uno\r\ndos\"", text("uno\r\ndos"))
+        assertEquals("\"solo\nLF\"", text("solo\nLF"))
     }
 
     @Test
     fun `a text cell that would run as a formula is neutralised`() {
         listOf("=1+1", "+34 600", "-2+3", "@SUM(A1)", "\tTab", "\rCR", "-150,00").forEach {
-            assertEquals("\"'${it.replace("\"", "\"\"")}\"", texto(it), "text '$it' must not run")
+            assertEquals("\"'${it.replace("\"", "\"\"")}\"", text(it), "text '$it' must not run")
         }
     }
 
     @Test
     fun `no legitimate text value is mistaken for a formula`() {
         listOf("2026-10-05", "2026-10-05 07:00", "8:30", "0:05", "510", "1764,00", "Ana Pérez").forEach {
-            assertEquals(it, texto(it))
+            assertEquals(it, text(it))
         }
     }
 
@@ -67,16 +67,16 @@ class FormatoCsvTest {
      */
     @Test
     fun `a numeric cell writes amounts, negative ones included, without the apostrophe`() {
-        assertEquals("1764,00\r\n", linea(FormatoCsv.numero("1764,00")))
-        assertEquals("-150,00\r\n", linea(FormatoCsv.numero("-150,00")))
-        assertEquals("0\r\n", linea(FormatoCsv.numero("0")))
-        assertEquals("12,5\r\n", linea(FormatoCsv.numero("12,5")))
+        assertEquals("1764,00\r\n", line(CsvFormat.number("1764,00")))
+        assertEquals("-150,00\r\n", line(CsvFormat.number("-150,00")))
+        assertEquals("0\r\n", line(CsvFormat.number("0")))
+        assertEquals("12,5\r\n", line(CsvFormat.number("12,5")))
     }
 
     @Test
     fun `a numeric cell refuses anything that is not a plain decimal`() {
         listOf("-2+3", "=1", "-150,00x", "1.764,00", "1764.00", "", "- 5", "+5", "1,234").forEach {
-            assertFailsWith<IllegalArgumentException>("'$it' is not a plain amount") { FormatoCsv.numero(it) }
+            assertFailsWith<IllegalArgumentException>("'$it' is not a plain amount") { CsvFormat.number(it) }
         }
     }
 }

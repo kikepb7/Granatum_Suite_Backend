@@ -2,7 +2,7 @@ package com.granatum.core.service
 
 import com.granatum.core.domain.exception.InvalidTokenException
 import com.granatum.core.domain.type.EntityId
-import com.granatum.core.domain.type.EstadoToken
+import com.granatum.core.domain.type.TokenStatus
 import com.granatum.core.domain.type.Role
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
@@ -39,7 +39,7 @@ class JwtService(
         role: Role,
         type: String,
         expiry: Long,
-        requiereCambioPassword: Boolean = false
+        requiresPasswordChange: Boolean = false
     ): String {
         val now = Date()
         val expiryDate = Date(now.time + expiry)
@@ -51,7 +51,7 @@ class JwtService(
                 // Added only when true, so a token minted the old way is
                 // byte-for-byte what it was. That is what keeps `inventory`,
                 // `timetracking` and `/api/dev/token` from changing behaviour.
-                if (requiereCambioPassword) claim(CLAIM_CAMBIO_PASSWORD, true)
+                if (requiresPasswordChange) claim(PASSWORD_CHANGE_CLAIM, true)
             }
             .issuedAt(now)
             .expiration(expiryDate)
@@ -59,7 +59,7 @@ class JwtService(
             .compact()
     }
 
-    private fun sinPrefijo(token: String): String =
+    private fun withoutBearerPrefix(token: String): String =
         if (token.startsWith("Bearer ")) token.removePrefix("Bearer ") else token
 
     private fun parseAllClaims(token: String): Claims? {
@@ -67,7 +67,7 @@ class JwtService(
             Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(sinPrefijo(token))
+                .parseSignedClaims(withoutBearerPrefix(token))
                 .payload
         } catch (e: Exception) {
             null
@@ -83,30 +83,30 @@ class JwtService(
      * means *sign in again*. `ExpiredJwtException` is the only case jjwt reports
      * separately, so it is caught separately here.
      */
-    fun estadoToken(token: String): EstadoToken =
+    fun tokenStatus(token: String): TokenStatus =
         try {
             Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(sinPrefijo(token))
-            EstadoToken.VALIDO
+                .parseSignedClaims(withoutBearerPrefix(token))
+            TokenStatus.VALID
         } catch (e: ExpiredJwtException) {
-            EstadoToken.CADUCADO
+            TokenStatus.EXPIRED
         } catch (e: Exception) {
-            EstadoToken.INVALIDO
+            TokenStatus.INVALID
         }
 
     fun generateAccessToken(
         subject: EntityId,
         role: Role,
-        requiereCambioPassword: Boolean = false
+        requiresPasswordChange: Boolean = false
     ): String =
         generateToken(
             subject = subject,
             role = role,
             type = "access",
             expiry = accessTokenValidityMs,
-            requiereCambioPassword = requiereCambioPassword
+            requiresPasswordChange = requiresPasswordChange
         )
 
     /**
@@ -119,8 +119,8 @@ class JwtService(
      * not to authenticate it, and an exception there would turn a routine
      * rejection into a 500.
      */
-    fun requiereCambioPassword(token: String): Boolean =
-        parseAllClaims(token)?.get(CLAIM_CAMBIO_PASSWORD) == true
+    fun requiresPasswordChange(token: String): Boolean =
+        parseAllClaims(token)?.get(PASSWORD_CHANGE_CLAIM) == true
 
     fun generateRefreshToken(subject: EntityId, role: Role): String =
         generateToken(subject = subject, role = role, type = "refresh", expiry = refreshTokenValidityMs)
@@ -150,6 +150,6 @@ class JwtService(
     }
 
     companion object {
-        const val CLAIM_CAMBIO_PASSWORD = "pwd_change"
+        const val PASSWORD_CHANGE_CLAIM = "pwd_change"
     }
 }

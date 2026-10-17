@@ -1,6 +1,6 @@
 package com.granatum.core.api.config
 
-import com.granatum.core.domain.type.EstadoToken
+import com.granatum.core.domain.type.TokenStatus
 import com.granatum.core.service.JwtService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -21,7 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter
  * ## Accounts that still owe a password change
  *
  * When the token carries the `pwd_change` claim, this filter grants **only**
- * [AUTORIDAD_SOLO_CAMBIO_PASSWORD] and deliberately **not** `ROLE_<role>`.
+ * [PASSWORD_CHANGE_ONLY_AUTHORITY] and deliberately **not** `ROLE_<role>`.
  *
  * That is what makes FR-020 hold without any other module knowing that `auth`
  * exists. Every authorisation rule in `SecurityConfig` is written as
@@ -42,8 +42,8 @@ import org.springframework.web.filter.OncePerRequestFilter
  * ## Expired versus invalid
  *
  * A rejection caused by expiry is marked on the request
- * ([ATRIBUTO_TOKEN_CADUCADO]) so the authentication entry point can answer
- * `TOKEN_ACCESO_EXPIRADO` instead of a generic rejection. FR-006 needs that
+ * ([EXPIRED_TOKEN_ATTRIBUTE]) so the authentication entry point can answer
+ * `ACCESS_TOKEN_EXPIRED` instead of a generic rejection. FR-006 needs that
  * distinction: the application has to know whether to renew or to ask for the
  * password, and without it an expired token and a forged one look identical from
  * the outside.
@@ -64,16 +64,16 @@ class JwtAuthFilter(
                 val subject = jwtService.getSubjectFromToken(token = authHeader)
                 val role = jwtService.getRoleFromToken(token = authHeader)
 
-                val authorities = if (jwtService.requiereCambioPassword(token = authHeader)) {
-                    listOf(SimpleGrantedAuthority(AUTORIDAD_SOLO_CAMBIO_PASSWORD))
+                val authorities = if (jwtService.requiresPasswordChange(token = authHeader)) {
+                    listOf(SimpleGrantedAuthority(PASSWORD_CHANGE_ONLY_AUTHORITY))
                 } else {
                     listOf(SimpleGrantedAuthority("ROLE_${role.name}"))
                 }
 
                 val auth = UsernamePasswordAuthenticationToken(subject, null, authorities)
                 SecurityContextHolder.getContext().authentication = auth
-            } else if (jwtService.estadoToken(token = authHeader) == EstadoToken.CADUCADO) {
-                request.setAttribute(ATRIBUTO_TOKEN_CADUCADO, true)
+            } else if (jwtService.tokenStatus(token = authHeader) == TokenStatus.EXPIRED) {
+                request.setAttribute(EXPIRED_TOKEN_ATTRIBUTE, true)
             }
         }
         filterChain.doFilter(request, response)
@@ -86,9 +86,9 @@ class JwtAuthFilter(
          * not a role of the person, and principle IV defines the four roles as
          * the product's authorisation map.
          */
-        const val AUTORIDAD_SOLO_CAMBIO_PASSWORD = "PWD_CHANGE_ONLY"
+        const val PASSWORD_CHANGE_ONLY_AUTHORITY = "PWD_CHANGE_ONLY"
 
         /** Request attribute set when the token was rejected for being expired. */
-        const val ATRIBUTO_TOKEN_CADUCADO = "granatum.token_acceso_caducado"
+        const val EXPIRED_TOKEN_ATTRIBUTE = "granatum.access_token_expired"
     }
 }

@@ -1,7 +1,7 @@
 package com.granatum.core.domain.contract
 
 import com.granatum.core.domain.type.EntityId
-import com.granatum.core.domain.type.EstadoEmpleado
+import com.granatum.core.domain.type.EmployeeStatus
 
 /**
  * What one feature needs to know about the staff records owned by another.
@@ -34,21 +34,21 @@ import com.granatum.core.domain.type.EstadoEmpleado
  * data it has no reason to see, and principle VI treats that as a data
  * protection failure, not just an authorisation one.
  */
-interface DirectorioEmpleados {
+interface EmployeeDirectory {
 
     /**
      * The state of the person with this id, or `null` if no such person is
      * registered. The `null` case is the one FR-029c is about, so it is a
      * distinct answer and not an exception.
      */
-    fun estado(empleadoId: EntityId): EstadoEmpleado?
+    fun status(employeeId: EntityId): EmployeeStatus?
 
     /**
      * Of the ids given, those that correspond to a registered person.
      *
-     * Exists as a batch operation and not as a loop over [estado] because the
+     * Exists as a batch operation and not as a loop over [status] because the
      * orphan sweep walks every account: one query per account would be a
      * guaranteed N+1. Implementations MUST answer in a single query.
      */
-    fun existentes(empleadoIds: Collection<EntityId>): Set<EntityId>
+    fun existing(employeeIds: Collection<EntityId>): Set<EntityId>
 }

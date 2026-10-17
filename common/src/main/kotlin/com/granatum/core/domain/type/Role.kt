@@ -4,9 +4,9 @@ package com.granatum.core.domain.type
  * Application-wide roles.
  *
  * - [ADMIN] has full access.
- * - [ENCARGADO] manages inventory and approves fichaje corrections.
- * - [EMPLEADO] can only fichar and see their own history.
- * - [REPRESENTANTE] is read-only over the whole workforce's working-time
+ * - [MANAGER] manages inventory and approves fichaje corrections.
+ * - [EMPLOYEE] can only fichar and see their own history.
+ * - [REPRESENTATIVE] is read-only over the whole workforce's working-time
  *   register and nothing else. It exists because article 34.9 of the Spanish
  *   Workers' Statute names workers' legal representatives as recipients of
  *   that register. Its scope is the narrowest that satisfies the obligation:
@@ -16,7 +16,7 @@ package com.granatum.core.domain.type
  */
 enum class Role {
     ADMIN,
-    ENCARGADO,
-    EMPLEADO,
-    REPRESENTANTE
+    MANAGER,
+    EMPLOYEE,
+    REPRESENTATIVE
 }

@@ -13,30 +13,30 @@ import com.granatum.core.domain.type.EntityId
  * Carries ids only: never a name, a comment or a reason, because a notice must
  * not carry personal data (feature 008, FR-006).
  *
- * @property referenciaId what the notice is about: a shift, a correction or an
+ * @property referenceId what the notice is about: a shift, a correction or an
  *   absence.
- * @property titularId the person it concerns, when it concerns one (the
+ * @property ownerId the person it concerns, when it concerns one (the
  *   shift's owner, the absence's person).
- * @property autorId who caused it, so they are not notified about their own
+ * @property authorId who caused it, so they are not notified about their own
  *   request; `null` when the system did (a job).
  */
-data class AvisoDominio(
-    val tipo: TipoAviso,
-    val referenciaId: EntityId,
-    val titularId: EntityId? = null,
-    val autorId: EntityId? = null
+data class DomainNotice(
+    val type: NoticeType,
+    val referenceId: EntityId,
+    val ownerId: EntityId? = null,
+    val authorId: EntityId? = null
 )
 
 /** The kinds of notice (specs/008-notifications/contracts/README.md). */
-enum class TipoAviso {
-    FICHAJE_SIN_SALIDA,
-    FICHAJE_INCOMPLETO,
-    CORRECCION_PENDIENTE,
-    CORRECCION_APROBADA,
-    CORRECCION_RECHAZADA,
-    AUSENCIA_PENDIENTE,
-    AUSENCIA_APROBADA,
-    AUSENCIA_RECHAZADA
+enum class NoticeType {
+    SHIFT_WITHOUT_CLOCK_OUT,
+    SHIFT_INCOMPLETE,
+    CORRECTION_PENDING,
+    CORRECTION_APPROVED,
+    CORRECTION_REJECTED,
+    ABSENCE_PENDING,
+    ABSENCE_APPROVED,
+    ABSENCE_REJECTED
     // REGISTRO_PENDIENTE was removed with 005's sign-up requests (feature 009,
     // V25): only the owner signs up now, and there is nothing to approve.
 }
