@@ -1,6 +1,6 @@
 package com.granatum.core.api.exception_handling
 
-import com.granatum.core.domain.exception.FacturacionException
+import com.granatum.core.domain.exception.InvoicingException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.ResponseEntity
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class InvoicesExceptionHandler {
 
-    @ExceptionHandler(FacturacionException::class)
-    fun onFacturacion(e: FacturacionException): ResponseEntity<Map<String, String>> =
-        ResponseEntity.status(e.estado).body(mapOf("code" to e.codigo, "message" to e.message))
+    @ExceptionHandler(InvoicingException::class)
+    fun onInvoicing(e: InvoicingException): ResponseEntity<Map<String, String>> =
+        ResponseEntity.status(e.status).body(mapOf("code" to e.code, "message" to e.message))
 }

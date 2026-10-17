@@ -25,12 +25,12 @@ invoices:
     api-key: ""
     model: claude-opus-5-5
     effort: medium
-  reconocimiento:
-    concurrencia: 3
-    timeout-segundos: 20
+  recognition:
+    concurrency: 3
+    timeout-seconds: 20
     # Effectively never during a test run; tests drive the retry job directly.
-    reintento-cron: "0 0 4 1 1 *"
-    reintento-tras-minutos: 10
-  documentos:
-    max-bytes-por-fichero: 10485760
-    pdf-max-paginas: 20
+    retry-cron: "0 0 4 1 1 *"
+    retry-after-minutes: 10
+  documents:
+    max-bytes-per-file: 10485760
+    pdf-max-pages: 20
