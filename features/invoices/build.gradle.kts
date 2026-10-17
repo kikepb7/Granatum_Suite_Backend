@@ -29,7 +29,7 @@ dependencies {
     testImplementation(libs.flyway.core)
     testImplementation(libs.flyway.postgresql)
     testImplementation(libs.spring.boot.flyway)
-    // Stands in for the Claude API in ReconocedorClaudeTest: no test of the
+    // Stands in for the Claude API in ClaudeInvoiceRecognizerTest: no test of the
     // suite talks to the real one (D-019).
     testImplementation(libs.okhttp.mockwebserver)
 
@@ -40,7 +40,7 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform {
-        // PrecisionReconocimientoIT calls the real API and costs money: it runs
+        // RecognitionPrecisionIT calls the real API and costs money: it runs
         // only through `claudeRealTest`, by hand, with a key (D-019).
         excludeTags("claude-real")
     }

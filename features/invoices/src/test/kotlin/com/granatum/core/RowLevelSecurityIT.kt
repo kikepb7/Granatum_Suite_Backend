@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
 /**
  * Enforces constitution principle VII for the invoicing tables (feature 004).
  *
- * Each module's test database only receives that module's migrations (V17-V19
+ * Each module's test database only receives that module's migrations (V17-V19, renamed by V31,
  * here), which is why `app` also carries `EsquemaCompletoRlsIT`. These tables
  * hold what the company buys and sells, from whom, and the NIF of self-employed
  * suppliers - which is their DNI - so Supabase's data API must not publish them.
@@ -51,20 +51,20 @@ class RowLevelSecurityIT {
      * failed to run - the failure mode this module has already been bitten by
      * once, when Flyway was not wired up at all.
      */
-    private val tablasEsperadas = setOf(
-        "empresa",
-        "trimestres",
-        "trimestre_eventos",
-        "facturas",
-        "factura_lineas_iva",
-        "factura_documentos",
-        "factura_reconocimientos",
-        "factura_cambios"
+    private val expectedTables = setOf(
+        "companies",
+        "quarters",
+        "quarter_events",
+        "invoices",
+        "invoice_vat_lines",
+        "invoice_documents",
+        "invoice_recognitions",
+        "invoice_changes"
     )
 
     @Test
     fun `the module's migrations ran and created every expected table`() {
-        val presentes = mutableSetOf<String>()
+        val present = mutableSetOf<String>()
 
         dataSource.connection.use { connection ->
             connection.createStatement().use { statement ->
@@ -76,13 +76,13 @@ class RowLevelSecurityIT {
                      WHERE n.nspname = 'public' AND c.relkind = 'r'
                     """.trimIndent()
                 )
-                while (rs.next()) presentes += rs.getString("relname")
+                while (rs.next()) present += rs.getString("relname")
             }
         }
 
         assertEquals(
             emptySet(),
-            tablasEsperadas - presentes,
+            expectedTables - present,
             "Missing tables: the migrations did not run, so the RLS assertion below " +
                 "would pass over an empty schema and prove nothing"
         )
@@ -142,9 +142,9 @@ class RowLevelSecurityIT {
                 val id = UUID.randomUUID()
                 statement.execute(
                     """
-                    INSERT INTO facturas
-                        (id, estado, documento_sha256, subida_por, subida_en, version)
-                    VALUES ('$id', 'BORRADOR', '${"a".repeat(64)}', '${UUID.randomUUID()}', now(), 0)
+                    INSERT INTO invoices
+                        (id, status, document_sha256, uploaded_by, uploaded_at, version)
+                    VALUES ('$id', 'DRAFT', '${"a".repeat(64)}', '${UUID.randomUUID()}', now(), 0)
                     """.trimIndent()
                 )
 
@@ -152,12 +152,12 @@ class RowLevelSecurityIT {
                     // Control: as the owner, RLS is bypassed and the row is
                     // visible. Without this the next assertion could pass
                     // simply because the insert never happened.
-                    assertEquals(1, contarFacturas(statement, id), "owner should see its own row")
+                    assertEquals(1, countInvoices(statement, id), "owner should see its own row")
 
                     statement.execute("SET ROLE rls_probe_inv")
                     assertEquals(
                         0,
-                        contarFacturas(statement, id),
+                        countInvoices(statement, id),
                         "rls_probe_inv is not the owner and no policy grants it access, so RLS " +
                             "must hide every row - this is exactly what stops PostgREST from " +
                             "serving the company's invoices with the public anon key"
@@ -172,8 +172,8 @@ class RowLevelSecurityIT {
         }
     }
 
-    private fun contarFacturas(statement: java.sql.Statement, id: UUID): Int =
-        statement.executeQuery("SELECT count(*) FROM facturas WHERE id = '$id'").use { rs ->
+    private fun countInvoices(statement: java.sql.Statement, id: UUID): Int =
+        statement.executeQuery("SELECT count(*) FROM invoices WHERE id = '$id'").use { rs ->
             rs.next()
             rs.getInt(1)
         }
