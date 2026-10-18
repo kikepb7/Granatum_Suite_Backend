@@ -42,8 +42,8 @@ pueden completar.
 
 **Acceptance Scenarios**:
 
-1. **Given** un `ADMIN`, **When** da de alta a una persona (directamente, por el
-   alta con acceso o aprobando un registro) con nombre y apellidos, **Then** los
+1. **Given** un `ADMIN`, **When** da de alta a una persona (directamente o por el alta
+   con acceso), o la propietaria se registra con el código de arranque, con nombre y apellidos, **Then** los
    dos quedan guardados y se devuelven por separado en todas las consultas.
 2. **Given** un alta o una edición sin apellidos, **When** se envía, **Then** se
    rechaza indicando que faltan los apellidos.
@@ -206,8 +206,8 @@ provocar un fallo de escritura y comprobar que el estado lo muestra.
 **Nombre y apellidos**
 
 - **FR-001**: La persona empleada **DEBE** tener nombre y apellidos como datos
-  separados, en el alta directa, en el alta con acceso, en el registro con
-  aprobación, en la edición y en todas las consultas que hoy devuelven el nombre.
+  separados, en el alta directa, en el alta con acceso, en el registro de la
+  propietaria con el código de arranque, en la edición y en todas las consultas que hoy devuelven el nombre.
 - **FR-002**: Las altas y ediciones **DEBEN** exigir apellidos no vacíos, con el
   mismo límite de longitud que el nombre.
 - **FR-003**: Las personas existentes **DEBEN** conservar su nombre actual sin
@@ -325,6 +325,11 @@ provocar un fallo de escritura y comprobar que el estado lo muestra.
   hojas nuevas.
 - Las credenciales de la cuenta técnica las da de alta quien despliega el
   servidor, por variable de entorno, igual que la clave de Claude.
+- Cada entorno tiene su propia cuenta técnica y sus propias hojas: PRE usa una
+  cuenta de un proyecto de prueba (`granatumprueba@proyecto-prueba-granatum.iam.gserviceaccount.com`,
+  ya compartida con las dos hojas de prueba el 2026-10-18) y PRO usará otra del
+  Workspace real de la empresa. El correo que muestra la app sale de las
+  credenciales del entorno, nunca del código.
 - Se usan hojas de cálculo de Google, no ficheros .xlsx; se pueden descargar como
   Excel desde Google cuando haga falta.
 - La zona horaria de la empresa es la ya usada por el registro de jornada.
