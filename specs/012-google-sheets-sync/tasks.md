@@ -407,9 +407,10 @@ borrador nunca se escribe; resincronizar un mes.
   - con el cliente real, `checkAccess`, `rewriteTab` en `test-<uuid>`,
     `upsertInvoiceRow`, `removeInvoiceRow`, y borra la pestaña al acabar.
 
-  **Hecho**: el test está escrito y compila. **Sin ejecutar** contra Google:
-  queda pendiente la pasada real con las credenciales de PRE
-  (`./gradlew :features:sheets:sheetsRealTest`).
+  **Hecho**: el test está escrito y compila. **Ejecutado contra Google el
+  2026-10-18** con la cuenta de PRE: la primera pasada destapó que un 403 por la
+  API de Sheets desactivada se leía como "no compartida" (corregido: `API_DISABLED`,
+  `V39`); con la API activada, 2/2 en verde.
 - [X] T049 Regenerar `docs/openapi.json` con `OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApi*'`
   usando Postgres desechable, y comprobar que aparecen `/api/sheets/**`,
   `lastName`, `lastNamePending` y `destination`.
@@ -423,7 +424,7 @@ borrador nunca se escribe; resincronizar un mes.
   - `CHANGELOG.md`, bajo Añadido y Cambiado: apellidos, columnas del CSV,
     `destination`;
   - `docs/english-naming.md`: versiones V35–V37 y rutas `/api/sheets`.
-- [ ] T051 Verificación final:
+- [X] T051 Verificación final:
   - `./gradlew test` de todos los módulos;
   - `:app:test` con Postgres desechable (`SPRING_APPLICATION_JSON`, contenedor
     eliminado después; no tocar el puerto 8080 ni los contenedores de squadfy);
@@ -432,8 +433,11 @@ borrador nunca se escribe; resincronizar un mes.
 
   **Hecho (2026-10-18)** salvo la parte real: módulos en verde (sin `:app`),
   `:app:test` en verde con un Postgres desechable (117 tests), y el grep solo
-  encuentra comentarios que lo prohíben. **Pendiente**: la prueba real en PRE
-  (`sheetsRealTest`, T048), que se deja sin marcar a propósito.
+  encuentra comentarios que lo prohíben. Prueba real en PRE hecha (T048), y prueba
+  de principio a fin con el backend en local y un Postgres desechable: configurar
+  las dos hojas, subir una factura escaneada, reconocerla con Claude Sonnet 5.5
+  (sin campos dudosos), confirmarla y comprobar su fila en la pestaña `2026-09` de
+  la hoja de recibos (escrita en ~1,5 s).
 
 - [X] T052 Motivo estructurado del fallo de cada tarea (pedido por la app):
   - `features/sheets/src/main/resources/db/migration/V38__add_sheet_task_error_reason.sql`:
