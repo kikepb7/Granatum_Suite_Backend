@@ -1,0 +1,37 @@
+# Test-only properties for this module's Spring contexts. The real values live
+# in app/src/main/resources/application.yml, which is not on this classpath.
+# Each IT supplies its Testcontainers datasource, Flyway and ddl-auto=validate
+# through @DynamicPropertySource.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+jwt:
+  secret: ${JWT_SECRET_BASE64}
+  expiration-minutes: 15
+
+# Hibernate loggers that print entity values by reflection, bypassing each
+# entity's toString(). Pinned as in app's configuration (principle VI).
+logging:
+  level:
+    org.hibernate.internal.util.EntityPrinter: WARN
+    org.hibernate.orm.core: INFO
+    org.hibernate.orm.jdbc.bind: WARN
+
+sheets:
+  google:
+    # A LITERAL empty value, never ${GOOGLE_SHEETS_CREDENTIALS_FILE:}. The Gradle
+    # test task loads .env into the environment (granatum.kotlin-common.gradle.kts),
+    # so credentials put there for development must not reach the suite: no test
+    # of this module calls Google (research.md D-001, D-009).
+    credentials-file: ""
+  worker:
+    # Effectively never during a test run; tests drive the worker directly.
+    cron: "0 0 4 1 1 *"
+    # No background pass after a retry: it would change the tasks while a test
+    # is asserting on them. SheetTaskWorkerIT checks kick() on its own worker.
+    immediate: false
+  max-attempts: 8

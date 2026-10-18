@@ -1,0 +1,175 @@
+package com.granatum.core
+
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+import java.util.UUID
+import javax.sql.DataSource
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * Enforces constitution principle VII for the Google Sheets tables (feature 012).
+ *
+ * Each module's test database only receives that module's migrations (V37
+ * here), which is why `app` also carries `FullSchemaRlsIT`. These tables say
+ * which company spreadsheets receive DNIs and invoices, and who asked for each
+ * export, so Supabase's data API must not publish them.
+ */
+@Testcontainers
+@SpringBootTest(classes = [SheetsTestApplication::class])
+class RowLevelSecurityIT {
+
+    companion object {
+        @Container
+        @JvmStatic
+        val postgres = PostgreSQLContainer("postgres:16-alpine")
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun properties(registry: DynamicPropertyRegistry) {
+            registry.add("spring.datasource.url", postgres::getJdbcUrl)
+            registry.add("spring.datasource.username", postgres::getUsername)
+            registry.add("spring.datasource.password", postgres::getPassword)
+            registry.add("spring.jpa.hibernate.ddl-auto") { "validate" }
+            registry.add("spring.flyway.enabled") { "true" }
+        }
+    }
+
+    @Autowired
+    lateinit var dataSource: DataSource
+
+    /**
+     * The tables this module's migrations create. Asserted by name so the test
+     * cannot pass vacuously: "no table lacks RLS" is trivially true of an empty
+     * schema, which is exactly what you would get if the migrations silently
+     * failed to run - the failure mode this module has already been bitten by
+     * once, when Flyway was not wired up at all.
+     */
+    private val expectedTables = setOf(
+        "sheet_settings",
+        "sheet_tasks",
+        "sheet_invoice_rows"
+    )
+
+    @Test
+    fun `the module's migrations ran and created every expected table`() {
+        val present = mutableSetOf<String>()
+
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                val rs = statement.executeQuery(
+                    """
+                    SELECT c.relname
+                      FROM pg_class c
+                      JOIN pg_namespace n ON n.oid = c.relnamespace
+                     WHERE n.nspname = 'public' AND c.relkind = 'r'
+                    """.trimIndent()
+                )
+                while (rs.next()) present += rs.getString("relname")
+            }
+        }
+
+        assertEquals(
+            emptySet(),
+            expectedTables - present,
+            "Missing tables: the migrations did not run, so the RLS assertion below " +
+                "would pass over an empty schema and prove nothing"
+        )
+    }
+
+    @Test
+    fun `every table in the public schema has row level security enabled`() {
+        val withoutRls = mutableListOf<String>()
+
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                val rs = statement.executeQuery(
+                    """
+                    SELECT c.relname
+                      FROM pg_class c
+                      JOIN pg_namespace n ON n.oid = c.relnamespace
+                     WHERE n.nspname = 'public'
+                       AND c.relkind = 'r'
+                       AND NOT c.relrowsecurity
+                       -- Flyway's bookkeeping table cannot be altered from
+                       -- inside a migration: Flyway holds a lock on it for the
+                       -- whole run, so the ALTER would wait on a lock only
+                       -- released when the run ends, and the migration
+                       -- deadlocks against itself. app's RlsHistorialFlyway
+                       -- enables it at startup, after Flyway has finished.
+                       AND c.relname <> 'flyway_schema_history'
+                     ORDER BY c.relname
+                    """.trimIndent()
+                )
+                while (rs.next()) {
+                    withoutRls += rs.getString("relname")
+                }
+            }
+        }
+
+        assertTrue(
+            withoutRls.isEmpty(),
+            "These tables have no RLS, so Supabase's data API would expose them: $withoutRls. " +
+                "Enable it in the same migration that creates the table."
+        )
+    }
+
+    @Test
+    fun `a non-owner role sees no rows while the owner still sees its data`() {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = true
+            connection.createStatement().use { statement ->
+                // Stand-in for Supabase's `anon` / `authenticated`: holds SELECT
+                // but does not own the table. Those roles do not exist on a
+                // plain Postgres, so the test creates its own.
+                statement.execute("DROP ROLE IF EXISTS rls_probe_sheets")
+                statement.execute("CREATE ROLE rls_probe_sheets NOLOGIN")
+                statement.execute("GRANT USAGE ON SCHEMA public TO rls_probe_sheets")
+                statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA public TO rls_probe_sheets")
+
+                // A queued write: which month or invoice goes to Google, and who asked.
+                val id = UUID.randomUUID()
+                statement.execute(
+                    """
+                    INSERT INTO sheet_tasks
+                        (id, kind, reference, status, next_attempt_at, requested_by, created_at, updated_at)
+                    VALUES ('$id', 'SHIFT_MONTH', '2026-10', 'PENDING', now(), '${UUID.randomUUID()}', now(), now())
+                    """.trimIndent()
+                )
+
+                try {
+                    // Control: as the owner, RLS is bypassed and the row is
+                    // visible. Without this the next assertion could pass
+                    // simply because the insert never happened.
+                    assertEquals(1, countTasks(statement, id), "owner should see its own row")
+
+                    statement.execute("SET ROLE rls_probe_sheets")
+                    assertEquals(
+                        0,
+                        countTasks(statement, id),
+                        "rls_probe_sheets is not the owner and no policy grants it access, so RLS " +
+                            "must hide every row - this is exactly what stops PostgREST from " +
+                            "serving the queue of writes with the public anon key"
+                    )
+                } finally {
+                    statement.execute("RESET ROLE")
+                    statement.execute("REVOKE SELECT ON ALL TABLES IN SCHEMA public FROM rls_probe_sheets")
+                    statement.execute("REVOKE USAGE ON SCHEMA public FROM rls_probe_sheets")
+                    statement.execute("DROP ROLE IF EXISTS rls_probe_sheets")
+                }
+            }
+        }
+    }
+
+    private fun countTasks(statement: java.sql.Statement, id: UUID): Int =
+        statement.executeQuery("SELECT count(*) FROM sheet_tasks WHERE id = '$id'").use { rs ->
+            rs.next()
+            rs.getInt(1)
+        }
+}

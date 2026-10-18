@@ -14,6 +14,13 @@ invoices:
     # guards it.
     api-key: ""
 
+sheets:
+  google:
+    # Same reason as the Claude key above: a literal empty value, so a
+    # GOOGLE_SHEETS_CREDENTIALS_FILE in .env never reaches the suite and no test
+    # of app writes in a real spreadsheet (specs/012-google-sheets-sync, D-009).
+    credentials-file: ""
+
 # Feature 006. Every app test talks to the server from 127.0.0.1, so with the
 # production quotas the suite would trip the limiter on itself. The limiter
 # tests lower these with @TestPropertySource.
