@@ -1,6 +1,7 @@
 package com.granatum.core.scheduling
 
 import com.granatum.core.domain.model.SheetTask
+import com.granatum.core.domain.model.SheetTaskErrorReason
 import com.granatum.core.domain.model.SheetTaskKind
 import com.granatum.core.domain.port.SheetsPermanentException
 import com.granatum.core.domain.port.SheetsTransientException
@@ -110,31 +111,34 @@ class SheetTaskWorker(
     private fun execute(task: SheetTask) {
         val handler = handlers[task.kind]
         if (handler == null) {
-            ledger.fail(task.id, "No hay ningún escritor para las tareas de tipo ${task.kind}", true, maxAttempts, clock.instant())
+            ledger.fail(
+                task.id, "No hay ningún escritor para las tareas de tipo ${task.kind}",
+                SheetTaskErrorReason.NO_HANDLER, maxAttempts, clock.instant()
+            )
             return
         }
         try {
             val result = handler.handle(task)
             ledger.succeed(task.id, result, clock.instant())
         } catch (e: SheetsPermanentException) {
-            fail(task, e.message, permanent = true)
+            fail(task, e.message, SheetTaskErrorReason.of(e.reason))
         } catch (e: SheetsUnavailableException) {
-            fail(task, e.message, permanent = true)
+            fail(task, e.message, SheetTaskErrorReason.UNAVAILABLE)
         } catch (e: SheetTaskAbortedException) {
-            fail(task, e.message, permanent = true)
+            fail(task, e.message, SheetTaskErrorReason.ABORTED)
         } catch (e: SheetsTransientException) {
-            fail(task, e.message, permanent = false)
+            fail(task, e.message, SheetTaskErrorReason.TRANSIENT)
         } catch (e: Exception) {
             // Only the class: a message could quote data of the row.
             log.warn("Error inesperado en la tarea {} de Google Sheets: {}", task.id, e.javaClass.name)
-            fail(task, "Error inesperado al escribir en la hoja; se reintentará", permanent = false)
+            fail(task, "Error inesperado al escribir en la hoja; se reintentará", SheetTaskErrorReason.TRANSIENT)
         }
     }
 
-    private fun fail(task: SheetTask, message: String?, permanent: Boolean) {
-        val reason = message ?: "Error al escribir en la hoja"
-        log.info("Tarea {} de Google Sheets ({}) sin completar: {}", task.id, task.kind, reason)
-        ledger.fail(task.id, reason, permanent, maxAttempts, clock.instant())
+    private fun fail(task: SheetTask, message: String?, reason: SheetTaskErrorReason) {
+        val text = message ?: "Error al escribir en la hoja"
+        log.info("Tarea {} de Google Sheets ({}) sin completar ({}): {}", task.id, task.kind, reason, text)
+        ledger.fail(task.id, text, reason, maxAttempts, clock.instant())
     }
 
     @PreDestroy

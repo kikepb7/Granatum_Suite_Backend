@@ -1,6 +1,8 @@
 package com.granatum.core
 
+import com.granatum.core.domain.port.DisabledSheetsClient
 import com.granatum.core.domain.port.InvoiceRecognizer
+import com.granatum.core.domain.port.SheetsClient
 import com.granatum.core.infrastructure.claude.DisabledInvoiceRecognizer
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,8 +21,20 @@ import kotlin.test.assertIs
  *
  * Validated by mutation (2026-10-08): with that file removed, the context
  * built `ClaudeInvoiceRecognizer` from the fake key and this test went red; restored.
+ *
+ * The same holds for Google Sheets (feature 012, research.md D-009): with
+ * `GOOGLE_SHEETS_CREDENTIALS_FILE` defined, the context must still build the
+ * `DisabledSheetsClient`, because the same file pins
+ * `sheets.google.credentials-file` empty. The path does not exist on purpose:
+ * were the pin removed, the real client would fail the startup on it rather
+ * than reach Google.
  */
-@SpringBootTest(properties = ["ANTHROPIC_API_KEY=sk-ant-clave-falsa-de-prueba"])
+@SpringBootTest(
+    properties = [
+        "ANTHROPIC_API_KEY=sk-ant-clave-falsa-de-prueba",
+        "GOOGLE_SHEETS_CREDENTIALS_FILE=/tmp/no-existe.json"
+    ]
+)
 class NoRealApiCallsInTestsIT {
 
     @Autowired
@@ -29,5 +43,13 @@ class NoRealApiCallsInTestsIT {
     @Test
     fun `even with ANTHROPIC_API_KEY defined, the test context never builds the real client`() {
         assertIs<DisabledInvoiceRecognizer>(recognizer)
+    }
+
+    @Autowired
+    lateinit var sheets: SheetsClient
+
+    @Test
+    fun `even with GOOGLE_SHEETS_CREDENTIALS_FILE defined, the test context never builds the real Sheets client`() {
+        assertIs<DisabledSheetsClient>(sheets)
     }
 }

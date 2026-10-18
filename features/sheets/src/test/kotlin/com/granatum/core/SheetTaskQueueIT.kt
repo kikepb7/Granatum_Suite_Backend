@@ -62,7 +62,9 @@ class SheetTaskQueueIT : SheetsDatabase() {
         queue.enqueue(SheetTaskKind.INVOICE, jdbc.queryForObject("SELECT reference FROM sheet_tasks", String::class.java)!!, null)
 
         assertEquals(0, column(id, "attempts"))
-        assertTrue(count("next_attempt_at <= now()") == 1)
+        // A margin for the clock of the Docker VM, which can lag the JVM's by
+        // some milliseconds; the point is "now" against the hour it had left.
+        assertTrue(count("next_attempt_at <= now() + interval '5 seconds'") == 1)
     }
 
     @Test

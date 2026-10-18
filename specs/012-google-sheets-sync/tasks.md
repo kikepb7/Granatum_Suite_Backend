@@ -392,24 +392,28 @@ borrador nunca se escribe; resincronizar un mes.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T045 Añadir `.requestMatchers("/api/sheets", "/api/sheets/**").hasRole("ADMIN")`
+- [X] T045 Añadir `.requestMatchers("/api/sheets", "/api/sheets/**").hasRole("ADMIN")`
   en `app/src/main/kotlin/com/granatum/core/api/security/SecurityConfig.kt`,
   antes del catch-all, y un IT en `app/src/test/…` que compruebe que `MANAGER`,
   `EMPLOYEE` y `REPRESENTATIVE` reciben `403` en `/api/sheets/settings` y
   `/api/sheets/shifts/2026/10`.
-- [ ] T046 [P] Ampliar `app/src/test/kotlin/com/granatum/core/NoRealApiCallsInTestsIT.kt`:
+- [X] T046 [P] Ampliar `app/src/test/kotlin/com/granatum/core/NoRealApiCallsInTestsIT.kt`:
   con `GOOGLE_SHEETS_CREDENTIALS_FILE=/tmp/no-existe.json` en properties, el bean
   `SheetsClient` es `DisabledSheetsClient`.
-- [ ] T047 [P] Añadir `sheet_settings`, `sheet_tasks` y `sheet_invoice_rows` a
+- [X] T047 [P] Añadir `sheet_settings`, `sheet_tasks` y `sheet_invoice_rows` a
   `expectedTables` en `app/src/test/kotlin/com/granatum/core/FullSchemaRlsIT.kt`.
-- [ ] T048 [P] Crear `SHT/SheetsRealIT.kt` con `@Tag("sheets-real")`:
+- [X] T048 [P] Crear `SHT/SheetsRealIT.kt` con `@Tag("sheets-real")`:
   - `assumeTrue` sobre `GOOGLE_SHEETS_CREDENTIALS_FILE` y `SHEETS_TEST_SPREADSHEET_ID`;
   - con el cliente real, `checkAccess`, `rewriteTab` en `test-<uuid>`,
     `upsertInvoiceRow`, `removeInvoiceRow`, y borra la pestaña al acabar.
-- [ ] T049 Regenerar `docs/openapi.json` con `OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApi*'`
+
+  **Hecho**: el test está escrito y compila. **Sin ejecutar** contra Google:
+  queda pendiente la pasada real con las credenciales de PRE
+  (`./gradlew :features:sheets:sheetsRealTest`).
+- [X] T049 Regenerar `docs/openapi.json` con `OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApi*'`
   usando Postgres desechable, y comprobar que aparecen `/api/sheets/**`,
   `lastName`, `lastNamePending` y `destination`.
-- [ ] T050 [P] Documentar:
+- [X] T050 [P] Documentar:
   - `.env.example`: sección `# --- Google Sheets (feature 012) ---` con
     `# GOOGLE_SHEETS_CREDENTIALS_FILE=` (SECRETO: ruta a un JSON fuera del
     repositorio), `SHEETS_WORKER_CRON` y `SHEETS_MAX_ATTEMPTS`;
@@ -425,6 +429,22 @@ borrador nunca se escribe; resincronizar un mes.
     eliminado después; no tocar el puerto 8080 ni los contenedores de squadfy);
   - grep de que no se usa `getApplicationDefault` ni `GOOGLE_APPLICATION_CREDENTIALS`;
   - marcar las tareas como completadas.
+
+  **Hecho (2026-10-18)** salvo la parte real: módulos en verde (sin `:app`),
+  `:app:test` en verde con un Postgres desechable (117 tests), y el grep solo
+  encuentra comentarios que lo prohíben. **Pendiente**: la prueba real en PRE
+  (`sheetsRealTest`, T048), que se deja sin marcar a propósito.
+
+- [X] T052 Motivo estructurado del fallo de cada tarea (pedido por la app):
+  - `features/sheets/src/main/resources/db/migration/V38__add_sheet_task_error_reason.sql`:
+    `sheet_tasks.error_reason VARCHAR(30) NULL` con CHECK
+    `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `UNAVAILABLE` `NO_HANDLER`
+    `ABORTED` `TRANSIENT` (V37 no se edita);
+  - `errorReason` en el modelo y en el JSON de la tarea (`GET /api/sheets/tasks/{id}`,
+    respuesta de `retry` y `recent` de `/status`); se fija en cada fallo, también en
+    los transitorios que se reintentan, y se borra al terminar bien o al reintentar;
+  - cubierto en `SheetTaskWorkerIT` y `SheetsStatusControllerIT`; documentado en
+    contracts/README.md, data-model.md y `docs/english-naming.md`.
 
 ---
 

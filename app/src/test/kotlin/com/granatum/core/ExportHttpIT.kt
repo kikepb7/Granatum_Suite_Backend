@@ -92,7 +92,7 @@ class ExportHttpIT {
         val admin = jwtService.generateAccessToken(UUID.randomUUID(), Role.ADMIN)
         val created = http.post(
             "/api/employees",
-            """{"name":"Persona HTTP","identityDocument":"$document",
+            """{"name":"Persona","lastName":"HTTP","identityDocument":"$document",
                 "position":"Florista","contractType":"FULL_TIME","hireDate":"2026-10-01"}""",
             admin
         )
@@ -132,7 +132,8 @@ class ExportHttpIT {
         assertEquals(200, r.status)
         val lines = String(r.body, Charsets.UTF_8).removePrefix("\uFEFF").trimEnd().split("\r\n")
         assertEquals(2, lines.size, "the header and today's shift")
-        assertTrue(lines[1].startsWith("Persona HTTP;$document;Florista;"), lines[1])
+        assertTrue(lines[0].startsWith("Nombre;Apellidos;Documento;Puesto;"), "name and last name apart (feature 012): ${lines[0]}")
+        assertTrue(lines[1].startsWith("Persona;HTTP;$document;Florista;"), lines[1])
         assertTrue(lines[1].contains(";CERRADO;"))
     }
 
@@ -150,8 +151,9 @@ class ExportHttpIT {
         assertEquals(200, r.status)
         val text = String(r.body, Charsets.UTF_8)
         assertFalse(text.contains("Documento"), "no column header")
+        assertTrue(text.removePrefix("\uFEFF").startsWith("Nombre;Apellidos;Puesto;"), "no document column after the names")
         assertFalse(text.contains(document), "and no document anywhere")
-        assertTrue(text.contains("Persona HTTP;Florista;"))
+        assertTrue(text.contains("Persona;HTTP;Florista;"))
     }
 
     /** FR-028, SC-008: the downloaded bytes verify; one character changed does not. */

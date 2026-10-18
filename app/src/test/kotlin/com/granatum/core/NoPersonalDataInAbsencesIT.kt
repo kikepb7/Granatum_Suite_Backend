@@ -70,7 +70,7 @@ class NoPersonalDataInAbsencesIT {
         val admin = jwtService.generateAccessToken(UUID.randomUUID(), Role.ADMIN)
         val created = http.post(
             "/api/employees",
-            """{"name":"Persona Ausencias","identityDocument":"${validDni()}","position":"Florista","contractType":"PART_TIME","hireDate":"2026-01-01"}""",
+            """{"name":"Persona","lastName":"Ausencias","identityDocument":"${validDni()}","position":"Florista","contractType":"PART_TIME","hireDate":"2026-01-01"}""",
             admin
         )
         assertEquals(201, created.status, created.body)

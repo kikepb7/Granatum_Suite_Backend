@@ -54,7 +54,7 @@ class LoginAndClockInIT {
         // 1. Registered as staff (timetracking).
         val employee = http.post(
             "/api/employees",
-            """{"name":"Persona SC-001","identityDocument":"${validDni()}",
+            """{"name":"Persona","lastName":"SC-001","identityDocument":"${validDni()}",
                 "position":"Florista","contractType":"FULL_TIME","hireDate":"2026-10-01"}""",
             admin
         )

@@ -366,6 +366,11 @@
             "minLength" : 1,
             "type" : "string"
           },
+          "lastName" : {
+            "maxLength" : 150,
+            "minLength" : 1,
+            "type" : "string"
+          },
           "name" : {
             "maxLength" : 150,
             "minLength" : 1,
@@ -377,7 +382,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "contractType", "hireDate", "identityDocument", "name", "position" ],
+        "required" : [ "contractType", "hireDate", "identityDocument", "lastName", "name", "position" ],
         "type" : "object"
       },
       "CreateMaterialRequest" : {
@@ -448,6 +453,12 @@
           "identityDocument" : {
             "type" : "string"
           },
+          "lastName" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastNamePending" : {
+            "type" : "boolean"
+          },
           "name" : {
             "type" : "string"
           },
@@ -455,7 +466,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "active", "contractType", "hireDate", "id", "identityDocument", "name", "position" ],
+        "required" : [ "active", "contractType", "hireDate", "id", "identityDocument", "lastNamePending", "name", "position" ],
         "type" : "object"
       },
       "Error" : {
@@ -1258,6 +1269,11 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "lastName" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "name" : {
             "maxLength" : 150,
             "minLength" : 0,
@@ -1273,7 +1289,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "contractType", "email", "hireDate", "identityDocument", "name", "position", "role" ],
+        "required" : [ "contractType", "email", "hireDate", "identityDocument", "lastName", "name", "position", "role" ],
         "type" : "object"
       },
       "OnboardingResponse" : {
@@ -1425,6 +1441,10 @@
           "completed" : {
             "type" : "boolean"
           },
+          "destination" : {
+            "enum" : [ "CSV", "GOOGLE_SHEETS" ],
+            "type" : "string"
+          },
           "employeeId" : {
             "format" : "uuid",
             "type" : [ "string", "null" ]
@@ -1465,7 +1485,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "completed", "from", "generatedAt", "id", "requesterId", "requesterRole", "rowCount", "scope", "to" ],
+        "required" : [ "completed", "destination", "from", "generatedAt", "id", "requesterId", "requesterRole", "rowCount", "scope", "to" ],
         "type" : "object"
       },
       "RejectShiftCorrectionRequest" : {
@@ -1486,6 +1506,134 @@
           }
         },
         "required" : [ "active" ],
+        "type" : "object"
+      },
+      "SheetQueueStatusDto" : {
+        "properties" : {
+          "failed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lastSuccessAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "pending" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "recent" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SheetTaskDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "failed", "pending", "recent" ],
+        "type" : "object"
+      },
+      "SheetRetryAllDto" : {
+        "properties" : {
+          "requeued" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "requeued" ],
+        "type" : "object"
+      },
+      "SheetSettingsDto" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "configuredAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "configuredBy" : {
+            "format" : "uuid",
+            "type" : [ "string", "null" ]
+          },
+          "invoicesSpreadsheetId" : {
+            "type" : [ "string", "null" ]
+          },
+          "invoicesSpreadsheetUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "serviceAccountEmail" : {
+            "type" : [ "string", "null" ]
+          },
+          "shiftsSpreadsheetId" : {
+            "type" : [ "string", "null" ]
+          },
+          "shiftsSpreadsheetUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "available" ],
+        "type" : "object"
+      },
+      "SheetTaskCreatedDto" : {
+        "properties" : {
+          "taskId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "taskId" ],
+        "type" : "object"
+      },
+      "SheetTaskDto" : {
+        "properties" : {
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "errorReason" : {
+            "enum" : [ "NOT_FOUND", "NOT_SHARED", "READ_ONLY", "BAD_REQUEST", "UNAVAILABLE", "NO_HANDLER", "ABORTED", "TRANSIENT" ],
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "SHIFT_MONTH", "INVOICE", "INVOICE_MONTH" ],
+            "type" : "string"
+          },
+          "lastError" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastNamesPending" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "rowCount" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "status" : {
+            "enum" : [ "PENDING", "RUNNING", "DONE", "FAILED" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "attempts", "createdAt", "id", "kind", "reference", "status", "updatedAt" ],
         "type" : "object"
       },
       "ShiftBreakDto" : {
@@ -1716,6 +1864,11 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "lastName" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "name" : {
             "maxLength" : 150,
             "minLength" : 0,
@@ -1727,7 +1880,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "bootstrapCode", "email", "identityDocument", "name", "password" ],
+        "required" : [ "bootstrapCode", "email", "identityDocument", "lastName", "name", "password" ],
         "type" : "object"
       },
       "SignUpResponse" : {
@@ -1791,6 +1944,11 @@
           "identityDocument" : {
             "type" : [ "string", "null" ]
           },
+          "lastName" : {
+            "maxLength" : 150,
+            "minLength" : 1,
+            "type" : "string"
+          },
           "name" : {
             "maxLength" : 150,
             "minLength" : 1,
@@ -1802,7 +1960,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "contractType", "hireDate", "name", "position" ],
+        "required" : [ "contractType", "hireDate", "lastName", "name", "position" ],
         "type" : "object"
       },
       "UpdateMaterialQuantityRequest" : {
@@ -1847,6 +2005,22 @@
           }
         },
         "required" : [ "categoryId", "description", "dimensions", "location" ],
+        "type" : "object"
+      },
+      "UpdateSheetSettingsRequest" : {
+        "properties" : {
+          "invoicesSpreadsheet" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "shiftsSpreadsheet" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "invoicesSpreadsheet", "shiftsSpreadsheet" ],
         "type" : "object"
       },
       "VacationBalanceResponse" : {
@@ -5650,7 +5824,7 @@
     },
     "/api/invoicing/quarters" : {
       "get" : {
-        "operationId" : "status",
+        "operationId" : "status_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "year",
@@ -6854,6 +7028,530 @@
           }
         },
         "tags" : [ "notification-controller" ]
+      }
+    },
+    "/api/sheets/invoices/{year}/{month}/resync" : {
+      "post" : {
+        "operationId" : "resyncInvoices",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetTaskCreatedDto"
+                }
+              }
+            },
+            "description" : "Accepted"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      }
+    },
+    "/api/sheets/settings" : {
+      "get" : {
+        "operationId" : "settings",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetSettingsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateSettings",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateSheetSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetSettingsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      }
+    },
+    "/api/sheets/shifts/{year}/{month}" : {
+      "post" : {
+        "operationId" : "exportShifts",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetTaskCreatedDto"
+                }
+              }
+            },
+            "description" : "Accepted"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      }
+    },
+    "/api/sheets/status" : {
+      "get" : {
+        "operationId" : "status",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetQueueStatusDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      }
+    },
+    "/api/sheets/tasks/retry-failed" : {
+      "post" : {
+        "operationId" : "retryAllFailed",
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetRetryAllDto"
+                }
+              }
+            },
+            "description" : "Accepted"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      }
+    },
+    "/api/sheets/tasks/{id}" : {
+      "get" : {
+        "operationId" : "task",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetTaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
+      }
+    },
+    "/api/sheets/tasks/{id}/retry" : {
+      "post" : {
+        "operationId" : "retry",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetTaskDto"
+                }
+              }
+            },
+            "description" : "Accepted"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Petición no válida (VALIDATION)"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Sin token, o token caducado (NOT_AUTHENTICATED, ACCESS_TOKEN_EXPIRED)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "El rol no permite esta operación (FORBIDDEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Error"
+                }
+              }
+            },
+            "description" : "Demasiadas peticiones desde esta dirección (TOO_MANY_REQUESTS); ver Retry-After"
+          }
+        },
+        "tags" : [ "sheets-controller" ]
       }
     },
     "/api/shifts" : {

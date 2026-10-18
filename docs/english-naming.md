@@ -49,6 +49,8 @@ siguen igual.
 | creado por | createdBy | id del material | materialId |
 | valor anterior / nuevo | previousValue / newValue | tipo de cambio | changeType |
 | imagen | image (`imageUrl`) | categoría (nombre) | category |
+| apellidos | lastName | apellidos pendientes | lastNamePending |
+| destino (de exportación) | destination | hoja de cálculo | spreadsheet |
 
 ## Roles (JWT `role`, `accounts.role`)
 
@@ -84,6 +86,7 @@ siguen igual.
 | `/api/materiales` (`almacen`, `seccion`) · `/{id}/cantidad` · `/historial` · `/imagen` | `/api/materials` (`warehouse`, `section`) · `/{id}/quantity` · `/history` · `/image` |
 | `/api/notificaciones` (`soloNoLeidas`) · `/leidas` · `/no-leidas` · `/{id}/leida` | `/api/notifications` (`unreadOnly`) · `/read` · `/unread` · `/{id}/read` |
 | `/api/dev/token` | sin cambios |
+| — (nuevas, feature 012) | `/api/sheets/settings` · `/api/sheets/status` · `/api/sheets/shifts/{year}/{month}` · `/api/sheets/invoices/{year}/{month}/resync` · `/api/sheets/tasks/{id}` · `/api/sheets/tasks/{id}/retry` · `/api/sheets/tasks/retry-failed` |
 
 ## Valores de enums
 
@@ -108,6 +111,8 @@ siguen igual.
 | Estado del evento | `PROGRAMADO` `FINALIZADO` → `SCHEDULED` `FINISHED` |
 | Tipo de notificación | `FICHAJE_SIN_SALIDA` `FICHAJE_INCOMPLETO` `CORRECCION_*` `AUSENCIA_*` (`_PENDIENTE`/`_APROBADA`/`_RECHAZADA`) → `SHIFT_WITHOUT_CLOCK_OUT` `SHIFT_INCOMPLETE` `CORRECTION_*` `ABSENCE_*` (`_PENDING`/`_APPROVED`/`_REJECTED`) |
 | Almacén | `A` `B` `C` sin cambios |
+| Destino de exportación (feature 012) | `CSV` `GOOGLE_SHEETS` |
+| Tarea de Google Sheets (feature 012) | tipo `SHIFT_MONTH` `INVOICE` `INVOICE_MONTH`; estado `PENDING` `RUNNING` `DONE` `FAILED`; motivo de fallo (`errorReason`) `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `UNAVAILABLE` `NO_HANDLER` `ABORTED` `TRANSIENT` |
 
 Cualquier otro valor guardado o enviado sigue la misma regla (traducción literal en
 `UPPER_SNAKE_CASE`); la migración de su módulo lo actualiza y lo deja escrito.
@@ -154,6 +159,10 @@ Mismo criterio: traducción literal en `UPPER_SNAKE_CASE`. Los que ya están en 
 | `RECURSO_NO_ENCONTRADO` (`/error`) | `RESOURCE_NOT_FOUND` | `METODO_NO_PERMITIDO` (`/error`) | `METHOD_NOT_ALLOWED` |
 | `TIPO_NO_ADMITIDO` (`/error`) | `UNSUPPORTED_MEDIA_TYPE` | `ERROR_<estado>` (`/error`) | `ERROR_<estado>` sin cambios |
 
+Códigos nuevos de la feature 012 (`/api/sheets`): `SAME_SPREADSHEET`, `SPREADSHEET_NOT_ACCESSIBLE`
+(`spreadsheet`, `reason`), `SHEETS_UNREACHABLE`, `SHEETS_UNAVAILABLE`, `SHEETS_NOT_CONFIGURED`,
+`TASK_NOT_FOUND`, `TASK_NOT_FAILED`; reutiliza `INVALID_PERIOD` y `VALIDATION`.
+
 ## Base de datos
 
 Cada módulo añade una migración que renombra sus tablas y columnas al inglés (`snake_case`,
@@ -161,6 +170,11 @@ tablas en plural), actualiza los valores guardados de sus enums y reescribe sus 
 perder datos. Versiones reservadas: `V28` inventory, `V29` timetracking, `V30` auth, `V31`
 invoices, `V32` absences, `V33` notifications, `V34` events. Las migraciones anteriores no se
 editan (principio II).
+
+Versiones posteriores, ya con nombres en inglés desde el principio (feature 012): `V35`
+timetracking (`employees.last_name`), `V36` timetracking (`exports.destination`, valores `CSV` y
+`GOOGLE_SHEETS`), `V37` sheets (`sheet_settings`, `sheet_tasks`, `sheet_invoice_rows`), `V38`
+sheets (`sheet_tasks.error_reason`).
 
 Consecuencia al desplegar: los tokens emitidos antes llevan los roles antiguos y dejan de valer;
 cada persona vuelve a iniciar sesión una vez.
@@ -170,7 +184,8 @@ cada persona vuelve a iniciar sesión una vez.
 Las claves de configuración (`application.yml`) y las variables de entorno siguen la misma regla.
 Las que ya estaban en inglés (`DB_*`, `JWT_*`, `SUPABASE_*`, `ANTHROPIC_API_KEY`, `CORS_ALLOWED_ORIGINS`,
 `OPENAPI_ENABLED`, `AUTH_ARGON2_*`, `AUTH_REFRESH_EXPIRATION_DAYS`, `INVOICES_CLAUDE_*`,
-`INVOICES_MAX_REQUEST_SIZE`) no cambian. Un despliegue existente tiene que renombrar estas:
+`INVOICES_MAX_REQUEST_SIZE`) no cambian. Las de la feature 012 nacen en inglés: `GOOGLE_SHEETS_CREDENTIALS_FILE`
+(secreto), `SHEETS_WORKER_CRON`, `SHEETS_MAX_ATTEMPTS` y `SHEETS_TEST_SPREADSHEET_ID`. Un despliegue existente tiene que renombrar estas:
 
 | Antes | Después |
 |---|---|

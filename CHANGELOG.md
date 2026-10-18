@@ -8,6 +8,17 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 
 ### Añadido
 
+- **Copia en Google Sheets** (spec 012). Módulo `features/sheets`: el `ADMIN`
+  configura dos hojas de Google (fichajes y recibos) compartidas con una cuenta
+  de servicio, exporta un mes de fichajes a su pestaña `AAAA-MM`
+  (`POST /api/sheets/shifts/{year}/{month}`), y las facturas confirmadas, corregidas
+  o descartadas se reflejan solas en la hoja de recibos, con resincronización por
+  mes. Cola persistente con reintentos y estado en `/api/sheets/status`. Rutas
+  `/api/sheets/**` solo `ADMIN`. Sin `GOOGLE_SHEETS_CREDENTIALS_FILE` (secreto) la
+  integración queda desactivada. Cada tarea expone `errorReason`, el motivo
+  estructurado de su último fallo. Migraciones V35–V38.
+- **Apellidos** de la persona empleada (`lastName`), separados del nombre, y
+  `lastNamePending` para las anteriores a la feature (spec 012).
 - **Eventos** (spec 011). La plantilla crea eventos y les asigna material del
   inventario, que se retira al asignarlo y vuelve al quitarlo, al borrar el evento
   o al finalizarlo (solo, al terminar su día, o a mano). Sin stock suficiente,
@@ -19,6 +30,15 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 
 ### Cambiado
 
+- `lastName` es **obligatorio** en `POST /api/employees`, `PUT /api/employees/{id}`,
+  `POST /api/auth/onboarding` y `POST /api/auth/sign-up` (spec 012). Sin él,
+  `400 VALIDATION`. Las personas existentes conservan su nombre y quedan con
+  `lastName: null` y `lastNamePending: true` hasta que un `ADMIN` lo complete.
+- **CSV del registro de jornada**: la columna `Persona` pasa a ser `Nombre` y
+  `Apellidos`, y las correcciones muestran el nombre completo de quien las pide y
+  aprueba. Las exportaciones anteriores siguen verificándose con su huella.
+- `GET /api/exports` devuelve `destination` (`CSV` o `GOOGLE_SHEETS`) en cada
+  exportación; las anteriores quedan como `CSV`.
 - El reconocimiento de facturas usa por defecto `claude-sonnet-5-5` en lugar de
   `claude-opus-5-5`: cuesta la mitad por factura. `INVOICES_CLAUDE_MODEL` sigue
   permitiendo cambiarlo sin tocar el código.

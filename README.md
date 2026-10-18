@@ -577,6 +577,79 @@ El contrato está en [`specs/011-events/contracts/README.md`](specs/011-events/c
 - `EMPLOYEE` gestiona eventos pero sigue sin acceder a `/api/materials`
   (constitución v2.5.0): el selector expone solo lo necesario para elegir.
 
+## Copia en Google Sheets
+
+Feature 012 ([`specs/012-google-sheets-sync/`](specs/012-google-sheets-sync/),
+contrato en [`contracts/README.md`](specs/012-google-sheets-sync/contracts/README.md)).
+Granatum copia en dos hojas de cálculo de Google Workspace de la empresa, con una
+pestaña por mes (`AAAA-MM`):
+
+- **fichajes**: cuando el `ADMIN` exporta un mes, su pestaña se reescribe entera
+  (`Nombre | Apellidos | DNI | Fecha | Entrada | Salida`) y la exportación queda en
+  `/api/exports` con `destination: GOOGLE_SHEETS`;
+- **recibos**: cada factura **confirmada** aparece sola en la pestaña del mes de su
+  fecha de emisión; si se corrige, su fila cambia (o se mueve de pestaña), y si se
+  descarta, desaparece. Un borrador nunca se escribe.
+
+La hoja es una copia de consulta: el registro legal sigue en la base de datos, y
+lo que se edite en la hoja no vuelve a Granatum. Las imágenes de las facturas no
+se envían a Google.
+
+| Ruta (solo `ADMIN`) | Qué hace |
+|------|----------|
+| `GET /api/sheets/settings` | Si está disponible, el correo de la cuenta de servicio y las hojas |
+| `PUT /api/sheets/settings` | Guarda las dos hojas (enlace o id) tras comprobar que se pueden editar |
+| `POST /api/sheets/shifts/{year}/{month}` | Exporta un mes de fichajes: `202 {taskId}` |
+| `POST /api/sheets/invoices/{year}/{month}/resync` | Reescribe un mes de recibos: `202 {taskId}` |
+| `GET /api/sheets/status` | Última sincronización correcta, pendientes, fallidas y recientes |
+| `GET /api/sheets/tasks/{id}` | Estado de una escritura (`rowCount`, `lastNamesPending`, `lastError`) |
+| `POST /api/sheets/tasks/{id}/retry` · `/tasks/retry-failed` | Reintenta las fallidas |
+
+Ninguna escritura en Google forma parte de la operación que la origina: se
+encolan en `sheet_tasks` (en la misma transacción que la factura, para facturas)
+y un trabajador las aplica fuera de transacción, con reintentos de espera
+creciente hasta `SHEETS_MAX_ATTEMPTS`. Fichar, confirmar facturas y exportar CSV
+funcionan igual aunque Google no responda.
+
+### Puesta en marcha
+
+1. **Crear la cuenta de servicio**: en la consola de Google Cloud, en el proyecto
+   del entorno, *IAM y administración → Cuentas de servicio → Crear*. No necesita
+   ningún rol del proyecto. En su pestaña *Claves*, *Añadir clave → JSON*: se
+   descarga el fichero de credenciales. **Es un secreto**: no se sube al
+   repositorio ni se pega en un chat.
+2. **Activar la API de Google Sheets** en ese mismo proyecto (*APIs y servicios →
+   Biblioteca → Google Sheets API → Habilitar*). No hace falta la API de Drive: la
+   cuenta solo edita las hojas que se le comparten (alcance `spreadsheets`).
+3. **Dar el fichero al servidor**: montarlo como secreto (fuera del repositorio y
+   de la imagen) y poner su ruta en `GOOGLE_SHEETS_CREDENTIALS_FILE`. Sin esa
+   variable la integración queda desactivada y la API responde
+   `503 SHEETS_UNAVAILABLE`; si la ruta no existe o no se puede leer, el servidor
+   no arranca.
+4. **Crear y compartir las dos hojas**: el `ADMIN` crea en la unidad de la empresa
+   una hoja para fichajes y otra para recibos (tienen que ser distintas) y las
+   **comparte como Editor** con el correo de la cuenta de servicio
+   (`…@….iam.gserviceaccount.com`), que la app muestra en
+   `GET /api/sheets/settings`.
+5. **Configurar desde la app**: pegar los dos enlaces. Granatum comprueba que
+   puede editar cada hoja; si no, responde `422 SPREADSHEET_NOT_ACCESSIBLE` con el
+   motivo (`NOT_FOUND`, `NOT_SHARED` o `READ_ONLY`).
+
+**PRE y PRO usan cuentas de servicio distintas**, cada una con sus propias hojas:
+PRE una de un proyecto de prueba y PRO una del Workspace real. El correo que ve el
+`ADMIN` sale siempre de las credenciales del entorno, nunca del código.
+
+Las facturas confirmadas antes de configurar la integración no se copian solas:
+se resincroniza su mes. La prueba contra una hoja real va aparte y nunca en CI:
+`GOOGLE_SHEETS_CREDENTIALS_FILE=… SHEETS_TEST_SPREADSHEET_ID=… ./gradlew :features:sheets:sheetsRealTest`.
+
+| Variable | Defecto | Para qué |
+|---|---|---|
+| `GOOGLE_SHEETS_CREDENTIALS_FILE` | (vacía) | **Secreto**: ruta al JSON de la cuenta de servicio. Vacía = desactivada |
+| `SHEETS_WORKER_CRON` | `*/30 * * * * *` | Frecuencia del trabajador |
+| `SHEETS_MAX_ATTEMPTS` | `8` | Intentos antes de `FAILED` |
+| `SHEETS_TEST_SPREADSHEET_ID` | (vacía) | Solo para `sheetsRealTest` |
+
 ## Despliegue
 
 Paso a paso para producción (variables, primer arranque, primer `ADMIN`,

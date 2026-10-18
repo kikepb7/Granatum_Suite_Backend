@@ -53,6 +53,7 @@ La cola de escrituras.
 | `attempts` | `INT` NOT NULL DEFAULT 0 | |
 | `next_attempt_at` | `TIMESTAMPTZ` NOT NULL | cuándo puede reclamarse |
 | `last_error` | `VARCHAR(300)` NULL | motivo legible, sin credenciales ni contenido de la hoja |
+| `error_reason` | `VARCHAR(30)` NULL | migración `V38`. Motivo estructurado del último intento fallido: CHECK `IN ('NOT_FOUND','NOT_SHARED','READ_ONLY','BAD_REQUEST','UNAVAILABLE','NO_HANDLER','ABORTED','TRANSIENT')`. Se fija en cada fallo (también en los transitorios que se reintentan) y se borra al terminar bien o al reintentar a mano |
 | `requested_by` | `UUID` NULL | quien pidió la exportación o resincronización; nulo en las automáticas |
 | `row_count` | `INT` NULL | filas escritas (meses) |
 | `last_names_pending` | `INT` NULL | solo `SHIFT_MONTH` |

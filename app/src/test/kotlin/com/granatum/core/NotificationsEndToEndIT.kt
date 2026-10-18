@@ -33,7 +33,7 @@ class NotificationsEndToEndIT {
     private fun person(): UUID {
         val created = http.post(
             "/api/employees",
-            """{"name":"Persona Avisos","identityDocument":"${validDni()}","position":"Florista","contractType":"PART_TIME","hireDate":"2026-01-01"}""",
+            """{"name":"Persona","lastName":"Avisos","identityDocument":"${validDni()}","position":"Florista","contractType":"PART_TIME","hireDate":"2026-01-01"}""",
             admin
         )
         assertEquals(201, created.status, created.body)

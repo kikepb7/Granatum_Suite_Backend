@@ -85,6 +85,8 @@ class SheetTaskQueue(
             // The same as the coalescing upsert would do to it.
             if (live.status == SheetTaskStatus.PENDING) {
                 live.attempts = 0
+                live.errorReason = null
+                live.lastError = null
                 live.nextAttemptAt = now
                 live.updatedAt = now
             } else {
@@ -97,6 +99,7 @@ class SheetTaskQueue(
         task.attempts = 0
         task.nextAttemptAt = now
         task.lastError = null
+        task.errorReason = null
         task.completedAt = null
         task.repeatRequested = false
         task.updatedAt = now
@@ -112,6 +115,7 @@ internal fun SheetTaskEntity.toModel() = SheetTask(
     attempts = attempts,
     nextAttemptAt = nextAttemptAt,
     lastError = lastError,
+    errorReason = errorReason,
     requestedBy = requestedBy,
     rowCount = rowCount,
     lastNamesPending = lastNamesPending,

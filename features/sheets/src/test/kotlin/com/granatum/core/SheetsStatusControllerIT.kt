@@ -37,14 +37,15 @@ class SheetsStatusControllerIT : SheetsHttp() {
         minutesAgo: Long,
         kind: SheetTaskKind = SheetTaskKind.INVOICE,
         reference: String = UUID.randomUUID().toString(),
-        lastError: String? = null
+        lastError: String? = null,
+        errorReason: String? = null
     ): UUID {
         val id = queue.enqueue(kind, reference, null)
         val at = java.sql.Timestamp.from(Instant.now().minusSeconds(minutesAgo * 60))
         jdbc.update(
-            "UPDATE sheet_tasks SET status = ?, updated_at = ?, last_error = ?, " +
+            "UPDATE sheet_tasks SET status = ?, updated_at = ?, last_error = ?, error_reason = ?, " +
                 "completed_at = CASE WHEN ? = 'DONE' THEN ?::timestamptz END WHERE id = ?",
-            status, at, lastError, status, at, id
+            status, at, lastError, errorReason, status, at, id
         )
         return id
     }
@@ -53,7 +54,10 @@ class SheetsStatusControllerIT : SheetsHttp() {
     fun `the status shows the last success, the pending and failed counts and the recent tasks newest first`() {
         val oldDone = task("DONE", 60 * 30)          // 30 hours ago: out of `recent`
         val done = task("DONE", 10)
-        val failed = task("FAILED", 5, lastError = "La hoja no está compartida con la cuenta técnica de Google")
+        val failed = task(
+            "FAILED", 5,
+            lastError = "La hoja no está compartida con la cuenta técnica de Google", errorReason = "NOT_SHARED"
+        )
         val running = task("RUNNING", 2)
         val pending = task("PENDING", 1)
 
@@ -71,6 +75,8 @@ class SheetsStatusControllerIT : SheetsHttp() {
             "La hoja no está compartida con la cuenta técnica de Google",
             r.body["recent"][2]["lastError"].asText()
         )
+        assertEquals("NOT_SHARED", r.body["recent"][2]["errorReason"].asText())
+        assertTrue(r.body["recent"][0]["errorReason"].isNull, "no failure, no reason")
     }
 
     @Test
@@ -103,6 +109,7 @@ class SheetsStatusControllerIT : SheetsHttp() {
         assertEquals(92, r.body["rowCount"].asInt())
         assertEquals(1, r.body["lastNamesPending"].asInt())
         assertTrue(r.body["lastError"].isNull)
+        assertTrue(r.body.has("errorReason") && r.body["errorReason"].isNull)
         listOf("createdAt", "updatedAt", "completedAt").forEach { assertTrue(r.body[it].isTextual, it) }
 
         val missing = send(HttpMethod.GET, "/api/sheets/tasks/${UUID.randomUUID()}")
@@ -114,13 +121,14 @@ class SheetsStatusControllerIT : SheetsHttp() {
 
     @Test
     fun `a failed task can be retried, and any other cannot`() {
-        val failed = task("FAILED", 1, lastError = "x")
+        val failed = task("FAILED", 1, lastError = "x", errorReason = "READ_ONLY")
         jdbc.update("UPDATE sheet_tasks SET attempts = 8 WHERE id = ?", failed)
 
         val r = send(HttpMethod.POST, "/api/sheets/tasks/$failed/retry")
         assertEquals(202, r.status, r.raw)
         assertEquals("PENDING", r.body["status"].asText())
         assertEquals(0, r.body["attempts"].asInt())
+        assertTrue(r.body["errorReason"].isNull, "a retry clears the reason")
         assertEquals("PENDING", jdbc.queryForObject("SELECT status FROM sheet_tasks WHERE id = ?", String::class.java, failed))
 
         val notFailed = send(HttpMethod.POST, "/api/sheets/tasks/$failed/retry")
