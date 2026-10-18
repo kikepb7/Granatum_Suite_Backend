@@ -224,9 +224,9 @@ relleno (inventa datos).
   `exports.destination VARCHAR(20) NOT NULL DEFAULT 'CSV'`, con un CHECK
   `('CSV', 'GOOGLE_SHEETS')`. Es solo `ADD COLUMN`: ninguna fila existente cambia
   de valor salvo por el valor por defecto, que es cierto para todas.
-- La exportación a la hoja se anota con `scope = 'MONTHLY'`, `employee_id` nulo
-  (toda la plantilla), el mes como periodo, las filas escritas y la huella SHA-256
-  de las filas en el mismo formato canónico que el CSV.
+- La exportación a la hoja se anota con `scope = 'STAFF'`, `employee_id` nulo
+  (toda la plantilla), el mes completo como periodo, `completed = true`, las filas
+  escritas y la huella SHA-256 de las filas (ver "Verificado al implementar").
 - La consulta `/api/exports` devuelve `destination`.
 
 **Motivo**: la tabla es INSERT-only (principio III aplicado a las exportaciones).
@@ -234,9 +234,18 @@ Añadir una columna con un valor por defecto verdadero no reescribe la historia.
 El registro deja constancia de que los DNI salieron hacia Google, quién lo hizo y
 cuándo.
 
-**Pendiente de verificar al implementar**: `scope = 'MONTHLY'` con
-`employee_id` nulo. Hoy solo `STAFF` admite el nulo, según el CHECK de `V15`/`V29`.
-Si el CHECK lo impide, se usa `STAFF` con el periodo del mes.
+**Verificado al implementar (2026-10-18)**: el CHECK `ck_exports_employee` de
+`V29` (heredero de `ck_exportaciones_empleado` de `V15`) es
+`(scope = 'STAFF') = (employee_id IS NULL)`: `MONTHLY` **exige** `employee_id`,
+porque es la descarga mensual de una persona. Por eso la exportación a la hoja usa
+`STAFF` con el periodo del mes, sin tocar ese CHECK. Lo que la distingue de una
+exportación CSV de la plantilla es `destination = 'GOOGLE_SHEETS'`.
+
+La huella es el SHA-256, en hexadecimal, de la pestaña tal como se escribe: la
+cabecera y cada fila, con las celdas separadas por un tabulador y cada fila
+terminada en `\n`, en UTF-8 (`ShiftMonthWriter.fingerprint`). Los mismos datos dan
+siempre la misma huella. No se puede verificar con `/api/exports/verify`, que
+compara ficheros CSV: la hoja no es un fichero entregado.
 
 ---
 

@@ -81,9 +81,9 @@ fichajes al mes. Muy por debajo de las cuotas de la API.
 | **VIII. Contrato REST** | Rutas en inglés según `english-naming.md`, errores `{code, message}`, y `docs/openapi.json` regenerado; la app fija la nueva copia (contracts/README.md). | ✅ |
 | **IX. Documentación** | `specs/012-google-sheets-sync/`, sección en el README (cómo crear la cuenta de servicio, compartir las hojas y configurar), CHANGELOG y `.env.example`. | ✅ |
 
-**Re-check tras el diseño (Phase 1)**: sin violaciones. Hay un punto a verificar
-al implementar que no afecta a la puerta: si el CHECK de `exports.scope` admite
-`MONTHLY` con `employee_id` nulo (D-006). Si no lo admite, se usa `STAFF`.
+**Re-check tras el diseño (Phase 1)**: sin violaciones. El punto que quedaba por
+verificar (D-006) se resolvió al implementar: el CHECK de `V29` exige persona en
+`MONTHLY`, así que la exportación a la hoja se anota como `STAFF`.
 
 ## Project Structure
 

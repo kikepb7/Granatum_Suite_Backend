@@ -272,14 +272,18 @@ anotado en `exports`.
 **Independent Test**: exportar octubre con el fake; filas correctas; repetir sin
 duplicados; `destination: GOOGLE_SHEETS` en `/api/exports`.
 
-- [ ] T031 [P] [US2] Crear los contratos en `CM/domain/contract/`:
+- [X] T031 [P] [US2] Crear los contratos en `CM/domain/contract/`:
   - **`ShiftSheetSource.kt`**: `month(YearMonth): ShiftSheetMonth`, con
     `ShiftSheetMonth(rows, lastNamesPending)` y
     `ShiftSheetRow(name, lastName?, identityDocument, date: LocalDate, clockIn: LocalTime, clockOut: LocalTime?)`
     en Europe/Madrid. El `toString` oculta el documento.
   - **`ShiftExportRecorder.kt`**:
     `recordSheetExport(requesterId, requesterRole, month: YearMonth, rowCount, fingerprint)`.
-- [ ] T032 [P] [US2] Escribir `TTT/ShiftSheetSourceIT.kt`:
+
+  **Hecho**: `ShiftSheetSource` añade `retentionCutoff(): LocalDate`, para que
+  `sheets` rechace con `400 INVALID_PERIOD` un mes fuera del plazo de
+  conservación sin depender de `timetracking`.
+- [X] T032 [P] [US2] Escribir `TTT/ShiftSheetSourceIT.kt`:
   - filas ordenadas por fecha y entrada;
   - valores vigentes tras una corrección aprobada;
   - jornada abierta o `INCOMPLETE` con `clockOut` nulo;
@@ -288,23 +292,26 @@ duplicados; `destination: GOOGLE_SHEETS` en `/api/exports`.
   - `lastNamesPending` cuenta personas distintas sin apellidos;
   - no escribe nada (cuenta de filas de `shifts` y `shift_events` igual antes y
     después).
-- [ ] T033 [P] [US2] Escribir `TTT/ShiftExportRecorderIT.kt`: la fila de
+- [X] T033 [P] [US2] Escribir `TTT/ShiftExportRecorderIT.kt`: la fila de
   `exports` lleva `destination='GOOGLE_SHEETS'`, el periodo del mes, `row_count`
   y `fingerprint`, y `/api/exports` devuelve `destination`. Las exportaciones CSV
   siguen con `CSV`.
-- [ ] T034 [US2] Crear `features/timetracking/src/main/resources/db/migration/V36__add_export_destination.sql`:
+- [X] T034 [US2] Crear `features/timetracking/src/main/resources/db/migration/V36__add_export_destination.sql`:
   `ALTER TABLE exports ADD COLUMN destination VARCHAR(20) NOT NULL DEFAULT 'CSV'
   CHECK (destination IN ('CSV','GOOGLE_SHEETS'))`.
 
   **Antes, verificar el CHECK de `scope` y `employee_id` (`V15`/`V29`)**: si
   `MONTHLY` exige `employee_id`, la exportación a la hoja usa `STAFF`. Anotar el
   resultado en research.md D-006.
-- [ ] T035 [US2] Añadir `destination` a `RegisterExportEntity` y al DTO de
+
+  **Hecho**: `ck_exports_employee` es `(scope = 'STAFF') = (employee_id IS NULL)`,
+  así que `MONTHLY` exige persona y la hoja se anota como `STAFF` (D-006).
+- [X] T035 [US2] Añadir `destination` a `RegisterExportEntity` y al DTO de
   `/api/exports`, e implementar `TT/infrastructure/contract/ShiftExportRecorderJpa.kt`.
-- [ ] T036 [US2] Implementar `TT/infrastructure/contract/ShiftSheetSourceJpa.kt`,
+- [X] T036 [US2] Implementar `TT/infrastructure/contract/ShiftSheetSourceJpa.kt`,
   reutilizando la lectura de `RegisterExportService.walk`: `REPEATABLE READ` de
   solo lectura, por lotes, `CivilDateRange.ZONE`. Hacer pasar T032 y T033.
-- [ ] T037 [US2] Escribir `SHT/ShiftMonthExportIT.kt` con `FakeSheetsClient` y
+- [X] T037 [US2] Escribir `SHT/ShiftMonthExportIT.kt` con `FakeSheetsClient` y
   `ShiftSheetSource` y `ShiftExportRecorder` falsos:
   - `POST /api/sheets/shifts/2026/10` → `202 {taskId}`;
   - tras `runOnce`, la pestaña `2026-10` tiene la cabecera
@@ -315,7 +322,7 @@ duplicados; `destination: GOOGLE_SHEETS` en `/api/exports`.
   - el recorder se llama con la huella SHA-256 de las filas;
   - mes futuro → `400 INVALID_PERIOD`;
   - sin hoja de fichajes → `409 SHEETS_NOT_CONFIGURED`.
-- [ ] T038 [US2] Implementar `SH/service/ShiftMonthWriter.kt`
+- [X] T038 [US2] Implementar `SH/service/ShiftMonthWriter.kt`
   (`SheetTaskHandler` de `SHIFT_MONTH`) y el endpoint en `SheetsController`
   (encola, llama a `kick()` y responde `202`). El `ADMIN` que lo pide queda en
   `requested_by`, y se usa para `recordSheetExport`. Hacer pasar T037.

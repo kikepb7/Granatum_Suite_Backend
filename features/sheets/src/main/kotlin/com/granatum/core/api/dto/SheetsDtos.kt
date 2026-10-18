@@ -52,6 +52,9 @@ data class SheetQueueStatusDto(
     val recent: List<SheetTaskDto>
 )
 
+/** `202` of an export or a resync: the task to follow with `GET /api/sheets/tasks/{id}`. */
+data class SheetTaskCreatedDto(val taskId: UUID)
+
 /** `POST /api/sheets/tasks/retry-failed`. */
 data class SheetRetryAllDto(val requeued: Int)
 
