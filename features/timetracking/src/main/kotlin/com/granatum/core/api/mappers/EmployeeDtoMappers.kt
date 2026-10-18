@@ -13,6 +13,8 @@ import com.granatum.core.domain.model.EmployeeModel
 fun EmployeeModel.toDto(): EmployeeDto = EmployeeDto(
     id = id,
     name = name,
+    lastName = lastName,
+    lastNamePending = lastName == null,
     identityDocument = identityDocument,
     position = position,
     contractType = contractType,

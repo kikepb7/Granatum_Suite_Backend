@@ -34,6 +34,14 @@ class EmployeeEntity(
     @Column(nullable = false, length = 150)
     var name: String,
 
+    /**
+     * Null only for the people registered before feature 012, whose name was
+     * kept whole rather than split (FR-003): "pending", exposed by the API as
+     * `lastNamePending`. Every engagement and edit sets it.
+     */
+    @Column(name = "last_name", length = 150)
+    var lastName: String? = null,
+
     @Column(name = "identity_document", nullable = false, length = 20, unique = true)
     var identityDocument: String,
 
@@ -74,6 +82,6 @@ class EmployeeEntity(
      */
     override fun hashCode(): Int = javaClass.hashCode()
 
-    /** `identityDocument` is deliberately absent: it is personal data. */
+    /** Name, last name and `identityDocument` are deliberately absent: they are personal data. */
     override fun toString(): String = "EmployeeEntity(id=$id, active=$active)"
 }

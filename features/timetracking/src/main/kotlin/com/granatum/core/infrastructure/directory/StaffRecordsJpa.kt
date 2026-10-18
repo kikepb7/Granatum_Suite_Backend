@@ -35,6 +35,7 @@ class StaffRecordsJpa(
     override fun create(newRecord: NewStaffRecord): EntityId =
         employeeService.create(
             name = newRecord.name,
+            lastName = newRecord.lastName,
             identityDocument = newRecord.identityDocument,
             position = newRecord.position,
             // valueOf, not a lenient parse: an unknown contract type is a bug in

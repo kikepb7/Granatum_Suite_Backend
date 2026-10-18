@@ -32,6 +32,11 @@ data class SignUpRequest(
     @field:Size(max = 150)
     val name: String = "",
 
+    /** Feature 012: separate from the name, with the same limit (FR-001, FR-002). */
+    @field:NotBlank
+    @field:Size(max = 150)
+    val lastName: String = "",
+
     @field:NotBlank
     @field:Size(max = 20)
     val identityDocument: String = "",
@@ -63,6 +68,11 @@ data class OnboardingRequest(
     @field:NotBlank
     @field:Size(max = 150)
     val name: String = "",
+
+    /** Feature 012: separate from the name, with the same limit (FR-001, FR-002). */
+    @field:NotBlank
+    @field:Size(max = 150)
+    val lastName: String = "",
 
     @field:NotBlank
     @field:Size(max = 20)

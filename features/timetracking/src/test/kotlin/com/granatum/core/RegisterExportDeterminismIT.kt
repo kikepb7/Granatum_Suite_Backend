@@ -113,7 +113,7 @@ class RegisterExportDeterminismIT {
         }
 
         val (bytes, _) = export()
-        val documents = RegisterCsvReader.rows(bytes).filter { it["Persona"] == "Mismo Nombre" }.map { it["Documento"] }
+        val documents = RegisterCsvReader.rows(bytes).filter { it["Nombre"] == "Mismo Nombre" }.map { it["Documento"] }
         assertEquals(
             listOf("DOC-MISMO-1", "DOC-MISMO-0"),
             documents,

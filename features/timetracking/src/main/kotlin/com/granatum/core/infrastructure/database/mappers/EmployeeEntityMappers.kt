@@ -6,6 +6,7 @@ import com.granatum.core.infrastructure.database.entities.EmployeeEntity
 fun EmployeeEntity.toModel(): EmployeeModel = EmployeeModel(
     id = id,
     name = name,
+    lastName = lastName,
     identityDocument = identityDocument,
     position = position,
     contractType = contractType,

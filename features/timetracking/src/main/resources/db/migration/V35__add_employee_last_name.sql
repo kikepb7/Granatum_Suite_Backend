@@ -1,0 +1,15 @@
+-- Feature 012 (US1, research D-005): the last name, separate from the name.
+--
+-- NULL means "pending": only the people registered before this feature have
+-- no last name. Every engagement and edit through the API requires one
+-- (@NotBlank, max 150, the same limit as `name`), and the API exposes the
+-- pending state as `lastNamePending` (= last_name IS NULL); it is not stored.
+--
+-- The existing names are deliberately NOT split (FR-003): "María García López"
+-- could be a compound first name or two last names, and guessing would corrupt
+-- a working-time record. They stay whole in `name` until an ADMIN completes
+-- the last name.
+--
+-- A new column on an existing table: its RLS was enabled when the table was
+-- created and covers the new column as well (principle VII).
+ALTER TABLE employees ADD COLUMN last_name VARCHAR(150) NULL;

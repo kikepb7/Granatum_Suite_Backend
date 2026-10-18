@@ -384,7 +384,9 @@ class RegisterExportService(
                     .filterNot(names::containsKey)
                     .toSet()
                 if (missing.isNotEmpty()) {
-                    employeeRepository.findAllByIdIn(missing).forEach { names[it.id] = it.name }
+                    employeeRepository.findAllByIdIn(missing).forEach {
+                        names[it.id] = RegisterCsvWriter.fullName(it.name, it.lastName)
+                    }
                 }
 
                 shifts.forEach { f ->
@@ -436,7 +438,8 @@ class RegisterExportService(
         names: Map<UUID, String>,
         includeDocument: Boolean
     ) = RegisterRow(
-        person = person.name,
+        name = person.name,
+        lastName = person.lastName,
         document = if (includeDocument) person.identityDocument else null,
         position = person.position,
         date = CivilDateRange.civilDate(f.clockIn),

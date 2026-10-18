@@ -169,13 +169,14 @@ class AuthNoPersonalDataInLogsIT : BaseAuthIT() {
         val admin = "Bearer ${jwtService.generateAccessToken(UUID.randomUUID(), Role.ADMIN)}"
         val email = "alta-${UUID.randomUUID()}@granatum.es"
         val name = "Nombre-Fuga-${UUID.randomUUID().toString().take(6)}"
+        val lastName = "Apellidos-Fuga-${UUID.randomUUID().toString().take(6)}"
         val number = (10_000_000..99_999_999).random()
         val identityDocument = "$number${"TRWAGMYFPDXBNJZSQVHLCKE"[number % 23]}"
         val finalPassword = "Alta-Fuga-${UUID.randomUUID().toString().take(8)}!1"
 
         val onboarding = post(
             "/api/auth/onboarding",
-            """{"name":"$name","identityDocument":"$identityDocument","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","email":"$email","role":"EMPLOYEE"}""",
+            """{"name":"$name","lastName":"$lastName","identityDocument":"$identityDocument","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","email":"$email","role":"EMPLOYEE"}""",
             admin
         )
         val temporaryPassword = field(onboarding, "temporaryPassword")
@@ -189,12 +190,13 @@ class AuthNoPersonalDataInLogsIT : BaseAuthIT() {
         val bootstrap = "codigo-de-arranque-${UUID.randomUUID()}"
         post(
             "/api/auth/sign-up",
-            """{"email":"jefe-${UUID.randomUUID()}@granatum.es","password":"$finalPassword","name":"$name","identityDocument":"$identityDocument","bootstrapCode":"$bootstrap"}"""
+            """{"email":"jefe-${UUID.randomUUID()}@granatum.es","password":"$finalPassword","name":"$name","lastName":"$lastName","identityDocument":"$identityDocument","bootstrapCode":"$bootstrap"}"""
         )
 
         val secrets = mapOf(
             "email" to email,
             "name" to name,
+            "apellidos" to lastName,
             "documento" to identityDocument,
             "contraseña temporal" to temporaryPassword,
             "contraseña definitiva" to finalPassword,

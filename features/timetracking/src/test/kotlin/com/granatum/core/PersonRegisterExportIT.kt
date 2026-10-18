@@ -88,8 +88,9 @@ class PersonRegisterExportIT {
 
     @BeforeAll
     fun seedData() {
-        ana = seed.employee(name = "Ana Pérez", document = "12345678Z")
-        luis = seed.employee(name = "Luis Gil")
+        ana = seed.employee(name = "Ana", lastName = "Pérez", document = "12345678Z")
+        luis = seed.employee(name = "Luis", lastName = "Gil")
+        // Registered before feature 012: the whole name in `name`, no last name.
         marta = seed.employee(name = "Marta Ruiz")
         val otherPerson = seed.employee(name = "Otra Persona")
 
@@ -159,7 +160,7 @@ class PersonRegisterExportIT {
     fun `one row per shift in the range, in order, and only this person's`() {
         val rows = rows()
         assertEquals(9, rows.size, "nine shifts of Ana inside the range")
-        assertTrue(rows.all { it["Persona"] == "Ana Pérez" })
+        assertTrue(rows.all { it["Nombre"] == "Ana" && it["Apellidos"] == "Pérez" })
         assertEquals(
             listOf("2025-03-03", "2025-03-04", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-05-09", "2025-10-25", "2025-10-30"),
             rows.map { it["Fecha"] }
@@ -276,7 +277,7 @@ class PersonRegisterExportIT {
     fun `a range with no shifts gives only the header`() {
         val bytes = export(d = LocalDate.parse("2024-01-01"), h = LocalDate.parse("2024-01-31"))
         assertEquals(1, RegisterCsvReader.records(bytes).size)
-        assertEquals("Persona", RegisterCsvReader.header(bytes).first())
+        assertEquals(listOf("Nombre", "Apellidos"), RegisterCsvReader.header(bytes).take(2))
     }
 
     @Test

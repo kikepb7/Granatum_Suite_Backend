@@ -204,6 +204,65 @@ class AuthHttpContractIT : BaseAuthIT() {
         assertEquals(400, post("/api/auth/refresh", """{"refreshToken":""}""").status)
     }
 
+    // --- apellidos (feature 012) --------------------------------------------
+
+    private fun validDni(): String {
+        val number = (10_000_000..99_999_999).random()
+        return "$number${"TRWAGMYFPDXBNJZSQVHLCKE"[number % 23]}"
+    }
+
+    private fun onboardingJson(lastName: String?): String {
+        val last = lastName?.let { ""","lastName":"$it"""" }.orEmpty()
+        return """{"name":"Ana"$last,"identityDocument":"${validDni()}","position":"Florista",""" +
+            """"contractType":"PART_TIME","hireDate":"2026-10-01","email":"${uniqueEmail()}","role":"EMPLOYEE"}"""
+    }
+
+    private fun signUpJson(lastName: String?): String {
+        val last = lastName?.let { ""","lastName":"$it"""" }.orEmpty()
+        return """{"email":"${uniqueEmail()}","password":"$password","name":"Ana"$last,""" +
+            """"identityDocument":"${validDni()}","bootstrapCode":"cualquiera"}"""
+    }
+
+    @Test
+    fun `onboarding without a last name is rejected naming the field`() {
+        val reply = post("/api/auth/onboarding", onboardingJson(lastName = null))
+
+        assertEquals(400, reply.status, "body: ${reply.body}")
+        assertEquals("VALIDATION", field(reply.body, "code"))
+        assertTrue(reply.body.contains("lastName"), "the message names the field: ${reply.body}")
+    }
+
+    @Test
+    fun `onboarding with a blank or over-long last name is rejected`() {
+        assertEquals(400, post("/api/auth/onboarding", onboardingJson("  ")).status)
+        assertEquals(400, post("/api/auth/onboarding", onboardingJson("a".repeat(151))).status)
+    }
+
+    @Test
+    fun `onboarding with a last name creates the staff record with it`() {
+        val reply = post("/api/auth/onboarding", onboardingJson("García López"))
+
+        assertEquals(201, reply.status, "body: ${reply.body}")
+        assertEquals("García López", directory.createdRecords.last().lastName)
+    }
+
+    @Test
+    fun `the owner's sign-up without a last name is rejected naming the field`() {
+        val reply = post("/api/auth/sign-up", signUpJson(lastName = null))
+
+        assertEquals(400, reply.status, "body: ${reply.body}")
+        assertEquals("VALIDATION", field(reply.body, "code"))
+        assertTrue(reply.body.contains("lastName"), "the message names the field: ${reply.body}")
+    }
+
+    @Test
+    fun `the owner's sign-up with an over-long last name is rejected`() {
+        val reply = post("/api/auth/sign-up", signUpJson("a".repeat(151)))
+
+        assertEquals(400, reply.status, "body: ${reply.body}")
+        assertEquals("VALIDATION", field(reply.body, "code"))
+    }
+
     // --- alta y cambio de contrasena ----------------------------------------
 
     @Test

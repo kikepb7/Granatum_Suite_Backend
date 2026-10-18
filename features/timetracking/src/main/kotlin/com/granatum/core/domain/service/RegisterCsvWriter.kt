@@ -54,7 +54,7 @@ object RegisterCsvWriter {
     private const val DOCUMENT_COLUMN = "Documento"
 
     private val COLUMNS = listOf(
-        "Persona", DOCUMENT_COLUMN, "Puesto", "Fecha", "Entrada", "Salida", "Pausas",
+        "Nombre", "Apellidos", DOCUMENT_COLUMN, "Puesto", "Fecha", "Entrada", "Salida", "Pausas",
         "Horas trabajadas", "Minutos trabajados", "Estado", "Completado a posteriori",
         "Corregido", "Entrada original", "Salida original", "Pausas originales", "Correcciones"
     )
@@ -74,7 +74,8 @@ object RegisterCsvWriter {
 
     fun writeRow(out: OutputStream, row: RegisterRow, includeDocument: Boolean) {
         val cells = buildList {
-            add(row.person)
+            add(row.name)
+            add(row.lastName.orEmpty())
             if (includeDocument) add(row.document.orEmpty())
             add(row.position)
             add(DATE.format(row.date))
@@ -131,6 +132,15 @@ object RegisterCsvWriter {
         writeLine(out, row(0 to "Tipo de contrato", 1 to label(contractType)))
         writeLine(out, row(0 to "Mes cerrado", 1 to yesNo(monthClosed)))
     }
+
+    /**
+     * How a person is named inside a cell that holds a whole person, such as
+     * the requester and approver in `Correcciones` (feature 012): name and last
+     * name, or the bare name while the last name is pending - that name is
+     * already the whole one the person was registered with (FR-003).
+     */
+    fun fullName(name: String, lastName: String?): String =
+        if (lastName.isNullOrBlank()) name else "$name $lastName"
 
     // Cell rules (BOM, quoting, formula guard) live in common's CsvFormat,
     // shared with the invoice reports of feature 004.

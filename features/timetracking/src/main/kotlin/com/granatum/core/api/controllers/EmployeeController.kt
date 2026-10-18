@@ -41,6 +41,7 @@ class EmployeeController(
     fun create(@Valid @RequestBody request: CreateEmployeeRequest): EmployeeDto =
         employeeService.create(
             name = request.name,
+            lastName = request.lastName,
             identityDocument = request.identityDocument,
             position = request.position,
             contractType = request.contractType,
@@ -72,6 +73,7 @@ class EmployeeController(
         return employeeService.update(
             id = id,
             name = request.name,
+            lastName = request.lastName,
             position = request.position,
             contractType = request.contractType,
             hireDate = request.hireDate

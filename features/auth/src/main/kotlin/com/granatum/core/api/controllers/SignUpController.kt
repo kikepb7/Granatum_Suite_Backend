@@ -29,6 +29,7 @@ class SignUpController(private val signUpService: SignUpService) {
                 email = request.email,
                 password = request.password,
                 name = request.name,
+                lastName = request.lastName,
                 identityDocument = request.identityDocument,
                 bootstrapCode = request.bootstrapCode
             )

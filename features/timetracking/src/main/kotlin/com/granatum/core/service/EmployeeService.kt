@@ -31,6 +31,7 @@ class EmployeeService(
     @Transactional
     fun create(
         name: String,
+        lastName: String,
         identityDocument: String,
         position: String,
         contractType: ContractType,
@@ -49,6 +50,7 @@ class EmployeeService(
         return employeeRepository.save(
             EmployeeEntity(
                 name = name,
+                lastName = lastName,
                 identityDocument = document,
                 position = position,
                 contractType = contractType,
@@ -63,6 +65,7 @@ class EmployeeService(
     fun update(
         id: UUID,
         name: String,
+        lastName: String,
         position: String,
         contractType: ContractType,
         hireDate: LocalDate
@@ -71,6 +74,7 @@ class EmployeeService(
             .orElseThrow { EmployeeNotFoundException(id) }
 
         employee.name = name
+        employee.lastName = lastName
         employee.position = position
         employee.contractType = contractType
         employee.hireDate = hireDate

@@ -35,11 +35,15 @@ class RegisterSeed(
         name: String = "Persona de prueba",
         type: ContractType = ContractType.FULL_TIME,
         active: Boolean = true,
-        document: String = "T${UUID.randomUUID().toString().take(8).uppercase()}"
+        document: String = "T${UUID.randomUUID().toString().take(8).uppercase()}",
+        // Null by default: the seeded people stand for the ones registered
+        // before feature 012, whose whole name stays in `name`.
+        lastName: String? = null
     ): EmployeeEntity =
         employees.save(
             EmployeeEntity(
                 name = name,
+                lastName = lastName,
                 identityDocument = document,
                 position = "Florista",
                 contractType = type,

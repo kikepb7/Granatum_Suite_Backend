@@ -115,7 +115,7 @@ class RepresentativeRegisterExportIT {
         withoutDocument(export(Role.REPRESENTATIVE, ExportTarget.Staff), "staff")
         withoutDocument(export(Role.REPRESENTATIVE, ExportTarget.Person(people[0].id)), "person")
         withoutDocument(monthly(Role.REPRESENTATIVE), "monthly")
-        assertEquals("Persona 0", RegisterCsvReader.rows(monthly(Role.REPRESENTATIVE)).single()["Persona"], "the register itself is there")
+        assertEquals("Persona 0", RegisterCsvReader.rows(monthly(Role.REPRESENTATIVE)).single()["Nombre"], "the register itself is there")
     }
 
     /** FR-007: no location, for anyone. */

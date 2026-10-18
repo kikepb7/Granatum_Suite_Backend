@@ -57,6 +57,7 @@ class StaffRecordsJpaIT {
 
     private fun newRecord(document: String, type: String = "PART_TIME") = NewStaffRecord(
         name = "Persona registrada",
+        lastName = "García López",
         identityDocument = document,
         position = "Florista",
         contractType = type,
@@ -72,6 +73,8 @@ class StaffRecordsJpaIT {
         assertEquals(ContractType.PART_TIME, record.contractType)
         assertEquals("Florista", record.position)
         assertEquals(LocalDate.of(2026, 10, 1), record.hireDate)
+        assertEquals("Persona registrada", record.name)
+        assertEquals("García López", record.lastName, "feature 012: the contract carries the last name")
     }
 
     @Test
