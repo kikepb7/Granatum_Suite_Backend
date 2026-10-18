@@ -41,7 +41,7 @@ class ExportSaturationHttpIT {
         // A real person, so that validation passes and only saturation can refuse.
         val created = HttpTestClient(port).post(
             "/api/employees",
-            """{"name":"Persona Saturada","identityDocument":"${validDni()}",
+            """{"name":"Persona","lastName":"Saturada","identityDocument":"${validDni()}",
                 "position":"Florista","contractType":"FULL_TIME","hireDate":"2026-10-01"}""",
             jwtService.generateAccessToken(UUID.randomUUID(), Role.ADMIN)
         )

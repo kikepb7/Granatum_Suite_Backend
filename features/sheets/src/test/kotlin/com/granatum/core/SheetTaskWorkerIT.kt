@@ -7,6 +7,8 @@ import com.granatum.core.domain.port.SheetsPermanentException
 import com.granatum.core.domain.port.SheetsTransientException
 import com.granatum.core.infrastructure.database.repositories.SheetTaskRepository
 import com.granatum.core.scheduling.SheetTaskWorker
+import com.granatum.core.domain.port.SheetsUnavailableException
+import com.granatum.core.service.SheetTaskAbortedException
 import com.granatum.core.service.SheetTaskHandler
 import com.granatum.core.service.SheetTaskLedger
 import com.granatum.core.service.SheetTaskQueue
@@ -114,6 +116,7 @@ class SheetTaskWorkerIT : SheetsDatabase() {
         assertEquals("PENDING", task["status"])
         assertEquals(1, task["attempts"])
         assertEquals("Google no ha podido atender la petición (HTTP 503)", task["last_error"])
+        assertEquals("TRANSIENT", task["error_reason"], "a pending task shows why it waits")
         val wait = Duration.between(before, instant(task["next_attempt_at"]))
         assertTrue(wait > Duration.ofSeconds(110) && wait < Duration.ofSeconds(130), "2^1 minutes, was $wait")
 
@@ -135,6 +138,7 @@ class SheetTaskWorkerIT : SheetsDatabase() {
         assertEquals("FAILED", task["status"])
         assertEquals(8, task["attempts"])
         assertEquals("Google ha limitado temporalmente las peticiones (cuota)", task["last_error"])
+        assertEquals("TRANSIENT", task["error_reason"])
     }
 
     @Test
@@ -148,6 +152,7 @@ class SheetTaskWorkerIT : SheetsDatabase() {
         assertEquals("FAILED", task["status"])
         assertEquals(0, task["attempts"], "not retried")
         assertEquals("La hoja no está compartida con la cuenta técnica de Google", task["last_error"])
+        assertEquals("NOT_SHARED", task["error_reason"])
     }
 
     @Test
@@ -161,6 +166,7 @@ class SheetTaskWorkerIT : SheetsDatabase() {
         assertEquals("PENDING", task["status"])
         assertEquals(1, task["attempts"])
         assertFalse((task["last_error"] as String).contains("12345678Z"))
+        assertEquals("TRANSIENT", task["error_reason"])
     }
 
     @Test
@@ -172,7 +178,46 @@ class SheetTaskWorkerIT : SheetsDatabase() {
         val task = row(id)
         assertEquals("FAILED", task["status"])
         assertEquals("No hay ningún escritor para las tareas de tipo INVOICE", task["last_error"])
+        assertEquals("NO_HANDLER", task["error_reason"])
         assertTrue(client.calls.isEmpty())
+    }
+
+    @Test
+    fun `every other permanent failure has its structured reason`() {
+        val cases = listOf(
+            SheetsPermanentException(SheetsFailureReason.NOT_FOUND) to "NOT_FOUND",
+            SheetsPermanentException(SheetsFailureReason.READ_ONLY) to "READ_ONLY",
+            SheetsPermanentException(SheetsFailureReason.BAD_REQUEST) to "BAD_REQUEST",
+            SheetsUnavailableException() to "UNAVAILABLE",
+            SheetTaskAbortedException("La hoja de fichajes no está configurada") to "ABORTED"
+        )
+        cases.forEachIndexed { i, (failure, reason) ->
+            val id = queue.enqueue(SheetTaskKind.SHIFT_MONTH, "2026-0${i + 1}", null)
+            client.nextFailures += failure
+            worker(ScriptedHandler()).runOnce()
+            assertEquals("FAILED", row(id)["status"], reason)
+            assertEquals(reason, row(id)["error_reason"])
+        }
+    }
+
+    @Test
+    fun `a success and a retry clear the reason`() {
+        val id = queue.enqueue(SheetTaskKind.SHIFT_MONTH, "2026-10", null)
+        client.nextFailures += SheetsTransientException("Google no responde")
+        worker(ScriptedHandler()).runOnce()
+        assertEquals("TRANSIENT", row(id)["error_reason"])
+
+        jdbc.update("UPDATE sheet_tasks SET next_attempt_at = now() WHERE id = ?", id)
+        worker(ScriptedHandler()).runOnce()
+        assertEquals("DONE", row(id)["status"])
+        assertNull(row(id)["error_reason"])
+
+        val failed = queue.enqueue(SheetTaskKind.SHIFT_MONTH, "2026-11", null)
+        client.nextFailures += SheetsPermanentException(SheetsFailureReason.NOT_SHARED)
+        worker(ScriptedHandler()).runOnce()
+        assertEquals("NOT_SHARED", row(failed)["error_reason"])
+        assertNull(queue.retry(failed).errorReason)
+        assertNull(row(failed)["error_reason"])
     }
 
     @Test

@@ -49,7 +49,7 @@ class SignUpEndToEndIT {
     private fun signUp(email: String, document: String, bootstrapCode: String? = null) =
         http.post(
             "/api/auth/sign-up",
-            """{"email":"$email","password":"$password","name":"Persona de prueba","identityDocument":"$document"""" +
+            """{"email":"$email","password":"$password","name":"Persona","lastName":"de Prueba","identityDocument":"$document"""" +
                 (bootstrapCode?.let { ""","bootstrapCode":"$it"""" } ?: "") + "}"
         )
 
@@ -105,7 +105,7 @@ class SignUpEndToEndIT {
 
         val onboarding = http.post(
             "/api/auth/onboarding",
-            """{"name":"Persona de prueba","identityDocument":"${validDni()}","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","email":"$email","role":"EMPLOYEE"}""",
+            """{"name":"Persona","lastName":"de Prueba","identityDocument":"${validDni()}","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","email":"$email","role":"EMPLOYEE"}""",
             admin
         )
         assertEquals(201, onboarding.status, onboarding.body)

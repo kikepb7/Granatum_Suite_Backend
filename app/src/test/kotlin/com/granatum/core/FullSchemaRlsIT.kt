@@ -28,7 +28,7 @@ class FullSchemaRlsIT {
 
     /**
      * Every table the migrations create (V24 and V26 drop one each; V28 to V34 rename them
-     * to English), across the seven feature
+     * to English), across the eight feature
      * modules. This is the only test that sees them all together: each module's
      * own `RowLevelSecurityIT` only has that module's migrations on its
      * classpath.
@@ -54,7 +54,10 @@ class FullSchemaRlsIT {
         // notifications (feature 008): who is told what about whom
         "notifications",
         // events (feature 011): events and the material they take
-        "events", "event_materials"
+        "events", "event_materials",
+        // sheets (feature 012): the Google spreadsheets, the queue of writes
+        // and where each copied invoice lives
+        "sheet_settings", "sheet_tasks", "sheet_invoice_rows"
     )
 
     @Test

@@ -58,7 +58,8 @@ class OpenApiContractIT {
         assertTrue(paths.none { it.startsWith("/api/dev") }, "the dev token emitter is not part of the contract")
         listOf(
             "/api/materials", "/api/shifts", "/api/employees", "/api/auth/login", "/api/auth/sign-up",
-            "/api/invoicing/invoices", "/api/absences", "/api/notifications"
+            "/api/invoicing/invoices", "/api/absences", "/api/notifications",
+            "/api/sheets/settings", "/api/sheets/shifts/{year}/{month}", "/api/sheets/invoices/{year}/{month}/resync"
         ).forEach { assertTrue(it in paths, "$it missing: $paths") }
     }
 

@@ -37,7 +37,7 @@ mediante contratos de `common` y un evento con solo el id de la factura.
   Se confirman en Maven Central al implementar (research D-001).
 
 **Storage**: PostgreSQL (Supabase). Migraciones `V35` y `V36` (timetracking) y
-`V37` (sheets).
+`V37` y `V38` (sheets; `V38` añade `sheet_tasks.error_reason`).
 
 **Testing**: JUnit 5, MockK, Testcontainers `postgres:16-alpine`, OkHttp
 `MockWebServer`, `@RecordApplicationEvents`, y la tarea real opcional
@@ -72,7 +72,7 @@ fichajes al mes. Muy por debajo de las cuotas de la API.
 | Principio | Cómo se cumple | Estado |
 |---|---|---|
 | **I. Features independientes** | `features/sheets` solo depende de `common`. `timetracking` e `invoices` implementan contratos nuevos en `common/domain/contract` (`ShiftSheetSource`, `ShiftExportRecorder`, `InvoiceSheetSource`) y publican `InvoiceSheetChange` en `common/domain/event`; ninguna depende de `sheets` (D-002). | ✅ |
-| **II. Flyway** | Tres migraciones nuevas (`V35`–`V37`), ninguna editada. Se añaden a la lista de versiones de `docs/english-naming.md`. | ✅ |
+| **II. Flyway** | Cuatro migraciones nuevas (`V35`–`V38`), ninguna editada. Se añaden a la lista de versiones de `docs/english-naming.md`. | ✅ |
 | **III. Inmutabilidad del registro horario** | La exportación solo lee, con los valores vigentes y sin escribir en `shifts`, `shift_events` ni correcciones (FR-013). Queda constancia en `exports`, que sigue siendo INSERT-only: `destination` es un `ADD COLUMN` con un valor por defecto cierto para todas las filas (D-006). La hoja es una copia de consulta; el registro legal sigue en la base de datos. | ✅ |
 | **IV. Autorización por roles** | `/api/sheets/**` solo `ADMIN`. `REPRESENTATIVE` sigue sin ver DNI: el CSV no cambia esa regla y la hoja solo la exporta `ADMIN`. Test de `SecurityConfig` para los demás roles. | ✅ |
 | **V. Tests y CI** | Unitarios, ITs con Testcontainers por módulo, `RowLevelSecurityIT` del módulo nuevo, `FullSchemaRlsIT` y `NoRealApiCallsInTestsIT` ampliados. El test real va aparte y nunca en CI (D-009). | ✅ |
@@ -81,9 +81,9 @@ fichajes al mes. Muy por debajo de las cuotas de la API.
 | **VIII. Contrato REST** | Rutas en inglés según `english-naming.md`, errores `{code, message}`, y `docs/openapi.json` regenerado; la app fija la nueva copia (contracts/README.md). | ✅ |
 | **IX. Documentación** | `specs/012-google-sheets-sync/`, sección en el README (cómo crear la cuenta de servicio, compartir las hojas y configurar), CHANGELOG y `.env.example`. | ✅ |
 
-**Re-check tras el diseño (Phase 1)**: sin violaciones. Hay un punto a verificar
-al implementar que no afecta a la puerta: si el CHECK de `exports.scope` admite
-`MONTHLY` con `employee_id` nulo (D-006). Si no lo admite, se usa `STAFF`.
+**Re-check tras el diseño (Phase 1)**: sin violaciones. El punto que quedaba por
+verificar (D-006) se resolvió al implementar: el CHECK de `V29` exige persona en
+`MONTHLY`, así que la exportación a la hoja se anota como `STAFF`.
 
 ## Project Structure
 
@@ -151,6 +151,7 @@ features/sheets/                     # módulo nuevo
     │   ├── infrastructure/google/SheetsClientConfig.kt
     │   └── infrastructure/database/               # entidades y repositorios
     ├── main/resources/db/migration/V37__create_sheets_tables.sql
+    ├── main/resources/db/migration/V38__add_sheet_task_error_reason.sql
     └── test/kotlin/com/granatum/core/
         ├── SheetsTestApplication.kt
         ├── FakeSheetsClient.kt

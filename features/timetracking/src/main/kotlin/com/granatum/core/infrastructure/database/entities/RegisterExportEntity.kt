@@ -1,5 +1,6 @@
 package com.granatum.core.infrastructure.database.entities
 
+import com.granatum.core.domain.type.ExportDestination
 import com.granatum.core.domain.type.ExportScope
 import com.granatum.core.domain.type.Role
 import jakarta.persistence.Column
@@ -63,7 +64,12 @@ class RegisterExportEntity(
 
     /** SHA-256 in hex of the exact bytes sent; null if and only if not completed (D-006). */
     @Column(name = "fingerprint", length = 64)
-    val fingerprint: String?
+    val fingerprint: String?,
+
+    /** A CSV file, or the month's tab of the Google spreadsheet (feature 012, D-006). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "destination", nullable = false, length = 20)
+    val destination: ExportDestination = ExportDestination.CSV
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -74,5 +80,5 @@ class RegisterExportEntity(
     override fun hashCode(): Int = javaClass.hashCode()
 
     override fun toString(): String =
-        "RegisterExportEntity(id=$id, scope=$scope, completed=$completed)"
+        "RegisterExportEntity(id=$id, scope=$scope, destination=$destination, completed=$completed)"
 }

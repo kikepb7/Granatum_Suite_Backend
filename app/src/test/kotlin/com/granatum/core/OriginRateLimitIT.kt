@@ -81,7 +81,7 @@ class OriginRateLimitIT {
     @Test
     fun `sign-up has its own quota, and it applies to the bootstrap code too`() {
         val ip = address()
-        val body = """{"email":"x@granatum.es","password":"x","name":"x","identityDocument":"x","bootstrapCode":"guess"}"""
+        val body = """{"email":"x@granatum.es","password":"x","name":"x","lastName":"x","identityDocument":"x","bootstrapCode":"guess"}"""
         repeat(2) { assertTrue(post("/api/auth/sign-up", body, ip).status != 429) }
 
         assertEquals(429, post("/api/auth/sign-up", body, ip).status)

@@ -2,6 +2,7 @@ package com.granatum.core.api.dto
 
 import com.granatum.core.domain.model.SheetQueueStatus
 import com.granatum.core.domain.model.SheetTask
+import com.granatum.core.domain.model.SheetTaskErrorReason
 import com.granatum.core.domain.model.SheetTaskKind
 import com.granatum.core.domain.model.SheetTaskStatus
 import com.granatum.core.service.SheetSettingsService
@@ -39,6 +40,12 @@ data class SheetTaskDto(
     val rowCount: Int?,
     val lastNamesPending: Int?,
     val lastError: String?,
+    /**
+     * Why the last attempt failed, for the app to act on; null if it did not:
+     * `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `UNAVAILABLE`
+     * `NO_HANDLER` `ABORTED` `TRANSIENT`.
+     */
+    val errorReason: SheetTaskErrorReason?,
     val createdAt: Instant,
     val updatedAt: Instant,
     val completedAt: Instant?
@@ -51,6 +58,9 @@ data class SheetQueueStatusDto(
     val failed: Long,
     val recent: List<SheetTaskDto>
 )
+
+/** `202` of an export or a resync: the task to follow with `GET /api/sheets/tasks/{id}`. */
+data class SheetTaskCreatedDto(val taskId: UUID)
 
 /** `POST /api/sheets/tasks/retry-failed`. */
 data class SheetRetryAllDto(val requeued: Int)
@@ -70,7 +80,7 @@ fun SheetSettingsView.toDto(): SheetSettingsDto {
 }
 
 fun SheetTask.toDto() = SheetTaskDto(
-    id, kind, reference, status, attempts, rowCount, lastNamesPending, lastError, createdAt, updatedAt, completedAt
+    id, kind, reference, status, attempts, rowCount, lastNamesPending, lastError, errorReason, createdAt, updatedAt, completedAt
 )
 
 fun SheetQueueStatus.toDto() = SheetQueueStatusDto(lastSuccessAt, pending, failed, recent.map { it.toDto() })

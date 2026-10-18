@@ -1,5 +1,6 @@
 package com.granatum.core.api.dto
 
+import com.granatum.core.domain.type.ExportDestination
 import com.granatum.core.domain.type.ExportScope
 import com.granatum.core.domain.type.Role
 import com.granatum.core.infrastructure.database.entities.RegisterExportEntity
@@ -27,7 +28,9 @@ data class RegisterExportDto(
     val generatedAt: Instant,
     val completed: Boolean,
     val rowCount: Int,
-    val fingerprint: String?
+    val fingerprint: String?,
+    /** `CSV` or `GOOGLE_SHEETS` (feature 012). */
+    val destination: ExportDestination
 ) {
     override fun toString(): String = "RegisterExportDto(id=$id, scope=$scope, completed=$completed)"
 }
@@ -52,5 +55,6 @@ fun RegisterExportEntity.toDto() = RegisterExportDto(
     generatedAt = generatedAt,
     completed = completed,
     rowCount = rowCount,
-    fingerprint = fingerprint
+    fingerprint = fingerprint,
+    destination = destination
 )

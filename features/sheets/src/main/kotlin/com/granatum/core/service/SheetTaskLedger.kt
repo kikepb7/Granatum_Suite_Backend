@@ -1,6 +1,7 @@
 package com.granatum.core.service
 
 import com.granatum.core.domain.model.SheetTask
+import com.granatum.core.domain.model.SheetTaskErrorReason
 import com.granatum.core.domain.model.SheetTaskStatus
 import com.granatum.core.infrastructure.database.repositories.SheetTaskRepository
 import org.springframework.stereotype.Service
@@ -45,6 +46,7 @@ class SheetTaskLedger(private val tasks: SheetTaskRepository) {
         task.rowCount = result.rowCount
         task.lastNamesPending = result.lastNamesPending
         task.lastError = null
+        task.errorReason = null
         task.updatedAt = now
         if (task.repeatRequested) {
             task.status = SheetTaskStatus.PENDING
@@ -59,14 +61,18 @@ class SheetTaskLedger(private val tasks: SheetTaskRepository) {
     }
 
     /**
-     * A transient failure waits [backoff] and is retried, up to [maxAttempts];
-     * a permanent one is FAILED at once - unless a change arrived while it ran,
-     * which deserves its own attempt.
+     * A transient failure ([SheetTaskErrorReason.TRANSIENT]) waits [backoff]
+     * and is retried, up to [maxAttempts]; any other reason is permanent and
+     * FAILED at once - unless a change arrived while it ran, which deserves
+     * its own attempt. The reason is kept in every case, so a task waiting for
+     * its next attempt says why; a success or a manual retry clears it.
      */
     @Transactional
-    fun fail(id: UUID, error: String, permanent: Boolean, maxAttempts: Int, now: Instant) {
+    fun fail(id: UUID, error: String, reason: SheetTaskErrorReason, maxAttempts: Int, now: Instant) {
         val task = tasks.lockById(id)?.takeIf { it.status == SheetTaskStatus.RUNNING } ?: return
+        val permanent = reason != SheetTaskErrorReason.TRANSIENT
         task.lastError = error.take(MAX_ERROR_LENGTH)
+        task.errorReason = reason
         task.updatedAt = now
         when {
             permanent && task.repeatRequested -> {

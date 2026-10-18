@@ -62,3 +62,14 @@ class SheetTaskNotFailedException : SheetsApiException(
     "TASK_NOT_FAILED",
     "Solo se pueden reintentar las tareas fallidas"
 )
+
+/** A month that does not exist, is after the current one or is outside the retention period. */
+class InvalidSheetPeriodException(detail: String) :
+    SheetsApiException(HttpStatus.BAD_REQUEST, "INVALID_PERIOD", "Mes no válido: $detail")
+
+/** The spreadsheet a request writes to has not been configured yet (US2 scenario 7). */
+class SheetsNotConfiguredException(role: SpreadsheetRole) : SheetsApiException(
+    HttpStatus.CONFLICT,
+    "SHEETS_NOT_CONFIGURED",
+    "Primero hay que configurar la hoja de ${role.spanish} en la copia en Google Sheets"
+)

@@ -153,6 +153,13 @@ class SecurityConfig {
                     // DNI of self-employed suppliers (research.md D-017).
                     .requestMatchers("/api/invoicing", "/api/invoicing/**")
                     .hasRole("ADMIN")
+                    // The Google Sheets copy (feature 012): ADMIN only, every
+                    // route under one prefix and one rule, like invoicing. The
+                    // shifts export sends identity documents to Google, and the
+                    // settings and status show the company's spreadsheets
+                    // (FR-024, SC-006).
+                    .requestMatchers("/api/sheets", "/api/sheets/**")
+                    .hasRole("ADMIN")
                     // Absences (feature 007). Most specific first: the yearly
                     // entitlement is ADMIN's; registering on someone's behalf
                     // (sick leave included), approving, rejecting and closing a

@@ -35,7 +35,10 @@ La columna `Persona` se sustituye por `Nombre` y `Apellidos`. El resto no cambia
 
 ### Registro de exportaciones (`GET /api/exports`)
 
-Cada elemento gana `"destination": "CSV" | "GOOGLE_SHEETS"`.
+Cada elemento gana `"destination": "CSV" | "GOOGLE_SHEETS"`. Una exportación a la
+hoja aparece con `scope: "STAFF"`, `employeeId: null`, el mes completo en
+`from`/`to`, `completed: true`, `rowCount` y `fingerprint` (SHA-256 de las filas
+escritas; research D-006).
 
 ## Rutas nuevas (`/api/sheets`)
 
@@ -83,25 +86,47 @@ Exporta un mes de fichajes: reescribe la pestaña `AAAA-MM`.
 | Respuesta | Cuándo |
 |---|---|
 | `202` + `{ "taskId": "uuid" }` | tarea creada (o unida a una pendiente del mismo mes) y pasada inmediata lanzada |
-| `400 INVALID_PERIOD` | mes inexistente, posterior al actual o fuera del plazo de conservación |
+| `400 INVALID_PERIOD` | mes inexistente (`month` fuera de 1–12, `year` < 1), posterior al mes actual en Madrid (el mes en curso sí se admite) o que termina antes del plazo de conservación del registro (4 años) |
 | `409 SHEETS_NOT_CONFIGURED` | falta la hoja de fichajes |
 | `503 SHEETS_UNAVAILABLE` | sin credenciales |
 
 ### `POST /api/sheets/invoices/{year}/{month}/resync`
 
 Reescribe la pestaña de recibos del mes con todas las facturas confirmadas de ese
-mes. Respuestas iguales que la anterior, con la hoja de recibos.
+mes. Respuestas iguales que la anterior, con la hoja de recibos, salvo que no hay
+límite de conservación: `400 INVALID_PERIOD` solo para un mes inexistente o
+futuro.
+
+Orden de comprobación en las dos: `400` (periodo), `503` (sin credenciales),
+`409` (hoja sin configurar).
 
 ### `GET /api/sheets/tasks/{id}`
 
 ```json
 { "id": "uuid", "kind": "SHIFT_MONTH", "reference": "2026-10", "status": "DONE",
   "attempts": 1, "rowCount": 92, "lastNamesPending": 1, "lastError": null,
-  "createdAt": "…", "updatedAt": "…", "completedAt": "…" }
+  "errorReason": null, "createdAt": "…", "updatedAt": "…", "completedAt": "…" }
 ```
 
 - `kind`: `SHIFT_MONTH` | `INVOICE` | `INVOICE_MONTH`
 - `status`: `PENDING` | `RUNNING` | `DONE` | `FAILED`
+- `rowCount`: filas escritas (meses; `1` o `0` en `INVOICE`); `lastNamesPending`,
+  solo en `SHIFT_MONTH`. Ambos `null` hasta que termina bien.
+- `lastError`: motivo legible en español, o `null`.
+- `errorReason`: motivo estructurado del último intento fallido, o `null` si no
+  falló (se borra al terminar bien y al reintentar a mano). Una tarea `PENDING`
+  que espera un reintento lo lleva, para que se vea por qué espera.
+
+  | Valor | Cuándo |
+  |---|---|
+  | `NOT_FOUND` | la hoja no existe o la cuenta no la ve (definitivo) |
+  | `NOT_SHARED` | la hoja no está compartida con la cuenta (definitivo) |
+  | `READ_ONLY` | compartida solo como lectora (definitivo) |
+  | `BAD_REQUEST` | Google rechazó la petición (definitivo) |
+  | `UNAVAILABLE` | el servidor no tiene credenciales de Google (definitivo) |
+  | `NO_HANDLER` | no hay escritor para ese `kind` (definitivo) |
+  | `ABORTED` | el escritor desistió, p. ej. la hoja ya no está configurada (definitivo) |
+  | `TRANSIENT` | el último intento falló de forma transitoria: `PENDING` si se reintentará, `FAILED` si se agotaron los intentos |
 - `404 TASK_NOT_FOUND` si no existe.
 
 ### `GET /api/sheets/status`
@@ -112,7 +137,8 @@ mes. Respuestas iguales que la anterior, con la hoja de recibos.
 ```
 
 `recent` lleva las 20 últimas tareas no `DONE` o terminadas en las últimas 24 h,
-de la más reciente a la más antigua.
+de la más reciente a la más antigua, con el mismo formato que
+`GET /api/sheets/tasks/{id}` (`errorReason` incluido).
 
 ### `POST /api/sheets/tasks/{id}/retry`
 

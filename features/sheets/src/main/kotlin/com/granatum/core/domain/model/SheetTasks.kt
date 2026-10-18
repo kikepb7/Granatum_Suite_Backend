@@ -17,6 +17,31 @@ enum class SheetTaskKind {
 
 enum class SheetTaskStatus { PENDING, RUNNING, DONE, FAILED }
 
+/**
+ * Why the last attempt of a task failed, for the app to act on
+ * (`sheet_tasks.error_reason`, V38); null when it did not fail.
+ */
+enum class SheetTaskErrorReason {
+    /** Google refused for good: see [com.granatum.core.domain.port.SheetsFailureReason]. */
+    NOT_FOUND, NOT_SHARED, READ_ONLY, BAD_REQUEST,
+
+    /** The server has no Google credentials. */
+    UNAVAILABLE,
+
+    /** No writer for the task's kind. */
+    NO_HANDLER,
+
+    /** The writer gave up, e.g. the spreadsheet is no longer configured. */
+    ABORTED,
+
+    /** The last attempt failed transiently: retried later, or out of attempts. */
+    TRANSIENT;
+
+    companion object {
+        fun of(reason: com.granatum.core.domain.port.SheetsFailureReason): SheetTaskErrorReason = valueOf(reason.name)
+    }
+}
+
 /** A queued write, as the worker hands it to its [com.granatum.core.service.SheetTaskHandler]. */
 data class SheetTask(
     val id: UUID,
@@ -26,6 +51,7 @@ data class SheetTask(
     val attempts: Int,
     val nextAttemptAt: Instant,
     val lastError: String?,
+    val errorReason: SheetTaskErrorReason?,
     val requestedBy: UUID?,
     val rowCount: Int?,
     val lastNamesPending: Int?,

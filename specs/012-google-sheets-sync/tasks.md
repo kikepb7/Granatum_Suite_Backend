@@ -272,14 +272,18 @@ anotado en `exports`.
 **Independent Test**: exportar octubre con el fake; filas correctas; repetir sin
 duplicados; `destination: GOOGLE_SHEETS` en `/api/exports`.
 
-- [ ] T031 [P] [US2] Crear los contratos en `CM/domain/contract/`:
+- [X] T031 [P] [US2] Crear los contratos en `CM/domain/contract/`:
   - **`ShiftSheetSource.kt`**: `month(YearMonth): ShiftSheetMonth`, con
     `ShiftSheetMonth(rows, lastNamesPending)` y
     `ShiftSheetRow(name, lastName?, identityDocument, date: LocalDate, clockIn: LocalTime, clockOut: LocalTime?)`
     en Europe/Madrid. El `toString` oculta el documento.
   - **`ShiftExportRecorder.kt`**:
     `recordSheetExport(requesterId, requesterRole, month: YearMonth, rowCount, fingerprint)`.
-- [ ] T032 [P] [US2] Escribir `TTT/ShiftSheetSourceIT.kt`:
+
+  **Hecho**: `ShiftSheetSource` añade `retentionCutoff(): LocalDate`, para que
+  `sheets` rechace con `400 INVALID_PERIOD` un mes fuera del plazo de
+  conservación sin depender de `timetracking`.
+- [X] T032 [P] [US2] Escribir `TTT/ShiftSheetSourceIT.kt`:
   - filas ordenadas por fecha y entrada;
   - valores vigentes tras una corrección aprobada;
   - jornada abierta o `INCOMPLETE` con `clockOut` nulo;
@@ -288,23 +292,26 @@ duplicados; `destination: GOOGLE_SHEETS` en `/api/exports`.
   - `lastNamesPending` cuenta personas distintas sin apellidos;
   - no escribe nada (cuenta de filas de `shifts` y `shift_events` igual antes y
     después).
-- [ ] T033 [P] [US2] Escribir `TTT/ShiftExportRecorderIT.kt`: la fila de
+- [X] T033 [P] [US2] Escribir `TTT/ShiftExportRecorderIT.kt`: la fila de
   `exports` lleva `destination='GOOGLE_SHEETS'`, el periodo del mes, `row_count`
   y `fingerprint`, y `/api/exports` devuelve `destination`. Las exportaciones CSV
   siguen con `CSV`.
-- [ ] T034 [US2] Crear `features/timetracking/src/main/resources/db/migration/V36__add_export_destination.sql`:
+- [X] T034 [US2] Crear `features/timetracking/src/main/resources/db/migration/V36__add_export_destination.sql`:
   `ALTER TABLE exports ADD COLUMN destination VARCHAR(20) NOT NULL DEFAULT 'CSV'
   CHECK (destination IN ('CSV','GOOGLE_SHEETS'))`.
 
   **Antes, verificar el CHECK de `scope` y `employee_id` (`V15`/`V29`)**: si
   `MONTHLY` exige `employee_id`, la exportación a la hoja usa `STAFF`. Anotar el
   resultado en research.md D-006.
-- [ ] T035 [US2] Añadir `destination` a `RegisterExportEntity` y al DTO de
+
+  **Hecho**: `ck_exports_employee` es `(scope = 'STAFF') = (employee_id IS NULL)`,
+  así que `MONTHLY` exige persona y la hoja se anota como `STAFF` (D-006).
+- [X] T035 [US2] Añadir `destination` a `RegisterExportEntity` y al DTO de
   `/api/exports`, e implementar `TT/infrastructure/contract/ShiftExportRecorderJpa.kt`.
-- [ ] T036 [US2] Implementar `TT/infrastructure/contract/ShiftSheetSourceJpa.kt`,
+- [X] T036 [US2] Implementar `TT/infrastructure/contract/ShiftSheetSourceJpa.kt`,
   reutilizando la lectura de `RegisterExportService.walk`: `REPEATABLE READ` de
   solo lectura, por lotes, `CivilDateRange.ZONE`. Hacer pasar T032 y T033.
-- [ ] T037 [US2] Escribir `SHT/ShiftMonthExportIT.kt` con `FakeSheetsClient` y
+- [X] T037 [US2] Escribir `SHT/ShiftMonthExportIT.kt` con `FakeSheetsClient` y
   `ShiftSheetSource` y `ShiftExportRecorder` falsos:
   - `POST /api/sheets/shifts/2026/10` → `202 {taskId}`;
   - tras `runOnce`, la pestaña `2026-10` tiene la cabecera
@@ -315,7 +322,7 @@ duplicados; `destination: GOOGLE_SHEETS` en `/api/exports`.
   - el recorder se llama con la huella SHA-256 de las filas;
   - mes futuro → `400 INVALID_PERIOD`;
   - sin hoja de fichajes → `409 SHEETS_NOT_CONFIGURED`.
-- [ ] T038 [US2] Implementar `SH/service/ShiftMonthWriter.kt`
+- [X] T038 [US2] Implementar `SH/service/ShiftMonthWriter.kt`
   (`SheetTaskHandler` de `SHIFT_MONTH`) y el endpoint en `SheetsController`
   (encola, llama a `kick()` y responde `202`). El `ADMIN` que lo pide queda en
   `requested_by`, y se usa para `recordSheetExport`. Hacer pasar T037.
@@ -330,7 +337,7 @@ pestaña del mes de su fecha de emisión.
 **Independent Test**: confirmar, corregir el mes y descartar con el fake; el
 borrador nunca se escribe; resincronizar un mes.
 
-- [ ] T039 [P] [US3] Crear `CM/domain/event/InvoiceSheetChange.kt` (`data class
+- [X] T039 [P] [US3] Crear `CM/domain/event/InvoiceSheetChange.kt` (`data class
   InvoiceSheetChange(val invoiceId: UUID)`) y `CM/domain/contract/InvoiceSheetSource.kt`:
   - `row(id): InvoiceSheetRow?`, nulo si la factura no está `CONFIRMED`;
   - `month(YearMonth): List<InvoiceSheetRow>`;
@@ -338,20 +345,20 @@ borrador nunca se escribe; resincronizar un mes.
     `recipientName`, `recipientNif`, `number`, `concept`, `base`, `vatAmount`,
     `surcharge`, `withholdings` y `total`, donde base, IVA y recargo son la suma
     de las líneas. El `toString` oculta los NIF.
-- [ ] T040 [P] [US3] Escribir `INT/InvoiceSheetChangeEventsIT.kt` con
+- [X] T040 [P] [US3] Escribir `INT/InvoiceSheetChangeEventsIT.kt` con
   `@RecordApplicationEvents`:
   - publican el evento: confirmar, corregir una confirmada y descartar una
     confirmada;
   - no lo publican: corregir o descartar un borrador ni la subida.
-- [ ] T041 [P] [US3] Escribir `INT/InvoiceSheetSourceIT.kt`:
+- [X] T041 [P] [US3] Escribir `INT/InvoiceSheetSourceIT.kt`:
   - una confirmada devuelve la fila con las sumas de las líneas de IVA;
   - una en borrador o descartada devuelve `null`;
   - `month` filtra por la fecha de emisión.
-- [ ] T042 [US3] Publicar `InvoiceSheetChange` en `IN/service/InvoiceReview.kt`
+- [X] T042 [US3] Publicar `InvoiceSheetChange` en `IN/service/InvoiceReview.kt`
   (`confirm`, y `correct`/`discard` cuando la factura estaba `CONFIRMED`) con
   `ApplicationEventPublisher`, e implementar
   `IN/infrastructure/contract/InvoiceSheetSourceJpa.kt`. Hacer pasar T040 y T041.
-- [ ] T043 [US3] Escribir `SHT/InvoiceSheetSyncIT.kt` con `FakeSheetsClient` y
+- [X] T043 [US3] Escribir `SHT/InvoiceSheetSyncIT.kt` con `FakeSheetsClient` y
   `InvoiceSheetSource` falso:
   - **atomicidad**:
     - el evento dentro de una transacción que hace rollback no deja tarea;
@@ -366,7 +373,7 @@ borrador nunca se escribe; resincronizar un mes.
   - **coalescencia**: diez cambios seguidos, una escritura;
   - **resincronizar**: `POST /api/sheets/invoices/2026/10/resync` reescribe la
     pestaña con todas las confirmadas y actualiza `sheet_invoice_rows`.
-- [ ] T044 [US3] Implementar:
+- [X] T044 [US3] Implementar:
   - `SH/service/InvoiceSheetChangeListener.kt`:
     `@TransactionalEventListener(phase = BEFORE_COMMIT)` que encola `INVOICE` si
     hay cliente activo y hoja de recibos;
@@ -376,28 +383,37 @@ borrador nunca se escribe; resincronizar un mes.
 
   Hacer pasar T043.
 
+  **Hecho**: la escritura de una factura tolera que la hoja de recibos
+  **anterior** rechace el borrado (ya no es la nuestra) y sigue con la nueva; la
+  resincronización quita antes la factura de otra pestaña de la misma hoja si el
+  índice la sitúa allí. El listener lanza una pasada inmediata tras el commit.
+
 ---
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T045 Añadir `.requestMatchers("/api/sheets", "/api/sheets/**").hasRole("ADMIN")`
+- [X] T045 Añadir `.requestMatchers("/api/sheets", "/api/sheets/**").hasRole("ADMIN")`
   en `app/src/main/kotlin/com/granatum/core/api/security/SecurityConfig.kt`,
   antes del catch-all, y un IT en `app/src/test/…` que compruebe que `MANAGER`,
   `EMPLOYEE` y `REPRESENTATIVE` reciben `403` en `/api/sheets/settings` y
   `/api/sheets/shifts/2026/10`.
-- [ ] T046 [P] Ampliar `app/src/test/kotlin/com/granatum/core/NoRealApiCallsInTestsIT.kt`:
+- [X] T046 [P] Ampliar `app/src/test/kotlin/com/granatum/core/NoRealApiCallsInTestsIT.kt`:
   con `GOOGLE_SHEETS_CREDENTIALS_FILE=/tmp/no-existe.json` en properties, el bean
   `SheetsClient` es `DisabledSheetsClient`.
-- [ ] T047 [P] Añadir `sheet_settings`, `sheet_tasks` y `sheet_invoice_rows` a
+- [X] T047 [P] Añadir `sheet_settings`, `sheet_tasks` y `sheet_invoice_rows` a
   `expectedTables` en `app/src/test/kotlin/com/granatum/core/FullSchemaRlsIT.kt`.
-- [ ] T048 [P] Crear `SHT/SheetsRealIT.kt` con `@Tag("sheets-real")`:
+- [X] T048 [P] Crear `SHT/SheetsRealIT.kt` con `@Tag("sheets-real")`:
   - `assumeTrue` sobre `GOOGLE_SHEETS_CREDENTIALS_FILE` y `SHEETS_TEST_SPREADSHEET_ID`;
   - con el cliente real, `checkAccess`, `rewriteTab` en `test-<uuid>`,
     `upsertInvoiceRow`, `removeInvoiceRow`, y borra la pestaña al acabar.
-- [ ] T049 Regenerar `docs/openapi.json` con `OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApi*'`
+
+  **Hecho**: el test está escrito y compila. **Sin ejecutar** contra Google:
+  queda pendiente la pasada real con las credenciales de PRE
+  (`./gradlew :features:sheets:sheetsRealTest`).
+- [X] T049 Regenerar `docs/openapi.json` con `OPENAPI_UPDATE=true ./gradlew :app:test --tests '*OpenApi*'`
   usando Postgres desechable, y comprobar que aparecen `/api/sheets/**`,
   `lastName`, `lastNamePending` y `destination`.
-- [ ] T050 [P] Documentar:
+- [X] T050 [P] Documentar:
   - `.env.example`: sección `# --- Google Sheets (feature 012) ---` con
     `# GOOGLE_SHEETS_CREDENTIALS_FILE=` (SECRETO: ruta a un JSON fuera del
     repositorio), `SHEETS_WORKER_CRON` y `SHEETS_MAX_ATTEMPTS`;
@@ -413,6 +429,22 @@ borrador nunca se escribe; resincronizar un mes.
     eliminado después; no tocar el puerto 8080 ni los contenedores de squadfy);
   - grep de que no se usa `getApplicationDefault` ni `GOOGLE_APPLICATION_CREDENTIALS`;
   - marcar las tareas como completadas.
+
+  **Hecho (2026-10-18)** salvo la parte real: módulos en verde (sin `:app`),
+  `:app:test` en verde con un Postgres desechable (117 tests), y el grep solo
+  encuentra comentarios que lo prohíben. **Pendiente**: la prueba real en PRE
+  (`sheetsRealTest`, T048), que se deja sin marcar a propósito.
+
+- [X] T052 Motivo estructurado del fallo de cada tarea (pedido por la app):
+  - `features/sheets/src/main/resources/db/migration/V38__add_sheet_task_error_reason.sql`:
+    `sheet_tasks.error_reason VARCHAR(30) NULL` con CHECK
+    `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `UNAVAILABLE` `NO_HANDLER`
+    `ABORTED` `TRANSIENT` (V37 no se edita);
+  - `errorReason` en el modelo y en el JSON de la tarea (`GET /api/sheets/tasks/{id}`,
+    respuesta de `retry` y `recent` de `/status`); se fija en cada fallo, también en
+    los transitorios que se reintentan, y se borra al terminar bien o al reintentar;
+  - cubierto en `SheetTaskWorkerIT` y `SheetsStatusControllerIT`; documentado en
+    contracts/README.md, data-model.md y `docs/english-naming.md`.
 
 ---
 

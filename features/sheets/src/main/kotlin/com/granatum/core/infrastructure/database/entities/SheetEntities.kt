@@ -1,5 +1,6 @@
 package com.granatum.core.infrastructure.database.entities
 
+import com.granatum.core.domain.model.SheetTaskErrorReason
 import com.granatum.core.domain.model.SheetTaskKind
 import com.granatum.core.domain.model.SheetTaskStatus
 import jakarta.persistence.Column
@@ -89,7 +90,12 @@ class SheetTaskEntity(
     var updatedAt: Instant,
 
     @Column(name = "completed_at")
-    var completedAt: Instant?
+    var completedAt: Instant?,
+
+    /** Why the last attempt failed (V38); null if it did not. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "error_reason", length = 30)
+    var errorReason: SheetTaskErrorReason? = null
 ) {
     override fun equals(other: Any?): Boolean = this === other || (other is SheetTaskEntity && id == other.id)
     override fun hashCode(): Int = javaClass.hashCode()

@@ -85,6 +85,7 @@ class HttpContractIT {
             """
             {
               "name": "Persona de contrato",
+              "lastName": "García López",
               "identityDocument": "${validDni()}",
               "position": "Florista",
               "contractType": "FULL_TIME",
@@ -110,6 +111,7 @@ class HttpContractIT {
             """
             {
               "name": "Persona de contrato",
+              "lastName": "García López",
               "identityDocument": "$dni",
               "position": "Florista",
               "contractType": "FULL_TIME",

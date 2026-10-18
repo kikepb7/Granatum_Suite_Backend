@@ -99,6 +99,32 @@ interface ShiftRepository : Repository<ShiftEntity, UUID> {
         page: Pageable
     ): List<UUID>
 
+    /**
+     * One batch of the Google Sheets copy of a month (feature 012): the ids of
+     * the next [page] shifts **of anyone** with entry in `[start, end)` after
+     * the key `(previousClockIn, previousId)`, in `(clockIn, id)` order. By key,
+     * like [findNextBatchIds], and ids only for the same reason.
+     */
+    @Query(
+        """
+        SELECT f.id FROM ShiftEntity f
+         WHERE f.clockIn >= :start AND f.clockIn < :end
+           AND (f.clockIn > :previousClockIn OR (f.clockIn = :previousClockIn AND f.id > :previousId))
+         ORDER BY f.clockIn, f.id
+        """
+    )
+    fun findNextBatchIdsOfAnyone(
+        @Param("start") start: Instant,
+        @Param("end") end: Instant,
+        @Param("previousClockIn") previousClockIn: Instant,
+        @Param("previousId") previousId: UUID,
+        page: Pageable
+    ): List<UUID>
+
+    /** The shifts of one batch, without their breaks. Unordered: the caller keeps the order of the ids. */
+    @Query("SELECT f FROM ShiftEntity f WHERE f.id IN :ids")
+    fun findAllByIdIn(@Param("ids") ids: Collection<UUID>): List<ShiftEntity>
+
     /** The shifts of one batch with their breaks, in a single query. Unordered: the caller keeps the order of the ids. */
     @Query("SELECT DISTINCT f FROM ShiftEntity f LEFT JOIN FETCH f.breaks WHERE f.id IN :ids")
     fun findAllWithBreaksByIdIn(@Param("ids") ids: Collection<UUID>): List<ShiftEntity>

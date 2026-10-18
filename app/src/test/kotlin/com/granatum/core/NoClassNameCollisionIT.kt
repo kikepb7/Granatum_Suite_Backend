@@ -6,6 +6,7 @@ import com.granatum.core.service.EventService
 import com.granatum.core.service.InvoiceUploads
 import com.granatum.core.service.MaterialService
 import com.granatum.core.service.NotificationService
+import com.granatum.core.service.SheetTaskQueue
 import com.granatum.core.service.ShiftService
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -55,7 +56,8 @@ class NoClassNameCollisionIT {
         "invoices" to InvoiceUploads::class.java,
         "absences" to AbsenceService::class.java,
         "notifications" to NotificationService::class.java,
-        "events" to EventService::class.java
+        "events" to EventService::class.java,
+        "sheets" to SheetTaskQueue::class.java
     )
 
     /** Every `.class` resource a module ships, as classpath paths. */
