@@ -362,6 +362,26 @@ class GoogleSheetsClientTest {
     }
 
     @Test
+    fun `a 403 because the Sheets API is disabled in the project is not a sharing problem`() {
+        // The body Google really sends when the API was never enabled (seen with the PRE account).
+        val disabled = MockResponse()
+            .setResponseCode(403)
+            .setHeader("Content-Type", "application/json")
+            .setBody(
+                """{"error":{"code":403,"message":"Google Sheets API has not been used in project 1 before or it is disabled.","status":"PERMISSION_DENIED",""" +
+                    """"details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com"}]}}"""
+            )
+        script += disabled
+        assertEquals(
+            SheetsFailureReason.API_DISABLED,
+            assertFailsWith<SheetsPermanentException> { client.rewriteTab(spreadsheet, "2026-10", listOf("x"), emptyList()) }.reason
+        )
+
+        script += disabled
+        assertEquals(SheetsFailureReason.API_DISABLED, assertFailsWith<SheetsPermanentException> { client.checkAccess(spreadsheet) }.reason)
+    }
+
+    @Test
     fun `429 and 503 are transient, and no message quotes Google's text`() {
         script += error(429, "RESOURCE_EXHAUSTED")
         val quota = assertFailsWith<SheetsTransientException> { client.rewriteTab(spreadsheet, "2026-10", listOf("x"), emptyList()) }

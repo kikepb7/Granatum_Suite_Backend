@@ -112,7 +112,7 @@ siguen igual.
 | Tipo de notificación | `FICHAJE_SIN_SALIDA` `FICHAJE_INCOMPLETO` `CORRECCION_*` `AUSENCIA_*` (`_PENDIENTE`/`_APROBADA`/`_RECHAZADA`) → `SHIFT_WITHOUT_CLOCK_OUT` `SHIFT_INCOMPLETE` `CORRECTION_*` `ABSENCE_*` (`_PENDING`/`_APPROVED`/`_REJECTED`) |
 | Almacén | `A` `B` `C` sin cambios |
 | Destino de exportación (feature 012) | `CSV` `GOOGLE_SHEETS` |
-| Tarea de Google Sheets (feature 012) | tipo `SHIFT_MONTH` `INVOICE` `INVOICE_MONTH`; estado `PENDING` `RUNNING` `DONE` `FAILED`; motivo de fallo (`errorReason`) `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `UNAVAILABLE` `NO_HANDLER` `ABORTED` `TRANSIENT` |
+| Tarea de Google Sheets (feature 012) | tipo `SHIFT_MONTH` `INVOICE` `INVOICE_MONTH`; estado `PENDING` `RUNNING` `DONE` `FAILED`; motivo de fallo (`errorReason`) `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `API_DISABLED` `UNAVAILABLE` `NO_HANDLER` `ABORTED` `TRANSIENT` |
 
 Cualquier otro valor guardado o enviado sigue la misma regla (traducción literal en
 `UPPER_SNAKE_CASE`); la migración de su módulo lo actualiza y lo deja escrito.
@@ -174,7 +174,8 @@ editan (principio II).
 Versiones posteriores, ya con nombres en inglés desde el principio (feature 012): `V35`
 timetracking (`employees.last_name`), `V36` timetracking (`exports.destination`, valores `CSV` y
 `GOOGLE_SHEETS`), `V37` sheets (`sheet_settings`, `sheet_tasks`, `sheet_invoice_rows`), `V38`
-sheets (`sheet_tasks.error_reason`).
+sheets (`sheet_tasks.error_reason`), `V39` sheets (`API_DISABLED` en el CHECK de
+`error_reason`).
 
 Consecuencia al desplegar: los tokens emitidos antes llevan los roles antiguos y dejan de valer;
 cada persona vuelve a iniciar sesión una vez.

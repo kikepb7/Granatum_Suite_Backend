@@ -42,7 +42,7 @@ data class SheetTaskDto(
     val lastError: String?,
     /**
      * Why the last attempt failed, for the app to act on; null if it did not:
-     * `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `UNAVAILABLE`
+     * `NOT_FOUND` `NOT_SHARED` `READ_ONLY` `BAD_REQUEST` `API_DISABLED` `UNAVAILABLE`
      * `NO_HANDLER` `ABORTED` `TRANSIENT`.
      */
     val errorReason: SheetTaskErrorReason?,

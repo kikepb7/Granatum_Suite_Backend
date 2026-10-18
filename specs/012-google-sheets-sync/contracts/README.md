@@ -75,7 +75,7 @@ D-007).
 | `200` + el cuerpo de `GET` | las dos hojas se pueden editar |
 | `400 VALIDATION` | vacío o no es ni un enlace de hoja ni un id |
 | `409 SAME_SPREADSHEET` | las dos apuntan a la misma hoja |
-| `422 SPREADSHEET_NOT_ACCESSIBLE` + `"spreadsheet": "shifts" \| "invoices"` y `"reason": "NOT_FOUND" \| "NOT_SHARED" \| "READ_ONLY"` | no existe, no está compartida con la cuenta, o solo como lectora |
+| `422 SPREADSHEET_NOT_ACCESSIBLE` + `"spreadsheet": "shifts" \| "invoices"` y `"reason": "NOT_FOUND" \| "NOT_SHARED" \| "READ_ONLY" \| "API_DISABLED"` | no existe, no está compartida con la cuenta, solo como lectora, o la API de Sheets no está activada en el proyecto de la cuenta |
 | `502 SHEETS_UNREACHABLE` | Google no responde; no se guarda nada |
 | `503 SHEETS_UNAVAILABLE` | el servidor no tiene credenciales |
 
@@ -122,6 +122,7 @@ Orden de comprobación en las dos: `400` (periodo), `503` (sin credenciales),
   | `NOT_FOUND` | la hoja no existe o la cuenta no la ve (definitivo) |
   | `NOT_SHARED` | la hoja no está compartida con la cuenta (definitivo) |
   | `READ_ONLY` | compartida solo como lectora (definitivo) |
+  | `API_DISABLED` | la API de Google Sheets no está activada en el proyecto de la cuenta técnica (definitivo) |
   | `BAD_REQUEST` | Google rechazó la petición (definitivo) |
   | `UNAVAILABLE` | el servidor no tiene credenciales de Google (definitivo) |
   | `NO_HANDLER` | no hay escritor para ese `kind` (definitivo) |

@@ -43,7 +43,8 @@ import kotlin.random.Random
  * [SheetsGoogleSettings], scoped to `spreadsheets` - never from
  * `getApplicationDefault()`. Everything is written with `RAW`.
  *
- * Errors: 400 → `BAD_REQUEST`, 403 → `NOT_SHARED` (`READ_ONLY` when the
+ * Errors: 400 → `BAD_REQUEST`, 403 → `NOT_SHARED` (`API_DISABLED` when the
+ * Sheets API is off in the project, `READ_ONLY` when the
  * read worked and the write did not), 404 → `NOT_FOUND`, all permanent; 429,
  * 408, 5xx, a 403 for quota, network, timeouts and token failures are
  * transient. No message carries Google's own text, the credentials or the
@@ -230,7 +231,11 @@ class GoogleSheetsClient(settings: SheetsGoogleSettings) : SheetsClient {
         } catch (e: GoogleJsonResponseException) {
             val quota = e.details?.errors.orEmpty().any { it.reason in QUOTA_REASONS } ||
                 e.details?.get("status") == "RESOURCE_EXHAUSTED"
-            throw classify(e.statusCode, onForbidden, quota)
+            // A 403 also arrives when the Sheets API is not enabled in the
+            // service account's project: that is not a sharing problem.
+            val apiDisabled = e.content.orEmpty().let { "SERVICE_DISABLED" in it || "accessNotConfigured" in it }
+            throw if (e.statusCode == 403 && apiDisabled) SheetsPermanentException(SheetsFailureReason.API_DISABLED)
+            else classify(e.statusCode, onForbidden, quota)
         } catch (e: HttpResponseException) {
             throw classify(e.statusCode, onForbidden, quota = false)
         } catch (e: IOException) {

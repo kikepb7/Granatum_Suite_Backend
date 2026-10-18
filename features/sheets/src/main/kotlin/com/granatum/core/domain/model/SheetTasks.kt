@@ -23,7 +23,7 @@ enum class SheetTaskStatus { PENDING, RUNNING, DONE, FAILED }
  */
 enum class SheetTaskErrorReason {
     /** Google refused for good: see [com.granatum.core.domain.port.SheetsFailureReason]. */
-    NOT_FOUND, NOT_SHARED, READ_ONLY, BAD_REQUEST,
+    NOT_FOUND, NOT_SHARED, READ_ONLY, BAD_REQUEST, API_DISABLED,
 
     /** The server has no Google credentials. */
     UNAVAILABLE,

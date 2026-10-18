@@ -1599,7 +1599,7 @@
             "type" : "string"
           },
           "errorReason" : {
-            "enum" : [ "NOT_FOUND", "NOT_SHARED", "READ_ONLY", "BAD_REQUEST", "UNAVAILABLE", "NO_HANDLER", "ABORTED", "TRANSIENT" ],
+            "enum" : [ "NOT_FOUND", "NOT_SHARED", "READ_ONLY", "BAD_REQUEST", "API_DISABLED", "UNAVAILABLE", "NO_HANDLER", "ABORTED", "TRANSIENT" ],
             "type" : [ "string", "null" ]
           },
           "id" : {

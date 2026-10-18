@@ -81,7 +81,8 @@ enum class SheetsFailureReason(val message: String) {
     NOT_FOUND("La hoja no existe o la cuenta técnica de Google no la ve"),
     NOT_SHARED("La hoja no está compartida con la cuenta técnica de Google"),
     READ_ONLY("La hoja está compartida con la cuenta técnica de Google solo como lectora"),
-    BAD_REQUEST("Google ha rechazado la petición de escritura en la hoja")
+    BAD_REQUEST("Google ha rechazado la petición de escritura en la hoja"),
+    API_DISABLED("La API de Google Sheets no está activada en el proyecto de la cuenta técnica de Google")
 }
 
 /** Not retried: 400, 403, 404 (research.md D-003). The message is Spanish and quotes no content. */
