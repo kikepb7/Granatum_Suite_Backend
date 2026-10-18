@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component
 @Component
 class InvoiceClaudeSettings(
     @param:Value("\${invoices.claude.api-key:}") private val apiKey: String,
-    @param:Value("\${invoices.claude.model:claude-opus-5-5}") val model: String,
+    @param:Value("\${invoices.claude.model:claude-sonnet-5-5}") val model: String,
     @param:Value("\${invoices.claude.effort:medium}") val effort: String,
     @param:Value("\${invoices.recognition.timeout-seconds:120}") val timeoutSeconds: Long,
     /** Empty = the SDK's default. Set only by ClaudeInvoiceRecognizerTest, to its local mock server. */

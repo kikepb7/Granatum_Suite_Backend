@@ -19,6 +19,9 @@ versiones según [SemVer](https://semver.org/lang/es/). Modelo de ramas en
 
 ### Cambiado
 
+- El reconocimiento de facturas usa por defecto `claude-sonnet-5-5` en lugar de
+  `claude-opus-5-5`: cuesta la mitad por factura. `INVOICES_CLAUDE_MODEL` sigue
+  permitiendo cambiarlo sin tocar el código.
 - **Solo el propietario se registra** (spec 009). `POST /api/auth/sign-up`
   exige el código de arranque; sin él responde `400`.
 - **Alta del personal en un paso** por un `ADMIN`: `POST /api/auth/onboarding` crea la

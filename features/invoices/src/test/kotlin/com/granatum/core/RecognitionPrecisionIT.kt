@@ -49,7 +49,7 @@ class RecognitionPrecisionIT {
         val recognizer = ClaudeInvoiceRecognizer(
             InvoiceClaudeSettings(
                 apiKey = key,
-                model = System.getenv("INVOICES_CLAUDE_MODEL") ?: "claude-opus-5-5",
+                model = System.getenv("INVOICES_CLAUDE_MODEL") ?: "claude-sonnet-5-5",
                 effort = System.getenv("INVOICES_CLAUDE_EFFORT") ?: "medium",
                 timeoutSeconds = 120,
                 fallbacks = System.getenv("INVOICES_CLAUDE_FALLBACKS")?.toBoolean() ?: true

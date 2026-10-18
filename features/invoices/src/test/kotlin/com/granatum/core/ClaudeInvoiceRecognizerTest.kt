@@ -38,7 +38,7 @@ class ClaudeInvoiceRecognizerTest {
         recognizer = ClaudeInvoiceRecognizer(
             InvoiceClaudeSettings(
                 apiKey = "clave-de-prueba",
-                model = "claude-opus-5-5",
+                model = "claude-sonnet-5-5",
                 effort = "medium",
                 timeoutSeconds = 2,
                 baseUrl = server.url("/").toString().removeSuffix("/"),
@@ -58,7 +58,7 @@ class ClaudeInvoiceRecognizerTest {
         .setHeader("Content-Type", "application/json")
         .setBody(
             """
-            {"id":"msg_1","type":"message","role":"assistant","model":"claude-opus-5-5",
+            {"id":"msg_1","type":"message","role":"assistant","model":"claude-sonnet-5-5",
              "content":[{"type":"thinking","thinking":"","signature":"firma"},
                         {"type":"text","text":${json.writeValueAsString(text)}}],
              "stop_reason":"$stopReason","stop_sequence":null $extra,
@@ -89,7 +89,7 @@ class ClaudeInvoiceRecognizerTest {
 
         assertEquals("/v1/messages", r.path)
         assertEquals("clave-de-prueba", r.getHeader("x-api-key"), "the key from configuration, explicitly")
-        assertEquals("claude-opus-5-5", body["model"].asText())
+        assertEquals("claude-sonnet-5-5", body["model"].asText())
         assertEquals("medium", body["output_config"]["effort"].asText())
         assertEquals("json_schema", body["output_config"]["format"]["type"].asText())
         val schema = body["output_config"]["format"]["schema"]
@@ -152,7 +152,7 @@ class ClaudeInvoiceRecognizerTest {
         assertEquals("21.00", r.proposal.vatLines[0].vatRate)
         assertEquals(BigDecimal("176.00"), BigDecimal(r.proposal.total))
         assertEquals(listOf("number"), r.proposal.uncertainFields)
-        assertEquals("claude-opus-5-5", r.model)
+        assertEquals("claude-sonnet-5-5", r.model)
         assertEquals(3100, r.inputTokens)
         assertEquals(850, r.outputTokens)
     }

@@ -40,8 +40,8 @@ import java.util.Base64
  *   look for credentials by itself (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, the
  *   `ant auth login` profile on disk) and a context configured "without key"
  *   could still spend money (finding S1).
- * - No `thinking` parameter: on Opus 5.5 thinking is adaptive and cannot be
- *   disabled; depth is set with the effort.
+ * - No `thinking` parameter: thinking is adaptive (Sonnet 5.5 by default) and
+ *   its depth is set with the effort.
  *
  * Errors become a [RecognitionResult.Failed] naming the kind of failure,
  * never quoting the document or the API's message (FR-027).

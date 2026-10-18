@@ -356,15 +356,15 @@ en [`specs/004-invoices/contracts/README.md`](specs/004-invoices/contracts/READM
 
 ### El reconocimiento con Claude
 
-Cada factura se envía **una vez** a la API de Claude (`claude-opus-5-5`), que
+Cada factura se envía **una vez** a la API de Claude (`claude-sonnet-5-5`), que
 devuelve sus datos en un esquema cerrado. Lo que no lee con seguridad lo deja
 vacío; nunca se confirma nada sin la revisión del `ADMIN`. El texto de una
 factura no puede dar órdenes: la llamada no tiene herramientas y lo peor que
 puede pasar es un borrador con campos equivocados, que no se confirma si no
 cuadra.
 
-- **Coste**: unos 0,05 $ por factura con Opus 5.5 (unos 10 $ al mes con 200
-  facturas). Los tokens reales de cada reconocimiento quedan guardados en
+- **Coste**: unos 0,025 $ por factura con Sonnet 5.5 (unos 5 $ al mes con 200
+  facturas; la mitad que con Opus 5.5). Los tokens reales de cada reconocimiento quedan guardados en
   `invoice_recognitions`.
 - **Sin `ANTHROPIC_API_KEY` funciona en modo manual**: las facturas se guardan y
   se rellenan a mano; no se envía nada a ningún sitio.
@@ -391,7 +391,7 @@ la clave vacía y un test lo comprueba.
 | Variable | Defecto | Para qué |
 |----------|---------|----------|
 | `ANTHROPIC_API_KEY` | (vacía) | Clave de la API de Claude. Vacía = modo manual |
-| `INVOICES_CLAUDE_MODEL` | `claude-opus-5-5` | Modelo del reconocimiento |
+| `INVOICES_CLAUDE_MODEL` | `claude-sonnet-5-5` | Modelo del reconocimiento |
 | `INVOICES_CLAUDE_EFFORT` | `medium` | Esfuerzo del modelo |
 | `INVOICES_CLAUDE_FALLBACKS` | `true` | Respaldo del servidor si el modelo rechaza; desactivable si la API lo rechazara |
 | `INVOICES_RECOGNITION_CONCURRENCY` | 3 | Reconocimientos simultáneos |

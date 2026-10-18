@@ -23,7 +23,7 @@ invoices:
     # key put there for development must not reach the suite: no test of this
     # module calls the real API (research.md D-006, D-019; finding S2).
     api-key: ""
-    model: claude-opus-5-5
+    model: claude-sonnet-5-5
     effort: medium
   recognition:
     concurrency: 3

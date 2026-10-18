@@ -292,7 +292,7 @@ notifications:
 invoices:
   claude:
     api-key: ${ANTHROPIC_API_KEY:}
-    model: ${INVOICES_CLAUDE_MODEL:claude-opus-5-5}
+    model: ${INVOICES_CLAUDE_MODEL:claude-sonnet-5-5}
     effort: ${INVOICES_CLAUDE_EFFORT:medium}
   recognition:
     concurrency: ${INVOICES_RECOGNITION_CONCURRENCY:3}
