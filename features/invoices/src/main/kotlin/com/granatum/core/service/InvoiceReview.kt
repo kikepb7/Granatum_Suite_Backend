@@ -1,6 +1,7 @@
 package com.granatum.core.service
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.granatum.core.domain.event.InvoiceSheetChange
 import com.granatum.core.domain.exception.CompanyNotConfiguredException
 import com.granatum.core.domain.exception.InvoiceStatusNotAllowedException
 import com.granatum.core.domain.exception.DuplicateInvoiceException
@@ -23,6 +24,7 @@ import com.granatum.core.infrastructure.database.repositories.InvoiceChangeRepos
 import com.granatum.core.infrastructure.database.repositories.InvoiceRecognitionRepository
 import com.granatum.core.infrastructure.database.repositories.InvoiceRepository
 import com.granatum.core.validation.NifValidator
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Service
@@ -42,6 +44,10 @@ import java.util.UUID
  *   (FR-016), and never left incomplete.
  * - The logical duplicate is checked here for a readable error and refused by
  *   the partial unique index whatever happens here (D-015).
+ * - Confirming, and correcting or discarding a confirmed invoice, publish
+ *   [InvoiceSheetChange] inside the transaction (feature 012, US3): the
+ *   Google Sheets copy queues its write in that same transaction. A draft
+ *   publishes nothing, since it is never copied (FR-017).
  */
 @Service
 class InvoiceReview(
@@ -52,6 +58,7 @@ class InvoiceReview(
     private val quarters: QuarterLock,
     private val probe: InvoiceConcurrencyProbe,
     private val json: InvoicingJson,
+    private val events: ApplicationEventPublisher,
     private val clock: Clock = Clock.systemUTC()
 ) {
     private val madrid = ZoneId.of("Europe/Madrid")
@@ -71,6 +78,7 @@ class InvoiceReview(
             val onlyType = before.copy(type = updated.type, version = 0) == updated.copy(version = 0)
             probe.afterChecks(id)
             recordChange(id, if (onlyType) InvoiceChangeEntity.RECLASSIFICATION else InvoiceChangeEntity.CORRECTION, before, author)
+            events.publishEvent(InvoiceSheetChange(id))
         } else {
             apply(f, values)
             if (f.type == null) {
@@ -101,7 +109,9 @@ class InvoiceReview(
         f.status = InvoiceStatus.CONFIRMED
         f.confirmedBy = author
         f.confirmedAt = clock.instant()
-        return save(f)
+        val confirmed = save(f)
+        events.publishEvent(InvoiceSheetChange(id))
+        return confirmed
     }
 
     @Transactional
@@ -113,6 +123,7 @@ class InvoiceReview(
                 f.issueDate?.let(quarters::requireOpen)
                 probe.afterChecks(id)
                 recordChange(id, InvoiceChangeEntity.DISCARD, f.toDomain(), author)
+                events.publishEvent(InvoiceSheetChange(id))
             }
             else -> Unit
         }

@@ -79,4 +79,16 @@ class SheetsController(
         worker.kick()
         return SheetTaskCreatedDto(id)
     }
+
+    /**
+     * Rewrites the month's receipts tab with every confirmed invoice issued in
+     * it (US3, FR-018). Same flow as [exportShifts].
+     */
+    @PostMapping("/invoices/{year}/{month}/resync")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    fun resyncInvoices(@PathVariable year: Int, @PathVariable month: Int): SheetTaskCreatedDto {
+        val id = exports.resyncInvoices(year, month, requestUserId)
+        worker.kick()
+        return SheetTaskCreatedDto(id)
+    }
 }

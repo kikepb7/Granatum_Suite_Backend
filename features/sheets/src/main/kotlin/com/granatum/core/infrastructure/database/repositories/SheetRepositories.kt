@@ -27,6 +27,7 @@ interface SheetInvoiceRowRepository : Repository<SheetInvoiceRowEntity, UUID> {
     fun save(row: SheetInvoiceRowEntity): SheetInvoiceRowEntity
     fun findById(invoiceId: UUID): Optional<SheetInvoiceRowEntity>
     fun findAllBySpreadsheetIdAndTab(spreadsheetId: String, tab: String): List<SheetInvoiceRowEntity>
+    fun findAllByInvoiceIdIn(invoiceIds: Collection<UUID>): List<SheetInvoiceRowEntity>
     fun deleteById(invoiceId: UUID)
 }
 

@@ -337,7 +337,7 @@ pestaña del mes de su fecha de emisión.
 **Independent Test**: confirmar, corregir el mes y descartar con el fake; el
 borrador nunca se escribe; resincronizar un mes.
 
-- [ ] T039 [P] [US3] Crear `CM/domain/event/InvoiceSheetChange.kt` (`data class
+- [X] T039 [P] [US3] Crear `CM/domain/event/InvoiceSheetChange.kt` (`data class
   InvoiceSheetChange(val invoiceId: UUID)`) y `CM/domain/contract/InvoiceSheetSource.kt`:
   - `row(id): InvoiceSheetRow?`, nulo si la factura no está `CONFIRMED`;
   - `month(YearMonth): List<InvoiceSheetRow>`;
@@ -345,20 +345,20 @@ borrador nunca se escribe; resincronizar un mes.
     `recipientName`, `recipientNif`, `number`, `concept`, `base`, `vatAmount`,
     `surcharge`, `withholdings` y `total`, donde base, IVA y recargo son la suma
     de las líneas. El `toString` oculta los NIF.
-- [ ] T040 [P] [US3] Escribir `INT/InvoiceSheetChangeEventsIT.kt` con
+- [X] T040 [P] [US3] Escribir `INT/InvoiceSheetChangeEventsIT.kt` con
   `@RecordApplicationEvents`:
   - publican el evento: confirmar, corregir una confirmada y descartar una
     confirmada;
   - no lo publican: corregir o descartar un borrador ni la subida.
-- [ ] T041 [P] [US3] Escribir `INT/InvoiceSheetSourceIT.kt`:
+- [X] T041 [P] [US3] Escribir `INT/InvoiceSheetSourceIT.kt`:
   - una confirmada devuelve la fila con las sumas de las líneas de IVA;
   - una en borrador o descartada devuelve `null`;
   - `month` filtra por la fecha de emisión.
-- [ ] T042 [US3] Publicar `InvoiceSheetChange` en `IN/service/InvoiceReview.kt`
+- [X] T042 [US3] Publicar `InvoiceSheetChange` en `IN/service/InvoiceReview.kt`
   (`confirm`, y `correct`/`discard` cuando la factura estaba `CONFIRMED`) con
   `ApplicationEventPublisher`, e implementar
   `IN/infrastructure/contract/InvoiceSheetSourceJpa.kt`. Hacer pasar T040 y T041.
-- [ ] T043 [US3] Escribir `SHT/InvoiceSheetSyncIT.kt` con `FakeSheetsClient` y
+- [X] T043 [US3] Escribir `SHT/InvoiceSheetSyncIT.kt` con `FakeSheetsClient` y
   `InvoiceSheetSource` falso:
   - **atomicidad**:
     - el evento dentro de una transacción que hace rollback no deja tarea;
@@ -373,7 +373,7 @@ borrador nunca se escribe; resincronizar un mes.
   - **coalescencia**: diez cambios seguidos, una escritura;
   - **resincronizar**: `POST /api/sheets/invoices/2026/10/resync` reescribe la
     pestaña con todas las confirmadas y actualiza `sheet_invoice_rows`.
-- [ ] T044 [US3] Implementar:
+- [X] T044 [US3] Implementar:
   - `SH/service/InvoiceSheetChangeListener.kt`:
     `@TransactionalEventListener(phase = BEFORE_COMMIT)` que encola `INVOICE` si
     hay cliente activo y hoja de recibos;
@@ -382,6 +382,11 @@ borrador nunca se escribe; resincronizar un mes.
   - el endpoint `resync`.
 
   Hacer pasar T043.
+
+  **Hecho**: la escritura de una factura tolera que la hoja de recibos
+  **anterior** rechace el borrado (ya no es la nuestra) y sigue con la nueva; la
+  resincronización quita antes la factura de otra pestaña de la misma hoja si el
+  índice la sitúa allí. El listener lanza una pasada inmediata tras el commit.
 
 ---
 
