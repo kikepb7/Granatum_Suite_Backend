@@ -304,6 +304,23 @@ invoices:
     max-bytes-per-file: ${INVOICES_MAX_BYTES_PER_FILE:10485760}
     pdf-max-pages: ${INVOICES_PDF_MAX_PAGES:20}
 
+# Copy of the shift register and the invoices in Google Sheets (feature 012).
+sheets:
+  google:
+    # SECRET: path to the service-account JSON, kept outside the repository and
+    # mounted as a secret. Never its content, never in a versioned file. Empty
+    # means the integration is off and everything else works as before
+    # (specs/012-google-sheets-sync, research.md D-001). The Google libraries
+    # never look for credentials on their own: not GOOGLE_APPLICATION_CREDENTIALS,
+    # not gcloud, not the metadata server.
+    credentials-file: ${GOOGLE_SHEETS_CREDENTIALS_FILE:}
+  worker:
+    # How often the queue of writes is processed. Exports and retries also
+    # trigger an immediate pass.
+    cron: ${SHEETS_WORKER_CRON:*/30 * * * * *}
+  # Transient failures before a write is left FAILED for the ADMIN to retry.
+  max-attempts: ${SHEETS_MAX_ATTEMPTS:8}
+
 # Materials' images (feature 010) in a PRIVATE Supabase Storage bucket. Only
 # service-key is a secret, and it has no value here, ever (principle VI). With
 # the URL or the key empty there is no Storage: the inventory works and only

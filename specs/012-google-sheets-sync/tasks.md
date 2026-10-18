@@ -25,14 +25,19 @@ que la implementación y deben fallar primero.
 
 ## Phase 1: Setup
 
-- [ ] T001 Añadir al catálogo `gradle/libs.versions.toml`:
+- [X] T001 Añadir al catálogo `gradle/libs.versions.toml`:
   - `google-api-services-sheets` `v4-rev20250603-2.0.0`
   - `google-auth-library-oauth2-http` `1.48.0`
   - `google-http-client-gson` `1.47.0`
 
   Antes, comprobar en Maven Central que son las últimas estables y ajustar si
   hay otras.
-- [ ] T002 Crear el módulo `features/sheets`:
+
+  **Hecho (2026-10-18)**: las últimas estables eran `v4-rev20260930-2.0.0`,
+  `1.54.0` y `2.2.0`, y son las fijadas. Se fija también `google-api-client`
+  `2.9.1`: el artefacto de Sheets aún declara la 2.7.2, compilada contra
+  `google-http-client` 1.x, y la librería de autenticación trae la 2.x.
+- [X] T002 Crear el módulo `features/sheets`:
   - `features/sheets/build.gradle.kts` igual que `features/invoices/build.gradle.kts`
     (plugins `java-library`, `granatum.spring-boot-service`, `kotlin("plugin.jpa")`);
     `implementation(projects.common)` como única dependencia de proyecto, más las
@@ -40,8 +45,8 @@ que la implementación y deben fallar primero.
   - `test` excluye el tag `sheets-real`, y la tarea `sheetsRealTest` lo incluye,
     copiando el patrón de `claudeRealTest`;
   - `include("features:sheets")` en `settings.gradle.kts`.
-- [ ] T003 Añadir `implementation(projects.features.sheets)` en `app/build.gradle.kts`.
-- [ ] T004 [P] Crear `SHT/SheetsTestApplication.kt` (`@SpringBootApplication
+- [X] T003 Añadir `implementation(projects.features.sheets)` en `app/build.gradle.kts`.
+- [X] T004 [P] Crear `SHT/SheetsTestApplication.kt` (`@SpringBootApplication
   @EnableJpaAuditing`, como `InvoicesTestApplication`) y
   `features/sheets/src/test/resources/application.yml` con Testcontainers,
   Flyway, `ddl-auto=validate`, `sheets.google.credentials-file: ""` y
@@ -53,7 +58,7 @@ que la implementación y deben fallar primero.
 
 **⚠️ Bloquea US4, US2 y US3** (US1 no depende de esta fase).
 
-- [ ] T005 Crear `features/sheets/src/main/resources/db/migration/V37__create_sheets_tables.sql`:
+- [X] T005 Crear `features/sheets/src/main/resources/db/migration/V37__create_sheets_tables.sql`:
   - **`sheet_settings`**:
     - `id SMALLINT PK CHECK (id = 1)`;
     - `shifts_spreadsheet_id VARCHAR(100) NULL`, `invoices_spreadsheet_id VARCHAR(100) NULL`,
@@ -73,9 +78,9 @@ que la implementación y deben fallar primero.
   - **`sheet_invoice_rows`**: `invoice_id UUID PK`, `spreadsheet_id VARCHAR(100) NOT NULL`,
     `tab VARCHAR(7) NOT NULL`, `written_at TIMESTAMPTZ NOT NULL`.
   - `ENABLE ROW LEVEL SECURITY` en las tres, sin políticas ni `FORCE` (patrón de `V15`).
-- [ ] T006 [P] Crear `SHT/RowLevelSecurityIT.kt` con `expectedTables`, las tres
+- [X] T006 [P] Crear `SHT/RowLevelSecurityIT.kt` con `expectedTables`, las tres
   tablas y la comprobación de `relrowsecurity`, copiando el de invoices.
-- [ ] T007 [P] Crear las entidades y repositorios JPA en `SH/infrastructure/database/`:
+- [X] T007 [P] Crear las entidades y repositorios JPA en `SH/infrastructure/database/`:
   - entidades: `SheetSettingsEntity`, `SheetTaskEntity`, `SheetInvoiceRowEntity`;
   - repositorios: `SheetSettingsRepository`, `SheetTaskRepository` con:
     - `claimDue(limit)` nativa con `FOR UPDATE SKIP LOCKED` sobre
@@ -86,7 +91,7 @@ que la implementación y deben fallar primero.
       si está `RUNNING`, marca `repeat_requested=true`. Devuelve el id;
     - `findStaleRunning(before)`;
   - `SheetInvoiceRowRepository`.
-- [ ] T008 [P] Crear el puerto `SH/domain/port/SheetsClient.kt`:
+- [X] T008 [P] Crear el puerto `SH/domain/port/SheetsClient.kt`:
   - operaciones: `serviceAccountEmail()`, `checkAccess(spreadsheetId)`,
     `rewriteTab(spreadsheetId, tab, header, rows)`,
     `upsertInvoiceRow(spreadsheetId, tab, invoiceId, row)`,
@@ -96,11 +101,11 @@ que la implementación y deben fallar primero.
   - `DisabledSheetsClient`, que lanza `SheetsUnavailableException`.
 
   Las celdas son `String` o `BigDecimal`, para escribir con `RAW`.
-- [ ] T009 [P] Crear `SHT/FakeSheetsClient.kt`, un fake scriptable y en memoria:
+- [X] T009 [P] Crear `SHT/FakeSheetsClient.kt`, un fake scriptable y en memoria:
   - pestañas con sus filas, peticiones registradas y fallos programables por
     llamada;
   - se importa con `@Import(WithFakeSheetsClient::class)` y `@Bean @Primary`.
-- [ ] T010 Crear `SHT/GoogleSheetsClientTest.kt` con OkHttp `MockWebServer`.
+- [X] T010 Crear `SHT/GoogleSheetsClientTest.kt` con OkHttp `MockWebServer`.
   Comprueba con `sheets.google.root-url` y `token-url` apuntando al servidor:
   - token con alcance `https://www.googleapis.com/auth/spreadsheets`;
   - `rewriteTab`: `get` con `fields=sheets.properties`, luego `addSheet` solo si
@@ -114,7 +119,7 @@ que la implementación y deben fallar primero.
 
   Usa un JSON de cuenta de servicio de prueba generado en el test, con una clave
   RSA efímera.
-- [ ] T011 Implementar `SH/infrastructure/google/`:
+- [X] T011 Implementar `SH/infrastructure/google/`:
   - **`SheetsGoogleSettings`**: `@Value` de `sheets.google.credentials-file`
     (`${GOOGLE_SHEETS_CREDENTIALS_FILE:}`), `root-url` y `token-url` (vacíos =
     los de Google); `active` si el fichero no es vacío; `toString` sin ruta ni
@@ -130,13 +135,13 @@ que la implementación y deben fallar primero.
     puede leer, falla el arranque con un mensaje claro sin mostrar el contenido.
 
   Hacer pasar T010.
-- [ ] T012 Escribir `SHT/SheetTaskQueueIT.kt`:
+- [X] T012 Escribir `SHT/SheetTaskQueueIT.kt`:
   - `upsertPending` dos veces seguidas deja una sola tarea `PENDING`;
   - sobre una `RUNNING`, marca `repeat_requested`;
   - una `FAILED` no impide crear una nueva.
-- [ ] T013 Implementar `SH/service/SheetTaskQueue.kt` (`enqueue(kind, reference, requestedBy)`,
+- [X] T013 Implementar `SH/service/SheetTaskQueue.kt` (`enqueue(kind, reference, requestedBy)`,
   `retry(id)`, `retryAllFailed()`) y hacer pasar T012.
-- [ ] T014 Escribir `SHT/SheetTaskWorkerIT.kt` con `FakeSheetsClient`:
+- [X] T014 Escribir `SHT/SheetTaskWorkerIT.kt` con `FakeSheetsClient`:
   - una tarea vencida se ejecuta y queda `DONE` con `completed_at`;
   - error transitorio: `attempts+1` y `next_attempt_at = now + min(2^attempts, 60) min`;
   - tras `sheets.max-attempts` (8) queda `FAILED`;
@@ -147,7 +152,7 @@ que la implementación y deben fallar primero.
   - la llamada al cliente se hace sin transacción activa (como hace
     `FakeInvoiceRecognizer`);
   - las `DONE` de más de 90 días se depuran.
-- [ ] T015 Implementar `SH/scheduling/SheetTaskWorker.kt`:
+- [X] T015 Implementar `SH/scheduling/SheetTaskWorker.kt`:
   - `@Scheduled(cron = "\${sheets.worker.cron:*/30 * * * * *}", zone = "Europe/Madrid")`;
   - `runOnce()` público: reclama en una transacción corta, escribe fuera de
     transacción y anota el resultado en otra;
@@ -156,7 +161,7 @@ que la implementación y deben fallar primero.
     interfaz `SheetTaskHandler` registrada por `kind`.
 
   Hacer pasar T014.
-- [ ] T016 Añadir el bloque `sheets:` a `app/src/main/resources/application.yml`:
+- [X] T016 Añadir el bloque `sheets:` a `app/src/main/resources/application.yml`:
   - `google.credentials-file: ${GOOGLE_SHEETS_CREDENTIALS_FILE:}`, con comentario:
     secreto, vacío = desactivado;
   - `worker.cron: ${SHEETS_WORKER_CRON:*/30 * * * * *}`;
@@ -230,7 +235,7 @@ estado de la cola.
 **Independent Test**: `PUT` con hojas válidas, no compartidas, de solo lectura e
 iguales; `GET` del estado; reintento de una fallida.
 
-- [ ] T027 [P] [US4] Escribir `SHT/SheetsSettingsControllerIT.kt` con `FakeSheetsClient`:
+- [X] T027 [P] [US4] Escribir `SHT/SheetsSettingsControllerIT.kt` con `FakeSheetsClient`:
   - `GET` sin credenciales → `available:false` (con `DisabledSheetsClient`);
   - `GET` con credenciales → `serviceAccountEmail` y hojas `null`;
   - `PUT` con enlace completo e id → `200`, con id extraído y URLs construidas;
@@ -240,19 +245,19 @@ iguales; `GET` del estado; reintento de una fallida.
   - Google transitorio → `502 SHEETS_UNREACHABLE` sin guardar;
   - texto inválido → `400 VALIDATION`;
   - sin credenciales → `503 SHEETS_UNAVAILABLE`.
-- [ ] T028 [P] [US4] Escribir `SHT/SheetsStatusControllerIT.kt`:
+- [X] T028 [P] [US4] Escribir `SHT/SheetsStatusControllerIT.kt`:
   - `GET /api/sheets/status`: `lastSuccessAt`, `pending`, `failed` y `recent`
     (como mucho 20, del más reciente al más antiguo);
   - `GET /api/sheets/tasks/{id}` y su `404 TASK_NOT_FOUND`;
   - `POST /api/sheets/tasks/{id}/retry` → `202`, o `409 TASK_NOT_FAILED`;
   - `POST /api/sheets/tasks/retry-failed` → `{requeued}`.
-- [ ] T029 [US4] Implementar `SH/service/SheetSettingsService.kt`:
+- [X] T029 [US4] Implementar `SH/service/SheetSettingsService.kt`:
   - extrae el id de `/spreadsheets/d/{id}/` o lo acepta tal cual (regex
     `[A-Za-z0-9_-]{20,100}`);
   - `checkAccess` de las dos hojas fuera de transacción y guarda en una
     transacción corta;
   - `configured_by` = persona autenticada.
-- [ ] T030 [US4] Implementar `SH/api/dto/SheetsDtos.kt`,
+- [X] T030 [US4] Implementar `SH/api/dto/SheetsDtos.kt`,
   `SH/api/controllers/SheetsController.kt` (settings, status, tasks y retry) y
   `SH/api/exception_handling/SheetsExceptionHandler.kt` con los códigos de
   contracts/README.md. Hacer pasar T027 y T028.
