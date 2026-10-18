@@ -29,6 +29,7 @@ data class SignUpData(
     val email: String,
     val password: String,
     val name: String,
+    val lastName: String,
     val identityDocument: String,
     val bootstrapCode: String
 ) {
@@ -93,6 +94,7 @@ class SignUpService(
             val employeeId = staffRecords.findByDocument(identityDocument) ?: staffRecords.create(
                 NewStaffRecord(
                     name = input.name.trim(),
+                    lastName = input.lastName.trim(),
                     identityDocument = identityDocument,
                     // 005 research.md D-008: documented defaults the ADMIN
                     // corrects later with PUT /api/empleados/{id}.

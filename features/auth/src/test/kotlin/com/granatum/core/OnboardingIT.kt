@@ -37,7 +37,7 @@ class OnboardingIT : BaseAuthIT() {
     }
 
     private fun onboarding(email: String = uniqueEmail(), identityDocument: String = validDni(), role: Role = Role.EMPLOYEE) =
-        OnboardingData("Ana Florista", identityDocument, "Florista", "PART_TIME", LocalDate.of(2026, 10, 1), email, role)
+        OnboardingData("Ana", "Florista Gómez", identityDocument, "Florista", "PART_TIME", LocalDate.of(2026, 10, 1), email, role)
 
     @Test
     fun `a new person gets a staff record and an account with a temporary password to change`() {
@@ -47,6 +47,8 @@ class OnboardingIT : BaseAuthIT() {
 
         assertTrue(onboarded.staffRecordCreated)
         val staffRecord = directory.createdRecords.last()
+        assertEquals("Ana", staffRecord.name)
+        assertEquals("Florista Gómez", staffRecord.lastName, "feature 012: the last name reaches the staff record")
         assertEquals("Florista", staffRecord.position)
         assertEquals("PART_TIME", staffRecord.contractType)
         assertEquals(onboarded.account.employeeId, directory.findByDocument(staffRecord.identityDocument))

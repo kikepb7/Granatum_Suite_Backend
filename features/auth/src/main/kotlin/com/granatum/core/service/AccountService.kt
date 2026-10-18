@@ -55,6 +55,7 @@ class AccountService(
     /** The staff record and the account an ADMIN asks for in one onboarding (feature 009). */
     data class OnboardingData(
         val name: String,
+        val lastName: String,
         val identityDocument: String,
         val position: String,
         val contractType: String,
@@ -102,7 +103,10 @@ class AccountService(
             val existing = staffRecords.findByDocument(identityDocument)
             if (existing != null && accounts.existsByEmployeeId(existing)) throw AccountAlreadyExistsException()
             val employeeId = existing ?: staffRecords.create(
-                NewStaffRecord(input.name.trim(), identityDocument, input.position.trim(), input.contractType, input.hireDate)
+                NewStaffRecord(
+                    input.name.trim(), input.lastName.trim(), identityDocument, input.position.trim(),
+                    input.contractType, input.hireDate
+                )
             )
 
             accounts.save(

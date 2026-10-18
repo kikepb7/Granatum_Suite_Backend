@@ -84,7 +84,7 @@ class StaffRegisterExportIT {
 
     @Test
     fun `everyone with shifts in the range appears, including someone who has left`() {
-        val people = RegisterCsvReader.rows(export()).map { it["Persona"] }
+        val people = RegisterCsvReader.rows(export()).map { it["Nombre"] }
         assertEquals(6, people.size)
         assertEquals(true, "Bea Baja" in people, "SC-011: leaving does not end the register")
         assertEquals(false, "Fuera Delrango" in people)
@@ -99,7 +99,7 @@ class StaffRegisterExportIT {
     fun `people are ordered by name with Spanish collation`() {
         assertEquals(
             listOf("Ángel", "Bea Baja", "Nuria", "Óscar", "Pablo", "Zoe"),
-            RegisterCsvReader.rows(export()).map { it["Persona"] }
+            RegisterCsvReader.rows(export()).map { it["Nombre"] }
         )
     }
 

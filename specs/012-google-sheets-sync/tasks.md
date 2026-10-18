@@ -176,44 +176,44 @@ que la implementación y deben fallar primero.
 **Independent Test**: alta con y sin `lastName`; persona antigua con
 `lastNamePending: true`; CSV con `Nombre` y `Apellidos`.
 
-- [ ] T017 [P] [US1] Ampliar los ITs de empleados en `TTT/` (el que cubre
+- [X] T017 [P] [US1] Ampliar los ITs de empleados en `TTT/` (el que cubre
   `EmployeeController`):
   - `POST` y `PUT` sin `lastName` → `400 VALIDATION`;
   - con `lastName` "García López" se devuelve;
   - una fila insertada sin `last_name` devuelve `lastName: null` y
     `lastNamePending: true`;
   - `lastName` de 151 caracteres → `400`.
-- [ ] T018 [P] [US1] Ampliar los ITs de onboarding y sign-up en
+- [X] T018 [P] [US1] Ampliar los ITs de onboarding y sign-up en
   `features/auth/src/test/kotlin/com/granatum/core/`: `lastName` obligatorio
   (`@NotBlank @Size(max=150)`), y la persona creada lo tiene.
-- [ ] T019 [P] [US1] Ampliar el test de `RegisterCsvWriter` en `TTT/`:
+- [X] T019 [P] [US1] Ampliar el test de `RegisterCsvWriter` en `TTT/`:
   - cabecera `Nombre;Apellidos;Documento;…` (sin `Documento` para
     `REPRESENTATIVE`);
   - apellidos vacíos si faltan;
   - nombre completo en `Correcciones`.
-- [ ] T020 [US1] Crear `features/timetracking/src/main/resources/db/migration/V35__add_employee_last_name.sql`:
+- [X] T020 [US1] Crear `features/timetracking/src/main/resources/db/migration/V35__add_employee_last_name.sql`:
   `ALTER TABLE employees ADD COLUMN last_name VARCHAR(150) NULL`, con un
   comentario: nula = pendiente; no se parten los nombres existentes.
-- [ ] T021 [US1] Añadir `lastName` (`@Column(name="last_name", length=150)`,
+- [X] T021 [US1] Añadir `lastName` (`@Column(name="last_name", length=150)`,
   nullable) a `TT/infrastructure/database/entities/EmployeeEntity.kt`, y los
   mapeos al dominio.
-- [ ] T022 [US1] En `TT/api/dto/EmployeeDtos.kt` y su servicio:
+- [X] T022 [US1] En `TT/api/dto/EmployeeDtos.kt` y su servicio:
   - `CreateEmployeeRequest` y `UpdateEmployeeRequest` con
     `lastName: String` `@NotBlank @Size(min=1, max=150)`;
   - `EmployeeDto` con `lastName: String?` y `lastNamePending: Boolean`
     (= `lastName == null`).
-- [ ] T023 [US1] Añadir `lastName` a `NewStaffRecord` en `CM/domain/contract/StaffRecords.kt`
+- [X] T023 [US1] Añadir `lastName` a `NewStaffRecord` en `CM/domain/contract/StaffRecords.kt`
   (y a su `toString`, oculto) y a `TT/…/StaffRecordsJpa.kt`.
-- [ ] T024 [US1] En `AU/api/dto/SignUpDtos.kt`, `SignUpRequest` y
+- [X] T024 [US1] En `AU/api/dto/SignUpDtos.kt`, `SignUpRequest` y
   `OnboardingRequest` con `lastName` `@NotBlank @Size(max=150)`. Propagar a
   `SignUpData` y `OnboardingData`, y luego a `NewStaffRecord`, en
   `AU/service/SignUpService.kt` y `AU/service/AccountService.kt`.
-- [ ] T025 [US1] En `TT/domain/service/RegisterCsvWriter.kt` y `RegisterExportService.kt`:
+- [X] T025 [US1] En `TT/domain/service/RegisterCsvWriter.kt` y `RegisterExportService.kt`:
   - la columna `Persona` pasa a ser `Nombre` y `Apellidos`;
   - quien pide o aprueba una corrección aparece con su nombre completo.
 
   Hacer pasar T017 a T019.
-- [ ] T026 [US1] Actualizar los fixtures y helpers de tests de todos los módulos
+- [X] T026 [US1] Actualizar los fixtures y helpers de tests de todos los módulos
   que crean empleados o llaman a onboarding o sign-up (buscar `NewStaffRecord(`,
   `CreateEmployeeRequest(`, `"name":` en `src/test`). Todo `./gradlew test` de
   módulos en verde.

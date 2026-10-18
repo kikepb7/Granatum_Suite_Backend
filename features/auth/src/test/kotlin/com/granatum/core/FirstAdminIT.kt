@@ -61,7 +61,7 @@ class FirstAdminIT : BaseAuthIT() {
         email: String = uniqueEmail(),
         identityDocument: String = validDni(),
         code: String = CODE
-    ) = SignUpData(email, password, "Jefa de Granatum", identityDocument, code)
+    ) = SignUpData(email, password, "Jefa", "de Granatum", identityDocument, code)
 
     @Test
     fun `the right code with no ADMIN creates the ADMIN account and a staff record`() {
@@ -77,6 +77,8 @@ class FirstAdminIT : BaseAuthIT() {
         assertEquals(created.employeeId, account.employeeId)
 
         val staffRecord = directory.createdRecords.last()
+        assertEquals("Jefa", staffRecord.name)
+        assertEquals("de Granatum", staffRecord.lastName, "feature 012: the owner's last name reaches the staff record")
         assertEquals("Dirección", staffRecord.position)
         assertEquals("FULL_TIME", staffRecord.contractType)
         assertEquals(LocalDate.now(ZoneId.of("Europe/Madrid")), staffRecord.hireDate)

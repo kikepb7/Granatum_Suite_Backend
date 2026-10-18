@@ -32,7 +32,8 @@ class RegisterCsvWriterTest {
         LocalDateTime.of(LocalDate.parse(date), java.time.LocalTime.parse(time)).atZone(madrid).toInstant()
 
     private fun row(
-        person: String = "Ana Pérez",
+        name: String = "Ana",
+        lastName: String? = "Pérez",
         document: String? = "12345678Z",
         position: String = "Florista",
         minutes: Int? = 510,
@@ -41,7 +42,8 @@ class RegisterCsvWriterTest {
         original: OriginalShiftValues? = null,
         corrections: List<AppliedCorrection> = emptyList()
     ) = RegisterRow(
-        person = person,
+        name = name,
+        lastName = lastName,
         document = document,
         position = position,
         date = LocalDate.parse("2026-10-05"),
@@ -102,7 +104,7 @@ class RegisterCsvWriterTest {
     }
 
     private val fullHeader = listOf(
-        "Persona", "Documento", "Puesto", "Fecha", "Entrada", "Salida", "Pausas",
+        "Nombre", "Apellidos", "Documento", "Puesto", "Fecha", "Entrada", "Salida", "Pausas",
         "Horas trabajadas", "Minutos trabajados", "Estado", "Completado a posteriori",
         "Corregido", "Entrada original", "Salida original", "Pausas originales", "Correcciones"
     )
@@ -129,7 +131,7 @@ class RegisterCsvWriterTest {
     fun `a closed day is written in the documented formats`() {
         val line = lines(write(listOf(row()))).last()
         assertEquals(
-            "Ana Pérez;12345678Z;Florista;2026-10-05;2026-10-05 07:00;2026-10-05 16:00;" +
+            "Ana;Pérez;12345678Z;Florista;2026-10-05;2026-10-05 07:00;2026-10-05 16:00;" +
                 "COMIDA 11:00-11:30;8:30;510;CERRADO;No;No;;;;",
             line
         )
@@ -147,7 +149,7 @@ class RegisterCsvWriterTest {
     @Test
     fun `values with separators, quotes or line breaks are quoted and keep the column count`() {
         val rows = listOf(
-            row(person = "Pérez; Ana"),
+            row(name = "Pérez; Ana"),
             row(position = "Florista \"senior\""),
             row(position = "Línea uno\r\nlínea dos"),
             row(position = "Solo\nLF")
@@ -172,7 +174,7 @@ class RegisterCsvWriterTest {
         }
         assertEquals(5, records.size, "header plus four rows, whatever the values contain")
         records.forEach { assertEquals(fullHeader.size, cells(it).size, "FR-010: $it") }
-        assertEquals("Línea uno\r\nlínea dos", cells(records[3])[2])
+        assertEquals("Línea uno\r\nlínea dos", cells(records[3])[3])
     }
 
     @Test
@@ -180,10 +182,10 @@ class RegisterCsvWriterTest {
         val dangerous = listOf("=1+1", "+34 600", "-2+3", "@SUM(A1)", "\tTab", "\rCR")
         dangerous.forEach { value ->
             // A lone CR is not a line end, so the record is still the last line.
-            val cell = cells(lines(write(listOf(row(person = value)))).last())[0]
+            val cell = cells(lines(write(listOf(row(name = value)))).last())[0]
             assertEquals("'$value", cell, "SC-006: '$value' must be text, not a formula")
         }
-        val raw = String(write(listOf(row(person = "=HYPERLINK(\"x\")"))), Charsets.UTF_8)
+        val raw = String(write(listOf(row(name = "=HYPERLINK(\"x\")"))), Charsets.UTF_8)
         assertTrue(raw.contains("\"'=HYPERLINK(\"\"x\"\")\""), "prefixed and quoted")
     }
 
@@ -251,12 +253,12 @@ class RegisterCsvWriterTest {
         assertEquals(fullHeader - "Documento", header)
         assertFalse(lines.last().contains("12345678Z"))
         assertEquals(header.size, cells(lines.last()).size)
-        assertEquals("Florista", cells(lines.last())[1], "everything shifts one position")
+        assertEquals("Florista", cells(lines.last())[2], "everything shifts one position")
     }
 
     @Test
     fun `the same rows produce the same bytes`() {
-        val rows = listOf(row(), row(person = "Zoe"), row(minutes = null, clockOut = null))
+        val rows = listOf(row(), row(name = "Zoe"), row(minutes = null, clockOut = null))
         assertContentEquals(write(rows), write(rows), "FR-011")
     }
 
@@ -284,5 +286,66 @@ class RegisterCsvWriterTest {
             assertEquals(listOf("Mes cerrado", "No"), cells(lines[blankLine + 3]).take(2))
             assertEquals(blankLine + 4, lines.size)
         }
+    }
+
+    // --- Feature 012: name and last name in separate columns ----------------
+
+    /** FR-004: `Persona` becomes `Nombre` and `Apellidos`, and REPRESENTATIVE still has no `Documento`. */
+    @Test
+    fun `the header splits the person into name and last name, with and without the document`() {
+        assertEquals(
+            listOf("Nombre", "Apellidos", "Documento", "Puesto"),
+            cells(lines(write(emptyList())).single()).take(4)
+        )
+        assertEquals(
+            listOf("Nombre", "Apellidos", "Puesto"),
+            cells(lines(write(emptyList(), includeDocument = false)).single()).take(3)
+        )
+    }
+
+    @Test
+    fun `name and last name go in their own cells`() {
+        val cells = cells(lines(write(listOf(row(name = "Ana María", lastName = "García López")))).last())
+        assertEquals("Ana María", cells[fullHeader.indexOf("Nombre")])
+        assertEquals("García López", cells[fullHeader.indexOf("Apellidos")])
+        assertEquals("12345678Z", cells[fullHeader.indexOf("Documento")])
+    }
+
+    /** FR-003: someone registered before the feature keeps the name whole and an empty last name. */
+    @Test
+    fun `a missing last name leaves its cell empty and keeps the column count`() {
+        val line = lines(write(listOf(row(name = "María García López", lastName = null)))).last()
+        val cells = cells(line)
+        assertEquals("María García López", cells[0], "the name is not split")
+        assertEquals("", cells[1])
+        assertEquals(fullHeader.size, cells.size)
+    }
+
+    @Test
+    fun `the last name is guarded against formulas like any other text`() {
+        val cells = cells(lines(write(listOf(row(lastName = "=1+1")))).last())
+        assertEquals("'=1+1", cells[fullHeader.indexOf("Apellidos")])
+    }
+
+    /** Whoever requests or approves a correction appears with the full name. */
+    @Test
+    fun `the full name joins name and last name, and is the bare name while the last name is pending`() {
+        assertEquals("Ana Pérez", RegisterCsvWriter.fullName("Ana", "Pérez"))
+        assertEquals("María García López", RegisterCsvWriter.fullName("María García López", null))
+        assertEquals("Ana", RegisterCsvWriter.fullName("Ana", " "))
+
+        val row = row(
+            corrections = listOf(
+                AppliedCorrection(
+                    instantOf("2026-10-07", "09:12"),
+                    RegisterCsvWriter.fullName("Ana", "Pérez"),
+                    RegisterCsvWriter.fullName("Luis", "Gil Martín")
+                )
+            )
+        )
+        assertEquals(
+            "2026-10-07 09:12 solicitada por Ana Pérez, aprobada por Luis Gil Martín",
+            cells(lines(write(listOf(row))).last())[fullHeader.indexOf("Correcciones")]
+        )
     }
 }

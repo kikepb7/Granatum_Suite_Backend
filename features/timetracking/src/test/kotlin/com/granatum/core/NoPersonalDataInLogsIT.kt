@@ -130,6 +130,7 @@ class NoPersonalDataInLogsIT {
 
         val employee = employeeService.create(
             name = "Persona de prueba",
+            lastName = "Gómez",
             identityDocument = document,
             position = "Florista",
             contractType = ContractType.FULL_TIME,
@@ -165,13 +166,13 @@ class NoPersonalDataInLogsIT {
         val document = uniqueDocument()
 
         employeeService.create(
-            "Primera", document, "Florista",
+            "Primera", "Gómez", document, "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
         val error = assertFailsWith<DuplicateDocumentException> {
             employeeService.create(
-                "Segunda", document, "Montador",
+                "Segunda", "Gómez", document, "Montador",
                 ContractType.PART_TIME, LocalDate.parse("2026-10-02")
             )
         }
@@ -193,6 +194,7 @@ class NoPersonalDataInLogsIT {
 
         val entity = EmployeeEntity(
             name = "Persona de prueba",
+            lastName = "Gómez",
             identityDocument = document,
             position = "Florista",
             contractType = ContractType.FULL_TIME,
@@ -204,6 +206,7 @@ class NoPersonalDataInLogsIT {
             entity.toString().contains(document),
             "EmployeeEntity.toString leaks the document: $entity"
         )
+        assertFalse(entity.toString().contains("Gómez"), "nor the last name (feature 012): $entity")
     }
 
     /**
@@ -214,7 +217,7 @@ class NoPersonalDataInLogsIT {
     fun `the scheduled job logs counts and not identifiers`() {
         val document = uniqueDocument()
         val employee = employeeService.create(
-            "Persona", document, "Florista",
+            "Persona", "Gómez", document, "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
         val yesterday = LocalDate.now(madrid).minusDays(1)

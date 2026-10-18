@@ -69,7 +69,8 @@ class EmployeeIT {
     @Test
     fun `an engagement is registered as active`() {
         val employee = employeeService.create(
-            name = "Maria Lopez Ruiz",
+            name = "Maria",
+            lastName = "Lopez Ruiz",
             identityDocument = validDni(),
             position = "Florista",
             contractType = ContractType.FULL_TIME,
@@ -77,7 +78,8 @@ class EmployeeIT {
         )
 
         assertTrue(employee.active)
-        assertEquals("Maria Lopez Ruiz", employee.name)
+        assertEquals("Maria", employee.name)
+        assertEquals("Lopez Ruiz", employee.lastName)
         assertEquals(ContractType.FULL_TIME, employee.contractType)
     }
 
@@ -86,13 +88,13 @@ class EmployeeIT {
     fun `a duplicate document is rejected`() {
         val dni = validDni()
         employeeService.create(
-            "Primera Persona", dni, "Florista",
+            "Primera Persona", "Gómez", dni, "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
         assertFailsWith<DuplicateDocumentException> {
             employeeService.create(
-                "Segunda Persona", dni, "Montador",
+                "Segunda Persona", "Gómez", dni, "Montador",
                 ContractType.PART_TIME, LocalDate.parse("2026-10-02")
             )
         }
@@ -109,13 +111,13 @@ class EmployeeIT {
         val letter = "TRWAGMYFPDXBNJZSQVHLCKE"[number % 23]
 
         employeeService.create(
-            "Primera Persona", "$number$letter", "Florista",
+            "Primera Persona", "Gómez", "$number$letter", "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
         assertFailsWith<DuplicateDocumentException> {
             employeeService.create(
-                "Segunda Persona", "$number-${letter.lowercaseChar()}", "Montador",
+                "Segunda Persona", "Gómez", "$number-${letter.lowercaseChar()}", "Montador",
                 ContractType.PART_TIME, LocalDate.parse("2026-10-02")
             )
         }
@@ -127,7 +129,7 @@ class EmployeeIT {
         val letter = "TRWAGMYFPDXBNJZSQVHLCKE"[number % 23]
 
         val employee = employeeService.create(
-            "Persona", " $number-${letter.lowercaseChar()} ", "Florista",
+            "Persona", "Gómez", " $number-${letter.lowercaseChar()} ", "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
@@ -138,7 +140,7 @@ class EmployeeIT {
     @Test
     fun `deactivating stops clocking in and leaves the history whole`() {
         val employee = employeeService.create(
-            "Persona", validDni(), "Florista",
+            "Persona", "Gómez", validDni(), "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
@@ -162,7 +164,7 @@ class EmployeeIT {
     @Test
     fun `reactivating allows clocking in again`() {
         val employee = employeeService.create(
-            "Persona", validDni(), "Florista",
+            "Persona", "Gómez", validDni(), "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
@@ -192,19 +194,21 @@ class EmployeeIT {
     fun `an update changes the job data but not the document`() {
         val dni = validDni()
         val employee = employeeService.create(
-            "Nombre Original", dni, "Florista",
+            "Nombre Original", "Gómez", dni, "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
         val updated = employeeService.update(
             id = employee.id,
             name = "Nombre Corregido",
+            lastName = "Gómez",
             position = "Encargada de taller",
             contractType = ContractType.PART_TIME,
             hireDate = LocalDate.parse("2026-09-15")
         )
 
         assertEquals("Nombre Corregido", updated.name)
+        assertEquals("Gómez", updated.lastName)
         assertEquals("Encargada de taller", updated.position)
         assertEquals(ContractType.PART_TIME, updated.contractType)
         assertEquals(dni, updated.identityDocument, "the document is untouched by an update")
@@ -214,11 +218,11 @@ class EmployeeIT {
     @Test
     fun `listing can be filtered by active status`() {
         val activeEmployee = employeeService.create(
-            "Activa", validDni(), "Florista",
+            "Activa", "Gómez", validDni(), "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
         val inactiveEmployee = employeeService.create(
-            "Inactiva", validDni(), "Montador",
+            "Inactiva", "Gómez", validDni(), "Montador",
             ContractType.HOURLY, LocalDate.parse("2026-10-01")
         )
         employeeService.setActive(inactiveEmployee.id, false)
@@ -240,7 +244,7 @@ class EmployeeIT {
     @Test
     fun `someone with an open shift can still be deactivated`() {
         val employee = employeeService.create(
-            "Persona", validDni(), "Florista",
+            "Persona", "Gómez", validDni(), "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
         val openShift = shiftService.clockIn(

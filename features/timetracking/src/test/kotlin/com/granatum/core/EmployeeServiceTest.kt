@@ -27,7 +27,7 @@ class EmployeeServiceTest {
 
         assertFailsWith<DuplicateDocumentException> {
             service.create(
-                "Persona", "12345678Z", "Florista",
+                "Persona", "Gómez", "12345678Z", "Florista",
                 ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
             )
         }
@@ -44,7 +44,7 @@ class EmployeeServiceTest {
 
         assertFailsWith<DuplicateDocumentException> {
             service.create(
-                "Persona", " 12345678-z ", "Florista",
+                "Persona", "Gómez", " 12345678-z ", "Florista",
                 ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
             )
         }
@@ -57,7 +57,7 @@ class EmployeeServiceTest {
         every { repository.save(capture(saved)) } answers { saved.captured }
 
         service.create(
-            "Persona", "12345678-z", "Florista",
+            "Persona", "Gómez", "12345678-z", "Florista",
             ContractType.FULL_TIME, LocalDate.parse("2026-10-01")
         )
 
@@ -71,7 +71,7 @@ class EmployeeServiceTest {
 
         assertFailsWith<EmployeeNotFoundException> {
             service.update(
-                id, "Nombre", "Puesto",
+                id, "Nombre", "Gómez", "Puesto",
                 ContractType.PART_TIME, LocalDate.parse("2026-10-01")
             )
         }

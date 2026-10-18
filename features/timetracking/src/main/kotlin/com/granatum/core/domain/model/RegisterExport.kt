@@ -16,7 +16,9 @@ import java.util.UUID
  * blank.
  */
 data class RegisterRow(
-    val person: String,
+    val name: String,
+    /** Null while pending (feature 012, FR-003): the cell is left empty, the name is not split. */
+    val lastName: String?,
     val document: String?,
     val position: String,
     val date: LocalDate,

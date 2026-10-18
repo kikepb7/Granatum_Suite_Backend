@@ -46,12 +46,14 @@ interface StaffRecords {
  * it must be one of `FULL_TIME`, `PART_TIME` or `HOURLY`, which the
  * caller validates at its edge and the implementation enforces again.
  *
- * `toString` is overridden: name and document are personal data and a data
+ * `toString` is overridden: name, last name and document are personal data and a data
  * class would print them in any log line or exception message that mentions
  * the object (principle VI).
  */
 data class NewStaffRecord(
     val name: String,
+    /** Required since feature 012: every new staff record has one (FR-001). */
+    val lastName: String,
     val identityDocument: String,
     val position: String,
     val contractType: String,

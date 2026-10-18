@@ -27,6 +27,7 @@ class OnboardingController(private val accountService: AccountService) {
         val onboarding = accountService.onboard(
             AccountService.OnboardingData(
                 name = r.name,
+                lastName = r.lastName,
                 identityDocument = r.identityDocument,
                 position = r.position,
                 contractType = r.contractType,
